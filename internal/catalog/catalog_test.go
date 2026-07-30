@@ -36,3 +36,14 @@ func TestResolveImageDefaultsToDiffusersOnWindows(t *testing.T) {
 		t.Fatalf("unexpected Windows image resolution: %#v", got)
 	}
 }
+
+func TestResolveQwenMLXAlias(t *testing.T) {
+	got, err := ResolveFor("qwen3.6:35b-mlx", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Repo != "mlx-community/Qwen3.6-35B-A3B-4bit" ||
+		got.Backend != "mlx-vlm" || got.Kind != "text" || got.Filename != "" {
+		t.Fatalf("unexpected Qwen MLX resolution: %#v", got)
+	}
+}

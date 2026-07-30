@@ -1,0 +1,1 @@
+mlx-vlm @ https://github.com/Blaizzy/mlx-vlm/archive/cb2ca446e6d9daa176408eb67fb190f830836904.zip

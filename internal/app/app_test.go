@@ -91,6 +91,19 @@ func TestSplitClientArgs(t *testing.T) {
 	}
 }
 
+func TestChatExitCommand(t *testing.T) {
+	for _, input := range []string{"/bye", "/BYE", "  /bye  "} {
+		if !isChatExit(input) {
+			t.Errorf("%q should exit chat", input)
+		}
+	}
+	for _, input := range []string{"bye", "/bye now", "hello"} {
+		if isChatExit(input) {
+			t.Errorf("%q should be sent to the model", input)
+		}
+	}
+}
+
 func containsEnv(env []string, prefix string) bool {
 	for _, value := range env {
 		if strings.HasPrefix(value, prefix) {

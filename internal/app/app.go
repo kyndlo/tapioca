@@ -112,6 +112,15 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 		}
 		return modelFromResolved(resolved, dir), nil
 	}
+	if resolved.Backend == "mlx-vlm" {
+		if err := pullTextSnapshot(resolved, dir, force); err != nil {
+			return config.Model{}, err
+		}
+		if err := register(resolved, dir); err != nil {
+			return config.Model{}, err
+		}
+		return modelFromResolved(resolved, dir), nil
+	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !force {
 		fmt.Printf("%s already exists at %s\n", resolved.Name, path)
@@ -224,6 +233,7 @@ type serveOptions struct {
 	upstreamPort int
 	context      int
 	llamaServer  string
+	verbose      bool
 }
 
 func serve(args []string) error {
@@ -248,6 +258,7 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 	fs.IntVar(&opts.upstreamPort, "upstream-port", 11436, "private llama-server port")
 	fs.IntVar(&opts.context, "context", 65536, "context window")
 	fs.StringVar(&opts.llamaServer, "llama-server", "", "path to llama-server")
+	fs.BoolVar(&opts.verbose, "verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(args[1:]); err != nil {
 		return opts, config.Model{}, err
 	}
@@ -264,7 +275,7 @@ func startServer(ctx context.Context, model config.Model, opts serveOptions) err
 	}
 	s := server.New(server.Options{
 		Model: model, Host: opts.host, Port: opts.port, UpstreamPort: opts.upstreamPort,
-		Context: opts.context, LlamaServer: opts.llamaServer,
+		Context: opts.context, LlamaServer: opts.llamaServer, Verbose: opts.verbose,
 	})
 	return s.Start(ctx)
 }
@@ -278,6 +289,8 @@ func run(args []string) error {
 	port := fs.Int("port", 11435, "Tapioca API port")
 	contextSize := fs.Int("context", 65536, "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
+	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
+	showThinking := fs.Bool("show-thinking", true, "show the model's reasoning before its answer")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -291,15 +304,22 @@ func run(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
+	fmt.Println("Loading", model.Name+"...")
 	go func() {
-		errs <- startServer(ctx, model, serveOptions{host: "127.0.0.1", port: *port, upstreamPort: *port + 1, context: *contextSize, llamaServer: *llamaServer})
+		errs <- startServer(ctx, model, serveOptions{
+			host: "127.0.0.1", port: *port, upstreamPort: *port + 1,
+			context: *contextSize, llamaServer: *llamaServer, verbose: *verbose,
+		})
 	}()
 	if err := waitForHealth(ctx, *port); err != nil {
 		return err
 	}
-	fmt.Println("Chat with", model.Name, "(Ctrl-D to exit)")
+	fmt.Println("Chat with", model.Name, "(/bye or Ctrl-D to exit)")
 	scanner := bufio.NewScanner(os.Stdin)
-	var messages []server.ChatMessage
+	messages := []server.ChatMessage{{
+		Role:    "system",
+		Content: "The current local date is " + time.Now().Format("Monday, January 2, 2006") + ".",
+	}}
 	for {
 		fmt.Print("> ")
 		if !scanner.Scan() {
@@ -309,14 +329,19 @@ func run(args []string) error {
 		if prompt == "" {
 			continue
 		}
+		if isChatExit(prompt) {
+			fmt.Println("Bye!")
+			break
+		}
 		messages = append(messages, server.ChatMessage{Role: "user", Content: prompt})
-		reply, err := chat(*port, model.Name, messages)
+		reply, thinking, err := chat(*port, model.Name, messages, *showThinking)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error:", err)
 			continue
 		}
-		fmt.Println(reply)
-		messages = append(messages, server.ChatMessage{Role: "assistant", Content: reply})
+		messages = append(messages, server.ChatMessage{
+			Role: "assistant", Content: reply, ReasoningContent: thinking,
+		})
 	}
 	stop()
 	select {
@@ -327,25 +352,114 @@ func run(args []string) error {
 	}
 }
 
-func chat(port int, model string, messages []server.ChatMessage) (string, error) {
-	body, _ := json.Marshal(server.ChatRequest{Model: model, Messages: messages})
+func isChatExit(prompt string) bool {
+	return strings.EqualFold(strings.TrimSpace(prompt), "/bye")
+}
+
+func chat(port int, model string, messages []server.ChatMessage, showThinking bool) (string, string, error) {
+	request := server.ChatRequest{Model: model, Messages: messages, Stream: true}
+	if showThinking {
+		request.ReasoningFormat = "deepseek"
+	}
+	body, _ := json.Marshal(request)
 	resp, err := http.Post("http://127.0.0.1:"+strconv.Itoa(port)+"/v1/chat/completions", "application/json", bytes.NewReader(body))
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("%s: %s", resp.Status, b)
+		return "", "", fmt.Errorf("%s: %s", resp.Status, b)
 	}
-	var result server.ChatResponse
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
+	var content, thinking strings.Builder
+	var sawThinking, sawContent bool
+	scanner := bufio.NewScanner(resp.Body)
+	scanner.Buffer(make([]byte, 4096), 1024*1024)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if !strings.HasPrefix(line, "data:") {
+			continue
+		}
+		data := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if data == "[DONE]" {
+			break
+		}
+		var chunk struct {
+			Choices []struct {
+				Delta server.ChatMessage `json:"delta"`
+			} `json:"choices"`
+		}
+		if err := json.Unmarshal([]byte(data), &chunk); err != nil || len(chunk.Choices) == 0 {
+			continue
+		}
+		delta := chunk.Choices[0].Delta
+		if delta.ReasoningContent != "" {
+			if !sawThinking {
+				sawThinking = true
+				if showThinking {
+					fmt.Print("Thinking:\n")
+				} else {
+					fmt.Print("Thinking...")
+				}
+			}
+			thinking.WriteString(delta.ReasoningContent)
+			if showThinking {
+				fmt.Print(delta.ReasoningContent)
+			}
+		}
+		text := textDelta(delta.Content)
+		if text != "" {
+			if !sawContent {
+				sawContent = true
+				if sawThinking {
+					if showThinking {
+						fmt.Print("\n\nAnswer:\n")
+					} else {
+						fmt.Print(" done.\n")
+					}
+				}
+			}
+			content.WriteString(text)
+			fmt.Print(text)
+		}
 	}
-	if len(result.Choices) == 0 {
-		return "", errors.New("model returned no choices")
+	if err := scanner.Err(); err != nil {
+		return "", "", err
 	}
-	return fmt.Sprint(result.Choices[0].Message.Content), nil
+	if sawThinking || sawContent {
+		fmt.Println()
+	}
+	if !sawContent {
+		return "", thinking.String(), errors.New("model returned no answer")
+	}
+	return content.String(), thinking.String(), nil
+}
+
+func textDelta(content any) string {
+	if content == nil {
+		return ""
+	}
+	if text, ok := content.(string); ok {
+		return text
+	}
+	return serverTextContent(content)
+}
+
+func serverTextContent(content any) string {
+	switch parts := content.(type) {
+	case []any:
+		var result strings.Builder
+		for _, raw := range parts {
+			if part, ok := raw.(map[string]any); ok {
+				if text, ok := part["text"].(string); ok {
+					result.WriteString(text)
+				}
+			}
+		}
+		return result.String()
+	default:
+		return fmt.Sprint(content)
+	}
 }
 
 func waitForHealth(ctx context.Context, port int) error {
@@ -425,6 +539,7 @@ func launch(args []string) error {
 	port := fs.Int("port", 11435, "Tapioca API port")
 	contextSize := fs.Int("context", 65536, "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
+	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(options); err != nil {
 		return err
 	}
@@ -438,8 +553,12 @@ func launch(args []string) error {
 	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
+	fmt.Println("Loading", model.Name+"...")
 	go func() {
-		errs <- startServer(ctx, model, serveOptions{host: "127.0.0.1", port: *port, upstreamPort: *port + 1, context: *contextSize, llamaServer: *llamaServer})
+		errs <- startServer(ctx, model, serveOptions{
+			host: "127.0.0.1", port: *port, upstreamPort: *port + 1,
+			context: *contextSize, llamaServer: *llamaServer, verbose: *verbose,
+		})
 	}()
 	if err := waitForHealth(ctx, *port); err != nil {
 		return err

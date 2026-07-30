@@ -8,13 +8,34 @@ native MLX image models.
 ## Requirements
 
 - Go 1.25 or newer (to build)
-- llama.cpp for GGUF language models (`brew install llama.cpp` on macOS)
-- macOS on Apple Silicon plus Xcode 26 / Swift 6.2 or newer for MLX image
-  generation
+- The official macOS and Windows bundles include `llama-server`; source builds
+  can use a separately installed llama.cpp (`brew install llama.cpp` on macOS).
+- Official macOS Apple Silicon bundles include the compiled MLX image runtime
+  and Metal shaders. Building that runtime from source requires Xcode 26 /
+  Swift 6.2 or newer and the Xcode Metal Toolchain. Install the Metal component
+  once with `xcodebuild -downloadComponent MetalToolchain`.
 - Windows x64 plus Python 3.10+, a current NVIDIA driver, and an
   Ampere-or-newer NVIDIA GPU for CUDA image generation
 - The client CLI you want to launch (`codex`, `claude`, `opencode`,
   `openclaw`, or `hermes`)
+
+## Release bundles
+
+GitHub Actions produces platform-native archives:
+
+- `tapioca-darwin-arm64.tar.gz` includes Tapioca, the Metal-enabled
+  `llama-server`, and the compiled Swift/MLX image runtime with
+  `mlx.metallib`.
+- `tapioca-windows-amd64.zip` includes Tapioca and the Vulkan-enabled
+  `llama-server` with its DLLs.
+
+Extract the complete archive and run `tapioca` from its root. Keep the
+`runtime` directory beside the executable.
+
+Model weights are never included. The Windows diffusion backend still creates
+its isolated CUDA/Python environment on first use because PyTorch/CUDA packages
+are several gigabytes and must match the installed NVIDIA driver. Coding-agent
+clients such as Codex and Claude Code remain separate applications.
 
 ## Build
 
@@ -41,6 +62,41 @@ are not installed yet, so the explicit `pull` step is optional:
 ```bash
 ./bin/tapioca run glm-4.7-flash:q8_0
 ```
+
+Run Qwen3.6 through the native MLX text backend on Apple Silicon:
+
+```bash
+./bin/tapioca run qwen3.6:35b-mlx
+```
+
+The Ollama-compatible `35b-mlx` alias maps to the approximately 20 GB
+`mlx-community/Qwen3.6-35B-A3B-4bit` snapshot on Hugging Face. Explicit
+`35b-mlx-4bit`, `35b-mlx-6bit`, and `35b-mlx-8bit` variants are also available.
+The first run creates an isolated `mlx-vlm` runtime under
+`~/.tapioca/runtime/mlx-vlm`; subsequent runs reuse it.
+
+Inside an interactive chat, enter `/bye` (or press Ctrl-D) to stop the local
+server and exit.
+
+Tapioca suppresses llama.cpp and HTTP request logs by default. Add `--verbose`
+to `run`, `serve`, or `launch` when diagnosing startup or request problems.
+
+Reasoning-capable models show their model-generated thinking separately from
+the final answer by default:
+
+```bash
+./bin/tapioca run glm-4.7-flash:q8_0
+```
+
+Tapioca preserves reasoning in the conversation history so the model can
+maintain continuity across turns. To hide the trace while retaining a progress
+indicator, use:
+
+```bash
+./bin/tapioca run glm-4.7-flash:q8_0 --show-thinking=false
+```
+
+Interactive responses stream as they are generated.
 
 Launch a coding agent:
 
@@ -109,7 +165,8 @@ Override this with `TAPIOCA_HOME`.
 ## MVP limitations
 
 - The built-in catalog currently contains GLM-4.7-Flash Q4_K_M/Q8_0,
-  Qwen-Image-Flash MLX int8, and Qwen-Image-Flash Diffusers BF16.
+  Qwen3.6 35B-A3B MLX 4/6/8-bit, Qwen-Image-Flash MLX int8, and
+  Qwen-Image-Flash Diffusers BF16.
 - MLX diffusion generation requires Apple Silicon and macOS 26.
 - CUDA diffusion generation requires Windows x64, an NVIDIA Ampere-or-newer
   GPU, and enough combined system/GPU memory for the approximately 58 GB BF16

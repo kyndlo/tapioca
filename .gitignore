@@ -1,4 +1,5 @@
 /bin/
+/dist/
 *.partial
 **/.build/
 **/__pycache__/

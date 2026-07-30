@@ -18,6 +18,19 @@ type hubModel struct {
 }
 
 func pullSnapshot(model catalog.Resolved, destination string, force bool) error {
+	return pullHubSnapshot(model, destination, force, imageSnapshotFile)
+}
+
+func pullTextSnapshot(model catalog.Resolved, destination string, force bool) error {
+	return pullHubSnapshot(model, destination, force, textSnapshotFile)
+}
+
+func pullHubSnapshot(
+	model catalog.Resolved,
+	destination string,
+	force bool,
+	include func(string) bool,
+) error {
 	resp, err := http.Get("https://huggingface.co/api/models/" + model.Repo)
 	if err != nil {
 		return err
@@ -32,7 +45,7 @@ func pullSnapshot(model catalog.Resolved, destination string, force bool) error 
 	}
 	var files []string
 	for _, sibling := range metadata.Siblings {
-		if imageSnapshotFile(sibling.Filename) {
+		if include(sibling.Filename) {
 			files = append(files, sibling.Filename)
 		}
 	}
@@ -60,6 +73,18 @@ func pullSnapshot(model catalog.Resolved, destination string, force bool) error 
 	}
 	fmt.Printf("saved %s\n", destination)
 	return nil
+}
+
+func textSnapshotFile(name string) bool {
+	if strings.HasPrefix(name, ".") || strings.HasPrefix(name, "assets/") {
+		return false
+	}
+	switch strings.ToLower(filepath.Ext(name)) {
+	case ".md", ".png", ".jpg", ".jpeg", ".gif":
+		return false
+	default:
+		return true
+	}
 }
 
 func imageSnapshotFile(name string) bool {

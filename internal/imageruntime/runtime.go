@@ -48,10 +48,16 @@ func runMLX(ctx context.Context, cacheDir string, request Request) error {
 	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
 		return fmt.Errorf("the MLX image backend requires macOS on Apple Silicon; pull the bf16 variant for CUDA")
 	}
-	if _, err := exec.LookPath("swift"); err != nil {
-		return fmt.Errorf("Swift 6.2 or newer is required for the MLX image backend: %w", err)
+	if binary := bundledMLXRuntime(); binary != "" {
+		return runMLXBinary(ctx, binary, request)
 	}
-	root := filepath.Join(cacheDir, "image-runtime", "0.1.0")
+	if _, err := exec.LookPath("swift"); err != nil {
+		return fmt.Errorf("this development build does not include the MLX image runtime; Swift 6.2 or newer is required: %w", err)
+	}
+	if err := requireMetalToolchain(ctx); err != nil {
+		return err
+	}
+	root := filepath.Join(cacheDir, "image-runtime", "0.1.1")
 	for _, name := range []string{"Package.swift", "Package.resolved", "Sources/tapioca-image-runtime/main.swift"} {
 		data, err := source.ReadFile(name)
 		if err != nil {
@@ -74,6 +80,31 @@ func runMLX(ctx context.Context, cacheDir string, request Request) error {
 			return fmt.Errorf("build MLX image runtime: %w", err)
 		}
 	}
+	if err := buildMLXMetallib(ctx, root, filepath.Dir(binary)); err != nil {
+		return err
+	}
+	return runMLXBinary(ctx, binary, request)
+}
+
+func bundledMLXRuntime() string {
+	executable, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	root := filepath.Join(filepath.Dir(executable), "runtime", "image")
+	binary := filepath.Join(root, "tapioca-image-runtime")
+	if runtime.GOOS == "windows" {
+		binary += ".exe"
+	}
+	for _, path := range []string{binary, filepath.Join(root, "mlx.metallib")} {
+		if info, err := os.Stat(path); err != nil || info.IsDir() {
+			return ""
+		}
+	}
+	return binary
+}
+
+func runMLXBinary(ctx context.Context, binary string, request Request) error {
 	args := []string{
 		"--model", request.ModelPath, "--prompt", request.Prompt,
 		"--output", request.Output, "--width", fmt.Sprint(request.Width),
@@ -86,6 +117,70 @@ func runMLX(ctx context.Context, cacheDir string, request Request) error {
 	cmd := exec.CommandContext(ctx, binary, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	return cmd.Run()
+}
+
+func buildMLXMetallib(ctx context.Context, root, binaryDir string) error {
+	metallib := filepath.Join(binaryDir, "mlx.metallib")
+	if _, err := os.Stat(metallib); err == nil {
+		return nil
+	}
+
+	fmt.Fprintln(os.Stderr, "building MLX Metal shaders (first run only)...")
+	cmlxRoot := filepath.Join(root, ".build", "checkouts", "mlx-swift", "Source", "Cmlx")
+	shaderRoot := filepath.Join(cmlxRoot, "mlx-generated", "metal")
+	airRoot := filepath.Join(root, ".build", "tapioca-metal-air")
+	if err := os.MkdirAll(airRoot, 0o755); err != nil {
+		return fmt.Errorf("create MLX shader build directory: %w", err)
+	}
+
+	shaders := []string{
+		"arg_reduce.metal",
+		"conv.metal",
+		"gemv.metal",
+		"layer_norm.metal",
+		"random.metal",
+		"rms_norm.metal",
+		"rope.metal",
+		"scaled_dot_product_attention.metal",
+		filepath.Join("steel", "attn", "kernels", "steel_attention.metal"),
+	}
+	airFiles := make([]string, 0, len(shaders))
+	for index, shader := range shaders {
+		sourcePath := filepath.Join(shaderRoot, shader)
+		airPath := filepath.Join(airRoot, fmt.Sprintf("%02d-%s.air", index, filepath.Base(shader[:len(shader)-len(filepath.Ext(shader))])))
+		args := []string{
+			"-sdk", "macosx", "metal", "-x", "metal",
+			"-Wall", "-Wextra", "-fno-fast-math",
+			"-Wno-c++17-extensions", "-Wno-c++20-extensions",
+			"-mmacosx-version-min=14.0", "-c", sourcePath,
+			"-I" + cmlxRoot, "-o", airPath,
+		}
+		cmd := exec.CommandContext(ctx, "xcrun", args...)
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("compile MLX Metal shader %s: %w", shader, err)
+		}
+		airFiles = append(airFiles, airPath)
+	}
+
+	args := append([]string{"-sdk", "macosx", "metallib"}, airFiles...)
+	args = append(args, "-o", metallib)
+	cmd := exec.CommandContext(ctx, "xcrun", args...)
+	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("link MLX Metal shader library: %w", err)
+	}
+	return nil
+}
+
+func requireMetalToolchain(ctx context.Context) error {
+	cmd := exec.CommandContext(ctx, "xcrun", "-sdk", "macosx", "--find", "metallib")
+	if err := cmd.Run(); err != nil {
+		return errors.New(
+			"the Xcode Metal Toolchain is required for MLX image generation; install it with `xcodebuild -downloadComponent MetalToolchain`",
+		)
+	}
+	return nil
 }
 
 func runDiffusers(ctx context.Context, cacheDir string, request Request) error {

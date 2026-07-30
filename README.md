@@ -18,6 +18,12 @@ APIs to Codex, Claude Code, and OpenCode.
 make build
 ```
 
+GitHub Actions builds downloadable artifacts for:
+
+- macOS on Apple Silicon (`darwin/arm64`)
+- Windows x64 (`windows/amd64`)
+- Windows ARM64 (`windows/arm64`)
+
 ## Quick start
 
 ```bash

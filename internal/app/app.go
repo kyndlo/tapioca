@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/carlos/tapioca/internal/catalog"
@@ -185,7 +184,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	return startServer(ctx, model, opts)
 }
@@ -239,7 +238,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
 	go func() {
@@ -373,7 +372,7 @@ func launch(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
 	go func() {

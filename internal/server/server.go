@@ -14,7 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/carlos/tapioca/internal/config"
@@ -59,7 +58,7 @@ func (s *Server) Start(ctx context.Context) error {
 	s.cmd = exec.CommandContext(ctx, s.opts.LlamaServer, args...)
 	s.cmd.Stdout = os.Stderr
 	s.cmd.Stderr = os.Stderr
-	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	configureProcess(s.cmd)
 	if err := s.cmd.Start(); err != nil {
 		return err
 	}
@@ -95,7 +94,7 @@ func (s *Server) Stop() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.cmd != nil && s.cmd.Process != nil {
-		_ = syscall.Kill(-s.cmd.Process.Pid, syscall.SIGTERM)
+		_ = stopProcess(s.cmd)
 	}
 }
 

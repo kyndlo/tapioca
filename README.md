@@ -21,7 +21,8 @@ native MLX image models.
 
 ## Release bundles
 
-GitHub Actions produces platform-native archives:
+[GitHub Releases](https://github.com/kyndlo/tapioca/releases) provide
+platform-native archives:
 
 - `tapioca-darwin-arm64.tar.gz` includes Tapioca, the Metal-enabled
   `llama-server`, and the compiled Swift/MLX image runtime with
@@ -31,6 +32,10 @@ GitHub Actions produces platform-native archives:
 
 Extract the complete archive and run `tapioca` from its root. Keep the
 `runtime` directory beside the executable.
+
+Version tags such as `v0.2.0` automatically build and publish a GitHub Release.
+Maintainers can also run the workflow manually with a release tag to publish
+the current commit.
 
 Model weights are never included. The Windows diffusion backend still creates
 its isolated CUDA/Python environment on first use because PyTorch/CUDA packages

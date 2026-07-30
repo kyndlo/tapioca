@@ -14,3 +14,25 @@ func TestResolveGLM(t *testing.T) {
 		t.Fatalf("unexpected name %q", got.Name)
 	}
 }
+
+func TestResolveImageDefault(t *testing.T) {
+	got, err := ResolveFor("qwen-image-flash", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "qwen-image-flash:int8" || got.Kind != "image" ||
+		got.Repo != "mlx-community/Qwen-Image-Flash-8bit" || got.Filename != "" {
+		t.Fatalf("unexpected image resolution: %#v", got)
+	}
+}
+
+func TestResolveImageDefaultsToDiffusersOnWindows(t *testing.T) {
+	got, err := ResolveFor("qwen-image-flash", "windows")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Name != "qwen-image-flash:bf16" ||
+		got.Repo != "nvidia/Qwen-Image-Flash" || got.Backend != "diffusers" {
+		t.Fatalf("unexpected Windows image resolution: %#v", got)
+	}
+}

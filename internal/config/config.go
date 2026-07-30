@@ -13,6 +13,8 @@ type Model struct {
 	Repo     string `json:"repo"`
 	Filename string `json:"filename"`
 	Path     string `json:"path"`
+	Kind     string `json:"kind,omitempty"`
+	Backend  string `json:"backend,omitempty"`
 }
 
 type Registry struct {

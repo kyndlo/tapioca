@@ -36,7 +36,7 @@ func image(args []string) error {
 	if *width <= 0 || *height <= 0 || *width%16 != 0 || *height%16 != 0 {
 		return errors.New("width and height must be positive and divisible by 16")
 	}
-	model, err := findModel(ref)
+	model, err := ensureModel(ref)
 	if err != nil {
 		return err
 	}

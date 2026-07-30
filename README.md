@@ -35,6 +35,13 @@ GitHub Actions builds downloadable artifacts for:
 ./bin/tapioca run glm-4.7-flash:q8_0
 ```
 
+`run`, `serve`, `launch`, and `image` automatically pull catalog models that
+are not installed yet, so the explicit `pull` step is optional:
+
+```bash
+./bin/tapioca run glm-4.7-flash:q8_0
+```
+
 Launch a coding agent:
 
 ```bash

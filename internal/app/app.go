@@ -93,38 +93,56 @@ func pull(args []string) error {
 	if err != nil {
 		return err
 	}
+	_, err = pullResolved(resolved, *force)
+	return err
+}
+
+func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 	home, err := config.Home()
 	if err != nil {
-		return err
+		return config.Model{}, err
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
 	if resolved.Kind == "image" {
-		if err := pullSnapshot(resolved, dir, *force); err != nil {
-			return err
+		if err := pullSnapshot(resolved, dir, force); err != nil {
+			return config.Model{}, err
 		}
-		return register(resolved, dir)
+		if err := register(resolved, dir); err != nil {
+			return config.Model{}, err
+		}
+		return modelFromResolved(resolved, dir), nil
 	}
 	path := filepath.Join(dir, resolved.Filename)
-	if _, err := os.Stat(path); err == nil && !*force {
+	if _, err := os.Stat(path); err == nil && !force {
 		fmt.Printf("%s already exists at %s\n", resolved.Name, path)
-		return register(resolved, path)
+		if err := register(resolved, path); err != nil {
+			return config.Model{}, err
+		}
+		return modelFromResolved(resolved, path), nil
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
+		return config.Model{}, err
 	}
 	partial := path + ".partial"
 	fmt.Printf("pulling %s from %s\n", resolved.Name, resolved.Repo)
 	if err := download(resolved.URL, partial); err != nil {
-		return err
+		return config.Model{}, err
 	}
 	if err := os.Rename(partial, path); err != nil {
-		return err
+		return config.Model{}, err
 	}
 	if err := register(resolved, path); err != nil {
-		return err
+		return config.Model{}, err
 	}
 	fmt.Printf("saved %s\n", path)
-	return nil
+	return modelFromResolved(resolved, path), nil
+}
+
+func modelFromResolved(resolved catalog.Resolved, path string) config.Model {
+	return config.Model{
+		Name: resolved.Name, Repo: resolved.Repo, Filename: resolved.Filename, Path: path,
+		Kind: resolved.Kind, Backend: resolved.Backend,
+	}
 }
 
 func register(resolved catalog.Resolved, path string) error {
@@ -236,7 +254,7 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 	if fs.NArg() != 0 {
 		return opts, config.Model{}, errors.New("usage: tapioca serve MODEL [flags]")
 	}
-	model, err := findModel(ref)
+	model, err := ensureModel(ref)
 	return opts, model, err
 }
 
@@ -266,7 +284,7 @@ func run(args []string) error {
 	if fs.NArg() != 0 {
 		return errors.New("usage: tapioca run MODEL")
 	}
-	model, err := findModel(ref)
+	model, err := ensureModel(ref)
 	if err != nil {
 		return err
 	}
@@ -350,18 +368,27 @@ func waitForHealth(ctx context.Context, port int) error {
 	}
 }
 
-func findModel(ref string) (config.Model, error) {
+func ensureModel(ref string) (config.Model, error) {
 	registry, err := config.Load()
 	if err != nil {
 		return config.Model{}, err
 	}
+	registered := false
 	if model, ok := registry.Find(ref); ok {
-		if _, err := os.Stat(model.Path); err != nil {
-			return config.Model{}, fmt.Errorf("model file is unavailable: %w", err)
+		registered = true
+		if _, err := os.Stat(model.Path); err == nil {
+			return model, nil
 		}
-		return model, nil
+		fmt.Printf("%s is registered but unavailable; pulling it again\n", model.Name)
 	}
-	return config.Model{}, fmt.Errorf("%s is not installed; run `tapioca pull %s`", ref, ref)
+	resolved, err := catalog.Resolve(ref)
+	if err != nil {
+		return config.Model{}, err
+	}
+	if !registered {
+		fmt.Printf("%s is not installed; pulling it now\n", resolved.Name)
+	}
+	return pullResolved(resolved, false)
 }
 
 func list() error {
@@ -404,7 +431,7 @@ func launch(args []string) error {
 	if fs.NArg() != 0 {
 		return errors.New("usage: tapioca launch CLIENT MODEL [flags] [-- CLIENT_ARGS...]")
 	}
-	model, err := findModel(ref)
+	model, err := ensureModel(ref)
 	if err != nil {
 		return err
 	}

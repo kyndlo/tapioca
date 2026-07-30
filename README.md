@@ -1,14 +1,18 @@
 # Tapioca
 
-Tapioca is a small local-model runtime for coding agents. It downloads GGUF
-models, starts `llama-server` with Metal acceleration, and presents compatible
-APIs to Codex, Claude Code, and OpenCode.
+Tapioca is a small local-model runtime for language and diffusion models. It
+downloads GGUF models, starts `llama-server` with Metal acceleration, and
+presents compatible APIs to coding agents. On Apple Silicon it can also run
+native MLX image models.
 
 ## Requirements
 
-- macOS on Apple Silicon
 - Go 1.25 or newer (to build)
-- llama.cpp: `brew install llama.cpp`
+- llama.cpp for GGUF language models (`brew install llama.cpp` on macOS)
+- macOS on Apple Silicon plus Xcode 26 / Swift 6.2 or newer for MLX image
+  generation
+- Windows x64 plus Python 3.10+, a current NVIDIA driver, and an
+  Ampere-or-newer NVIDIA GPU for CUDA image generation
 - The client CLI you want to launch (`codex`, `claude`, `opencode`,
   `openclaw`, or `hermes`)
 
@@ -17,6 +21,12 @@ APIs to Codex, Claude Code, and OpenCode.
 ```bash
 make build
 ```
+
+GitHub Actions builds downloadable artifacts for:
+
+- macOS on Apple Silicon (`darwin/arm64`)
+- Windows x64 (`windows/amd64`)
+- Windows ARM64 (`windows/arm64`)
 
 ## Quick start
 
@@ -49,6 +59,35 @@ Or expose the APIs directly:
 ./bin/tapioca serve glm-4.7-flash:q8_0 --context 65536
 ```
 
+Generate an image with Qwen-Image-Flash:
+
+```bash
+./bin/tapioca pull qwen-image-flash:int8
+./bin/tapioca image qwen-image-flash:int8 \
+  --prompt "A red fox in a snowy pine forest at golden hour" \
+  --output fox.png \
+  --seed 42
+```
+
+On Windows x64, the unqualified model name automatically selects the original
+BF16 Diffusers checkpoint and the CUDA backend:
+
+```powershell
+tapioca pull qwen-image-flash
+tapioca image qwen-image-flash --prompt "A glass city floating above the ocean" --output city.png
+```
+
+The first Windows run creates an isolated Python environment under
+`%USERPROFILE%\.tapioca\runtime` and installs CUDA-enabled PyTorch and
+Diffusers. GPUs below 64 GB VRAM use sequential CPU offload automatically, so
+Qwen-Image-Flash also needs substantial system RAM and will generate much more
+slowly on common 16–24 GB cards.
+
+The image snapshot is approximately 30 GB. The first generation compiles and
+caches the native Swift/MLX runtime under `~/.tapioca/runtime`; later runs reuse
+it. Qwen-Image-Flash defaults to its intended 1024×1024, four-step, CFG 1.0
+configuration. Width and height may be changed but must be divisible by 16.
+
 Endpoints:
 
 - `GET /health`
@@ -57,12 +96,17 @@ Endpoints:
 - `POST /v1/responses`
 - `POST /v1/messages`
 
-Tapioca stores models and generated launcher configuration in `~/.tapioca`.
+Tapioca stores models, runtime caches, and generated launcher configuration in `~/.tapioca`.
 Override this with `TAPIOCA_HOME`.
 
 ## MVP limitations
 
-- The built-in catalog currently contains GLM-4.7-Flash Q4_K_M and Q8_0.
+- The built-in catalog currently contains GLM-4.7-Flash Q4_K_M/Q8_0,
+  Qwen-Image-Flash MLX int8, and Qwen-Image-Flash Diffusers BF16.
+- MLX diffusion generation requires Apple Silicon and macOS 26.
+- CUDA diffusion generation requires Windows x64, an NVIDIA Ampere-or-newer
+  GPU, and enough combined system/GPU memory for the approximately 58 GB BF16
+  pipeline. Windows ARM64 image generation is not currently supported.
 - Responses and Anthropic streaming are compatibility streams produced after
   generation completes. True token-by-token translation is planned.
 - The launcher owns a server for the lifetime of its child coding-agent process.

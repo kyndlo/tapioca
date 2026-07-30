@@ -16,7 +16,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/carlos/tapioca/internal/catalog"
@@ -40,6 +39,8 @@ func Run(args []string) error {
 		return run(args[1:])
 	case "launch":
 		return launch(args[1:])
+	case "image":
+		return image(args[1:])
 	case "list":
 		return list()
 	case "version", "--version", "-v":
@@ -54,12 +55,13 @@ func Run(args []string) error {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, `Tapioca runs local GGUF models for coding agents.
+	fmt.Fprintln(w, `Tapioca runs local language and diffusion models.
 
 Usage:
   tapioca pull MODEL[:QUANT]
   tapioca serve MODEL [--port 11435] [--context 65536]
   tapioca run MODEL
+  tapioca image MODEL --prompt TEXT [--output image.png]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
   tapioca list
 
@@ -67,6 +69,8 @@ Examples:
   tapioca pull glm-4.7-flash:q8_0
   tapioca serve glm-4.7-flash:q8_0
   tapioca run glm-4.7-flash:q8_0
+  tapioca pull qwen-image-flash:int8
+  tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
   tapioca launch codex glm-4.7-flash:q8_0
   tapioca launch openclaw glm-4.7-flash:q8_0
   tapioca launch hermes glm-4.7-flash:q8_0`)
@@ -94,6 +98,12 @@ func pull(args []string) error {
 		return err
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
+	if resolved.Kind == "image" {
+		if err := pullSnapshot(resolved, dir, *force); err != nil {
+			return err
+		}
+		return register(resolved, dir)
+	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !*force {
 		fmt.Printf("%s already exists at %s\n", resolved.Name, path)
@@ -124,12 +134,20 @@ func register(resolved catalog.Resolved, path string) error {
 	}
 	registry.Models[strings.ToLower(resolved.Name)] = config.Model{
 		Name: resolved.Name, Repo: resolved.Repo, Filename: resolved.Filename, Path: path,
+		Kind: resolved.Kind, Backend: resolved.Backend,
 	}
 	return registry.Save()
 }
 
 func download(url, destination string) error {
+	var offset int64
+	if info, err := os.Stat(destination); err == nil {
+		offset = info.Size()
+	}
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	if offset > 0 {
+		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
+	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -139,13 +157,23 @@ func download(url, destination string) error {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("download failed: %s: %s", resp.Status, strings.TrimSpace(string(body)))
 	}
-	file, err := os.Create(destination)
+	flags := os.O_CREATE | os.O_WRONLY
+	if resp.StatusCode == http.StatusPartialContent {
+		flags |= os.O_APPEND
+	} else {
+		flags |= os.O_TRUNC
+		offset = 0
+	}
+	file, err := os.OpenFile(destination, flags, 0o644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
 	total := resp.ContentLength
-	progress := &progressWriter{w: file, total: total, last: time.Now()}
+	if total > 0 {
+		total += offset
+	}
+	progress := &progressWriter{w: file, written: offset, total: total, last: time.Now()}
 	_, err = io.Copy(progress, resp.Body)
 	fmt.Fprintln(os.Stderr)
 	return err
@@ -185,7 +213,7 @@ func serve(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	return startServer(ctx, model, opts)
 }
@@ -213,6 +241,9 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 }
 
 func startServer(ctx context.Context, model config.Model, opts serveOptions) error {
+	if model.Kind == "image" {
+		return fmt.Errorf("%s is an image model; use `tapioca image %s --prompt TEXT`", model.Name, model.Name)
+	}
 	s := server.New(server.Options{
 		Model: model, Host: opts.host, Port: opts.port, UpstreamPort: opts.upstreamPort,
 		Context: opts.context, LlamaServer: opts.llamaServer,
@@ -239,7 +270,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
 	go func() {
@@ -343,12 +374,16 @@ func list() error {
 		return nil
 	}
 	for _, model := range registry.Models {
-		info, _ := os.Stat(model.Path)
-		var size int64
-		if info != nil {
-			size = info.Size()
+		size, _ := pathSize(model.Path)
+		kind := model.Kind
+		if kind == "" {
+			kind = "text"
 		}
-		fmt.Printf("%-28s %6.1f GB  %s\n", model.Name, float64(size)/1e9, model.Path)
+		backend := model.Backend
+		if backend == "" {
+			backend = "llama.cpp"
+		}
+		fmt.Printf("%-28s %-6s %-10s %6.1f GB  %s\n", model.Name, kind, backend, float64(size)/1e9, model.Path)
 	}
 	return nil
 }
@@ -373,7 +408,7 @@ func launch(args []string) error {
 	if err != nil {
 		return err
 	}
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	errs := make(chan error, 1)
 	go func() {

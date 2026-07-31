@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/carlos/tapioca/internal/adapter"
 )
 
 //go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py requirements.txt requirements-mflux.txt
@@ -24,6 +26,8 @@ type Request struct {
 	Steps          int
 	Seed           uint64
 	Backend        string
+	InputImages    []string
+	Adapters       []adapter.Local
 }
 
 func Run(ctx context.Context, cacheDir string, request Request) error {
@@ -90,19 +94,42 @@ func runMFlux(ctx context.Context, cacheDir string, request Request) error {
 			return err
 		}
 	}
-	command := filepath.Join(venv, "bin", "mflux-generate-flux2")
-	args := []string{
-		"--model", request.ModelPath, "--prompt", request.Prompt,
-		"--width", fmt.Sprint(request.Width), "--height", fmt.Sprint(request.Height),
-		"--steps", fmt.Sprint(request.Steps), "--seed", fmt.Sprint(request.Seed),
-		"--output", request.Output,
-	}
+	commandName, args := mfluxArguments(request)
+	command := filepath.Join(venv, "bin", commandName)
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("MFLUX image generation failed: %w", err)
 	}
 	return nil
+}
+
+func mfluxArguments(request Request) (string, []string) {
+	commandName := "mflux-generate-flux2"
+	if len(request.InputImages) > 0 {
+		commandName = "mflux-generate-flux2-edit"
+	}
+	args := []string{
+		"--model", request.ModelPath, "--prompt", request.Prompt,
+		"--width", fmt.Sprint(request.Width), "--height", fmt.Sprint(request.Height),
+		"--steps", fmt.Sprint(request.Steps), "--seed", fmt.Sprint(request.Seed),
+		"--output", request.Output,
+	}
+	if len(request.InputImages) > 0 {
+		args = append(args, "--image-paths")
+		args = append(args, request.InputImages...)
+	}
+	if len(request.Adapters) > 0 {
+		args = append(args, "--lora-paths")
+		for _, item := range request.Adapters {
+			args = append(args, item.Path)
+		}
+		args = append(args, "--lora-scales")
+		for _, item := range request.Adapters {
+			args = append(args, fmt.Sprint(item.Scale))
+		}
+	}
+	return commandName, args
 }
 
 func runMLX(ctx context.Context, cacheDir string, request Request) error {
@@ -305,6 +332,16 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 			return err
 		}
 	}
+	args := diffusersArguments(root, request)
+	cmd := exec.CommandContext(ctx, python, args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("Diffusers image generation failed: %w", err)
+	}
+	return nil
+}
+
+func diffusersArguments(root string, request Request) []string {
 	args := []string{
 		filepath.Join(root, "diffusers.py"),
 		"--model", request.ModelPath, "--prompt", request.Prompt,
@@ -315,12 +352,13 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 	if request.NegativePrompt != "" {
 		args = append(args, "--negative-prompt", request.NegativePrompt)
 	}
-	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("Diffusers image generation failed: %w", err)
+	for _, image := range request.InputImages {
+		args = append(args, "--image", image)
 	}
-	return nil
+	for _, item := range request.Adapters {
+		args = append(args, "--adapter", item.Path, "--adapter-scale", fmt.Sprint(item.Scale))
+	}
+	return args
 }
 
 func systemPython() (string, []string, error) {

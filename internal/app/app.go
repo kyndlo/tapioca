@@ -41,8 +41,14 @@ func Run(args []string) error {
 		return launch(args[1:])
 	case "image":
 		return image(args[1:])
+	case "edit":
+		return edit(args[1:])
 	case "video":
 		return video(args[1:])
+	case "adapter":
+		return adapterCommand(args[1:])
+	case "create":
+		return createRecipe(args[1:])
 	case "list":
 		return list()
 	case "catalog":
@@ -66,7 +72,10 @@ Usage:
   tapioca serve MODEL [--port 11435] [--context 65536]
   tapioca run MODEL
   tapioca image MODEL --prompt TEXT [--output image.png]
+  tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
   tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
+  tapioca adapter (inspect|pull|list) [hf://OWNER/REPOSITORY]
+  tapioca create NAME --base MODEL [--adapter REFERENCE]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
   tapioca catalog
   tapioca list
@@ -78,6 +87,7 @@ Examples:
   tapioca pull qwen-image-flash:int8
   tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
   tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow"
+  tapioca adapter inspect hf://Alissonerdx/BFS-Best-Face-Swap
   tapioca launch codex glm-4.7-flash:q8_0
   tapioca launch openclaw glm-4.7-flash:q8_0
   tapioca launch hermes glm-4.7-flash:q8_0`)
@@ -200,6 +210,15 @@ func download(url, destination string) error {
 		offset = info.Size()
 	}
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	if strings.EqualFold(req.URL.Host, "huggingface.co") {
+		token := os.Getenv("HF_TOKEN")
+		if token == "" {
+			token = os.Getenv("HUGGING_FACE_HUB_TOKEN")
+		}
+		if token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+	}
 	if offset > 0 {
 		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", offset))
 	}
@@ -528,6 +547,22 @@ func ensureModel(ref string) (config.Model, error) {
 		return config.Model{}, err
 	}
 	if !registered {
+		fmt.Printf("%s is not installed; pulling it now\n", resolved.Name)
+	}
+	return pullResolved(resolved, false)
+}
+
+func ensureResolvedModel(resolved catalog.Resolved) (config.Model, error) {
+	registry, err := config.Load()
+	if err != nil {
+		return config.Model{}, err
+	}
+	if model, ok := registry.Find(resolved.Name); ok {
+		if _, err := os.Stat(model.Path); err == nil {
+			return model, nil
+		}
+		fmt.Printf("%s is registered but unavailable; pulling it again\n", model.Name)
+	} else {
 		fmt.Printf("%s is not installed; pulling it now\n", resolved.Name)
 	}
 	return pullResolved(resolved, false)

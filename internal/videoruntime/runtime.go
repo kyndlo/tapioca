@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/carlos/tapioca/internal/adapter"
 )
 
 //go:embed mlx_video.py diffusers_video.py requirements-mlx.txt requirements-diffusers.txt
@@ -27,6 +29,7 @@ type Request struct {
 	FPS            int
 	Seed           uint64
 	Backend        string
+	Adapters       []adapter.Local
 }
 
 func Run(ctx context.Context, cacheDir string, request Request) error {
@@ -104,6 +107,16 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 		}
 	}
 
+	args := pythonArguments(root, script, request)
+	cmd := exec.CommandContext(ctx, python, args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s video generation failed: %w", flavor, err)
+	}
+	return nil
+}
+
+func pythonArguments(root, script string, request Request) []string {
 	args := []string{
 		filepath.Join(root, script), "--model", request.ModelPath,
 		"--prompt", request.Prompt, "--output", request.Output,
@@ -117,12 +130,10 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 	if request.InputImage != "" {
 		args = append(args, "--image", request.InputImage)
 	}
-	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s video generation failed: %w", flavor, err)
+	for _, item := range request.Adapters {
+		args = append(args, "--adapter", item.Path, "--adapter-scale", fmt.Sprint(item.Scale))
 	}
-	return nil
+	return args
 }
 
 func systemPython() (string, []string, error) {

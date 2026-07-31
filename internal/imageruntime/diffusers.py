@@ -9,6 +9,9 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--image", action="append", default=[])
+    parser.add_argument("--adapter", action="append", default=[])
+    parser.add_argument("--adapter-scale", action="append", type=float, default=[])
     parser.add_argument("--negative-prompt", default=" ")
     parser.add_argument("--width", type=int, default=1024)
     parser.add_argument("--height", type=int, default=1024)
@@ -18,6 +21,7 @@ def main():
 
     import torch
     from diffusers import DiffusionPipeline
+    from diffusers.utils import load_image
 
     if not torch.cuda.is_available():
         raise SystemExit(
@@ -42,9 +46,28 @@ def main():
         "torch_dtype": dtype,
         "local_files_only": True,
     }
-    if not is_qwen_image:
+    has_fp16_variant = any(
+        ".fp16." in name.lower()
+        for _, _, files in os.walk(args.model)
+        for name in files
+    )
+    if not is_qwen_image and has_fp16_variant:
         load_options["variant"] = "fp16"
     pipe = DiffusionPipeline.from_pretrained(args.model, **load_options)
+    if len(args.adapter) != len(args.adapter_scale):
+        raise SystemExit("each --adapter requires one --adapter-scale")
+    for index, (path, scale) in enumerate(zip(args.adapter, args.adapter_scale)):
+        name = f"tapioca-{index}"
+        pipe.load_lora_weights(
+            os.path.dirname(path),
+            weight_name=os.path.basename(path),
+            adapter_name=name,
+        )
+    if args.adapter:
+        pipe.set_adapters(
+            [f"tapioca-{index}" for index in range(len(args.adapter))],
+            adapter_weights=args.adapter_scale,
+        )
     weight_bytes = 0
     for root, _, files in os.walk(args.model):
         for name in files:
@@ -75,6 +98,14 @@ def main():
         "num_inference_steps": args.steps,
         "generator": generator,
     }
+    if args.image:
+        if "image" not in supported:
+            raise SystemExit(
+                f"{type(pipe).__name__} does not accept input images; "
+                "choose an image-editing base model"
+            )
+        loaded = [load_image(path) for path in args.image]
+        generation["image"] = loaded if len(loaded) > 1 else loaded[0]
     if "true_cfg_scale" in supported:
         generation["true_cfg_scale"] = 1.0
     elif "guidance_scale" in supported:

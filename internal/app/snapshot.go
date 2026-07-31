@@ -18,7 +18,16 @@ type hubModel struct {
 }
 
 func pullSnapshot(model catalog.Resolved, destination string, force bool) error {
-	return pullHubSnapshot(model, destination, force, imageSnapshotFile)
+	include := imageSnapshotFile
+	if model.Repo == "stabilityai/sd-turbo" ||
+		model.Repo == "stabilityai/sdxl-turbo" ||
+		model.Repo == "stabilityai/stable-video-diffusion-img2vid-xt" {
+		include = imageFP16SnapshotFile
+	}
+	if model.Kind == "video" && model.Backend == "mlx-video" {
+		include = textSnapshotFile
+	}
+	return pullHubSnapshot(model, destination, force, include)
 }
 
 func pullTextSnapshot(model catalog.Resolved, destination string, force bool) error {
@@ -50,7 +59,7 @@ func pullHubSnapshot(
 		}
 	}
 	if len(files) == 0 {
-		return fmt.Errorf("%s contains no supported image-model files", model.Repo)
+		return fmt.Errorf("%s contains no supported model files", model.Repo)
 	}
 	fmt.Printf("pulling %s snapshot from %s (%d files)\n", model.Name, model.Repo, len(files))
 	for index, name := range files {
@@ -88,7 +97,10 @@ func textSnapshotFile(name string) bool {
 }
 
 func imageSnapshotFile(name string) bool {
-	for _, prefix := range []string{"transformer/", "text_encoder/", "tokenizer/", "vae/", "scheduler/"} {
+	for _, prefix := range []string{
+		"transformer/", "text_encoder/", "text_encoder_2/", "tokenizer/",
+		"tokenizer_2/", "feature_extractor/", "vae/", "scheduler/", "unet/",
+	} {
 		if strings.HasPrefix(name, prefix) {
 			return true
 		}
@@ -99,6 +111,20 @@ func imageSnapshotFile(name string) bool {
 	default:
 		return false
 	}
+}
+
+func imageFP16SnapshotFile(name string) bool {
+	if !imageSnapshotFile(name) {
+		return false
+	}
+	extension := strings.ToLower(filepath.Ext(name))
+	if extension == ".onnx" || strings.HasSuffix(strings.ToLower(name), ".onnx_data") {
+		return false
+	}
+	if extension == ".safetensors" {
+		return strings.Contains(strings.ToLower(name), ".fp16.")
+	}
+	return true
 }
 
 func pathSize(path string) (int64, error) {

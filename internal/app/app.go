@@ -41,8 +41,12 @@ func Run(args []string) error {
 		return launch(args[1:])
 	case "image":
 		return image(args[1:])
+	case "video":
+		return video(args[1:])
 	case "list":
 		return list()
+	case "catalog":
+		return showCatalog()
 	case "version", "--version", "-v":
 		fmt.Println("tapioca", version)
 		return nil
@@ -62,7 +66,9 @@ Usage:
   tapioca serve MODEL [--port 11435] [--context 65536]
   tapioca run MODEL
   tapioca image MODEL --prompt TEXT [--output image.png]
+  tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
+  tapioca catalog
   tapioca list
 
 Examples:
@@ -71,6 +77,7 @@ Examples:
   tapioca run glm-4.7-flash:q8_0
   tapioca pull qwen-image-flash:int8
   tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
+  tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow"
   tapioca launch codex glm-4.7-flash:q8_0
   tapioca launch openclaw glm-4.7-flash:q8_0
   tapioca launch hermes glm-4.7-flash:q8_0`)
@@ -97,13 +104,34 @@ func pull(args []string) error {
 	return err
 }
 
+func showCatalog() error {
+	fmt.Println("MODEL\tKIND\tBACKEND\tDOWNLOAD\tMEMORY\tGPU\tPLATFORM")
+	for _, ref := range catalog.Refs() {
+		model, err := catalog.Resolve(ref)
+		if err != nil {
+			return err
+		}
+		kind := model.Kind
+		if kind == "" {
+			kind = "text"
+		}
+		backend := model.Backend
+		if backend == "" {
+			backend = "llama.cpp"
+		}
+		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			model.Name, kind, backend, model.Size, model.Memory, model.GPU, model.Platform)
+	}
+	return nil
+}
+
 func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 	home, err := config.Home()
 	if err != nil {
 		return config.Model{}, err
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
-	if resolved.Kind == "image" {
+	if resolved.Kind == "image" || resolved.Kind == "video" {
 		if err := pullSnapshot(resolved, dir, force); err != nil {
 			return config.Model{}, err
 		}

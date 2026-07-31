@@ -47,3 +47,124 @@ func TestResolveQwenMLXAlias(t *testing.T) {
 		t.Fatalf("unexpected Qwen MLX resolution: %#v", got)
 	}
 }
+
+func TestResolveCompactWindowsModels(t *testing.T) {
+	tests := map[string]string{
+		"qwen3:4b-q4_k_m": "Qwen3-4B-Q4_K_M.gguf",
+		"qwen3:8b-q4_k_m": "Qwen3-8B-Q4_K_M.gguf",
+		"phi4-mini":       "Phi-4-mini-instruct-Q4_K_M.gguf",
+		"gemma3":          "gemma-3-4b-it-Q4_K_M.gguf",
+	}
+	for ref, filename := range tests {
+		t.Run(ref, func(t *testing.T) {
+			got, err := ResolveFor(ref, "windows")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Filename != filename || got.URL == "" || got.Backend != "" {
+				t.Fatalf("unexpected resolution for %s: %#v", ref, got)
+			}
+		})
+	}
+}
+
+func TestResolveAppleSiliconMLXModels(t *testing.T) {
+	tests := map[string]string{
+		"qwen3:30b-mlx":       "mlx-community/Qwen3-30B-A3B-4bit",
+		"qwen3-coder:30b-mlx": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit",
+		"gemma3:12b-mlx":      "mlx-community/gemma-3-12b-it-4bit",
+		"gemma3:27b-mlx":      "mlx-community/gemma-3-27b-it-4bit",
+	}
+	for ref, repo := range tests {
+		t.Run(ref, func(t *testing.T) {
+			got, err := ResolveFor(ref, "darwin")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Repo != repo || got.Backend != "mlx-vlm" || got.Filename != "" {
+				t.Fatalf("unexpected resolution for %s: %#v", ref, got)
+			}
+		})
+	}
+}
+
+func TestResolveTurboImageProfiles(t *testing.T) {
+	tests := map[string]struct {
+		width  int
+		height int
+	}{
+		"sd-turbo":   {width: 512, height: 512},
+		"sdxl-turbo": {width: 1024, height: 1024},
+	}
+	for ref, expected := range tests {
+		t.Run(ref, func(t *testing.T) {
+			got, err := ResolveFor(ref, "windows")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Backend != "diffusers" || got.Width != expected.width ||
+				got.Height != expected.height || got.Steps != 4 {
+				t.Fatalf("unexpected image profile for %s: %#v", ref, got)
+			}
+		})
+	}
+}
+
+func TestAllCatalogRefsResolve(t *testing.T) {
+	for _, ref := range Refs() {
+		if _, err := ResolveFor(ref, "darwin"); err != nil {
+			t.Errorf("%s: %v", ref, err)
+		}
+	}
+}
+
+func TestCatalogRequirementsArePresent(t *testing.T) {
+	for _, ref := range Refs() {
+		model, err := ResolveFor(ref, "darwin")
+		if err != nil {
+			t.Fatalf("ResolveFor(%q): %v", ref, err)
+		}
+		if model.Size == "" || model.Memory == "" || model.GPU == "" || model.Platform == "" {
+			t.Errorf("%s has incomplete requirements: %#v", ref, model)
+		}
+	}
+}
+
+func TestLowMemoryVideoProfiles(t *testing.T) {
+	tests := []struct {
+		ref      string
+		backend  string
+		platform string
+	}{
+		{"wan2.2-video:5b-q8-mlx", "mlx-video", "macOS Apple Silicon"},
+		{"yume-video:5b-mlx", "mlx-video", "macOS Apple Silicon"},
+		{"ltx-video:2b-fp16", "diffusers-video", "Windows x64 NVIDIA"},
+		{"stable-video-diffusion:xt-fp16", "diffusers-video", "Windows x64 NVIDIA"},
+	}
+	for _, test := range tests {
+		model, err := ResolveFor(test.ref, "darwin")
+		if err != nil {
+			t.Fatalf("ResolveFor(%q): %v", test.ref, err)
+		}
+		if model.Kind != "video" || model.Backend != test.backend || model.Platform != test.platform {
+			t.Errorf("%s resolved to %#v", test.ref, model)
+		}
+		if model.Width == 0 || model.Height == 0 || model.Frames == 0 || model.FPS == 0 {
+			t.Errorf("%s lacks generation defaults: %#v", test.ref, model)
+		}
+	}
+}
+
+func TestLowMemoryMacImageProfile(t *testing.T) {
+	model, err := ResolveFor("flux2-klein:4b-q4-mlx", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.Kind != "image" || model.Backend != "mflux" {
+		t.Fatalf("unexpected profile: %#v", model)
+	}
+	if model.Memory != "16 GiB min; 24 GiB recommended" ||
+		model.GPU != "Apple Silicon GPU" {
+		t.Fatalf("unexpected requirements: %#v", model)
+	}
+}

@@ -1,5 +1,6 @@
 import argparse
 import inspect
+import os
 
 import torch
 from diffusers import DiffusionPipeline, StableVideoDiffusionPipeline
@@ -12,6 +13,8 @@ def main():
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--negative-prompt", default="")
     parser.add_argument("--image")
+    parser.add_argument("--adapter", action="append", default=[])
+    parser.add_argument("--adapter-scale", action="append", type=float, default=[])
     parser.add_argument("--output", required=True)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
@@ -27,12 +30,32 @@ def main():
     is_svd = "stable-video-diffusion" in args.model.lower()
     pipeline_class = StableVideoDiffusionPipeline if is_svd else DiffusionPipeline
     load_options = {
-        "torch_dtype": torch.float16 if is_svd else torch.bfloat16,
+        "torch_dtype": (
+            torch.float16
+            if is_svd or not torch.cuda.is_bf16_supported()
+            else torch.bfloat16
+        ),
         "local_files_only": True,
     }
     if is_svd:
         load_options["variant"] = "fp16"
     pipe = pipeline_class.from_pretrained(args.model, **load_options)
+    if len(args.adapter) != len(args.adapter_scale):
+        raise SystemExit("each --adapter requires one --adapter-scale")
+    if args.adapter and not hasattr(pipe, "load_lora_weights"):
+        raise SystemExit(f"{type(pipe).__name__} does not support LoRA adapters")
+    for index, (path, scale) in enumerate(zip(args.adapter, args.adapter_scale)):
+        name = f"tapioca-{index}"
+        pipe.load_lora_weights(
+            os.path.dirname(path),
+            weight_name=os.path.basename(path),
+            adapter_name=name,
+        )
+    if args.adapter:
+        pipe.set_adapters(
+            [f"tapioca-{index}" for index in range(len(args.adapter))],
+            adapter_weights=args.adapter_scale,
+        )
     pipe.enable_sequential_cpu_offload()
     if hasattr(pipe, "vae"):
         pipe.vae.enable_tiling()

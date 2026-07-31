@@ -12,7 +12,8 @@ import (
 )
 
 type hubModel struct {
-	Siblings []struct {
+	PipelineTag string `json:"pipeline_tag"`
+	Siblings    []struct {
 		Filename string `json:"rfilename"`
 	} `json:"siblings"`
 }
@@ -25,6 +26,9 @@ func pullSnapshot(model catalog.Resolved, destination string, force bool) error 
 		include = imageFP16SnapshotFile
 	}
 	if model.Kind == "video" && model.Backend == "mlx-video" {
+		include = textSnapshotFile
+	}
+	if model.Backend == "mflux" {
 		include = textSnapshotFile
 	}
 	return pullHubSnapshot(model, destination, force, include)
@@ -40,7 +44,20 @@ func pullHubSnapshot(
 	force bool,
 	include func(string) bool,
 ) error {
-	resp, err := http.Get("https://huggingface.co/api/models/" + model.Repo)
+	req, err := http.NewRequest(
+		http.MethodGet, "https://huggingface.co/api/models/"+model.Repo, nil,
+	)
+	if err != nil {
+		return err
+	}
+	token := os.Getenv("HF_TOKEN")
+	if token == "" {
+		token = os.Getenv("HUGGING_FACE_HUB_TOKEN")
+	}
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -51,6 +68,21 @@ func pullHubSnapshot(
 	var metadata hubModel
 	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
 		return err
+	}
+	if strings.HasPrefix(model.Name, "hf-") && metadata.PipelineTag != "" {
+		expected := model.Kind
+		if expected == "image" && !strings.Contains(metadata.PipelineTag, "image") {
+			return fmt.Errorf(
+				"%s is tagged %q on Hugging Face, not as an image model",
+				model.Repo, metadata.PipelineTag,
+			)
+		}
+		if expected == "video" && !strings.Contains(metadata.PipelineTag, "video") {
+			return fmt.Errorf(
+				"%s is tagged %q on Hugging Face, not as a video model",
+				model.Repo, metadata.PipelineTag,
+			)
+		}
 	}
 	var files []string
 	for _, sibling := range metadata.Siblings {

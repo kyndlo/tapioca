@@ -9,6 +9,8 @@ def main():
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--negative-prompt", default="")
     parser.add_argument("--image")
+    parser.add_argument("--adapter", action="append", default=[])
+    parser.add_argument("--adapter-scale", action="append", type=float, default=[])
     parser.add_argument("--output", required=True)
     parser.add_argument("--width", type=int, required=True)
     parser.add_argument("--height", type=int, required=True)
@@ -43,6 +45,10 @@ def main():
         command.extend(["--image", args.image])
     if args.negative_prompt:
         command.extend(["--negative-prompt", args.negative_prompt])
+    if len(args.adapter) != len(args.adapter_scale):
+        raise SystemExit("each --adapter requires one --adapter-scale")
+    for path, scale in zip(args.adapter, args.adapter_scale):
+        command.extend(["--lora", path, str(scale)])
     subprocess.run(command, check=True)
 
 

@@ -19,8 +19,12 @@ func video(args []string) error {
 	if len(args) == 0 {
 		return errors.New("usage: tapioca video MODEL --prompt TEXT [flags]")
 	}
-	ref := args[0]
-	profile, err := catalog.Resolve(ref)
+	rawRef := args[0]
+	ref, recipeAdapters, recipePreset, err := resolveComposition(rawRef, nil)
+	if err != nil {
+		return err
+	}
+	profile, err := resolveMediaModel(ref, "video")
 	if err != nil {
 		return err
 	}
@@ -31,7 +35,11 @@ func video(args []string) error {
 	fs := flag.NewFlagSet("video", flag.ContinueOnError)
 	prompt := fs.String("prompt", "", "video description")
 	enhancePrompt := fs.Bool("enhance-prompt", true, "add quality and temporal-consistency guidance")
-	preset := fs.String("preset", "balanced", "quality preset: low-memory, balanced, or quality")
+	presetDefault := "balanced"
+	if recipePreset != "" {
+		presetDefault = recipePreset
+	}
+	preset := fs.String("preset", presetDefault, "quality preset: low-memory, balanced, or quality")
 	negative := fs.String("negative-prompt", "", "content to steer away from")
 	inputImage := fs.String("image", "", "optional starting image")
 	output := fs.String("output", "", "output MP4 path")
@@ -41,6 +49,11 @@ func video(args []string) error {
 	steps := fs.Int("steps", profile.Steps, "denoising steps")
 	fps := fs.Int("fps", profile.FPS, "output frames per second")
 	seed := fs.Uint64("seed", 0, "random seed")
+	var adapterValues stringList
+	adapterValues = append(adapterValues, recipeAdapters...)
+	adapterFile := ""
+	var adapterScale optionalFloat
+	addAdapterFlags(fs, &adapterValues, &adapterFile, &adapterScale)
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -83,8 +96,21 @@ func video(args []string) error {
 	if profile.Name == "stable-video-diffusion:xt-fp16" && *inputImage == "" {
 		return errors.New("stable-video-diffusion requires --image")
 	}
+	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
+		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
+	}
 
-	model, err := ensureModel(ref)
+	var explicitScale *float64
+	if adapterScale.set {
+		explicitScale = &adapterScale.value
+	}
+	adapters, err := resolveAdapters(
+		adapterValues, adapterFile, explicitScale, profile.Name, profile.Backend,
+	)
+	if err != nil {
+		return err
+	}
+	model, err := ensureResolvedModel(profile)
 	if err != nil {
 		return err
 	}
@@ -125,6 +151,7 @@ func video(args []string) error {
 		ModelPath: model.Path, Prompt: effectivePrompt, NegativePrompt: *negative,
 		InputImage: imagePath, Output: target, Width: *width, Height: *height,
 		Frames: *frames, Steps: *steps, FPS: *fps, Seed: *seed, Backend: model.Backend,
+		Adapters: adapters,
 	})
 	if err != nil {
 		return err

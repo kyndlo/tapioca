@@ -11,7 +11,7 @@ import (
 	"runtime"
 )
 
-//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py requirements.txt
+//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py requirements.txt requirements-mflux.txt
 var source embed.FS
 
 type Request struct {
@@ -39,9 +39,70 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 		return runMLX(ctx, cacheDir, request)
 	case "diffusers":
 		return runDiffusers(ctx, cacheDir, request)
+	case "mflux":
+		return runMFlux(ctx, cacheDir, request)
 	default:
 		return fmt.Errorf("unsupported image backend %q", request.Backend)
 	}
+}
+
+func runMFlux(ctx context.Context, cacheDir string, request Request) error {
+	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+		return errors.New("the MFLUX image backend requires macOS on Apple Silicon")
+	}
+	root := filepath.Join(cacheDir, "mflux-runtime", "0.1.0")
+	data, err := source.ReadFile("requirements-mflux.txt")
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		return err
+	}
+	requirements := filepath.Join(root, "requirements.txt")
+	if err := os.WriteFile(requirements, data, 0o644); err != nil {
+		return err
+	}
+	venv := filepath.Join(root, "venv")
+	python := filepath.Join(venv, "bin", "python")
+	ready := filepath.Join(venv, ".tapioca-ready")
+	if _, err := os.Stat(ready); err != nil {
+		system, prefix, err := systemPython()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintln(os.Stderr, "creating the MFLUX image runtime (first run only)...")
+		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("create Python environment: %w", err)
+		}
+		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "--upgrade", "pip")
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("upgrade pip: %w", err)
+		}
+		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", requirements)
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("install MFLUX: %w", err)
+		}
+		if err := os.WriteFile(ready, []byte("ready\n"), 0o644); err != nil {
+			return err
+		}
+	}
+	command := filepath.Join(venv, "bin", "mflux-generate-flux2")
+	args := []string{
+		"--model", request.ModelPath, "--prompt", request.Prompt,
+		"--width", fmt.Sprint(request.Width), "--height", fmt.Sprint(request.Height),
+		"--steps", fmt.Sprint(request.Steps), "--seed", fmt.Sprint(request.Seed),
+		"--output", request.Output,
+	}
+	cmd := exec.CommandContext(ctx, command, args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("MFLUX image generation failed: %w", err)
+	}
+	return nil
 }
 
 func runMLX(ctx context.Context, cacheDir string, request Request) error {
@@ -276,5 +337,5 @@ func systemPython() (string, []string, error) {
 			return path, candidate.prefix, nil
 		}
 	}
-	return "", nil, errors.New("Python 3.10 or newer is required for the CUDA image backend")
+	return "", nil, errors.New("Python 3.10 or newer is required for this image backend")
 }

@@ -1,0 +1,2 @@
+mflux>=0.16,<0.20
+huggingface-hub[hf_xet]>=0.30

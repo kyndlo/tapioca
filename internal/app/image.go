@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/carlos/tapioca/internal/catalog"
 	"github.com/carlos/tapioca/internal/config"
 	"github.com/carlos/tapioca/internal/imageruntime"
 )
@@ -19,13 +20,30 @@ func image(args []string) error {
 		return errors.New("usage: tapioca image MODEL --prompt TEXT [flags]")
 	}
 	ref := args[0]
+	profile, err := catalog.Resolve(ref)
+	if err != nil {
+		return err
+	}
+	if profile.Kind != "image" {
+		return fmt.Errorf("%s is a text model; use `tapioca run %s`", profile.Name, ref)
+	}
+	widthDefault, heightDefault, stepsDefault := profile.Width, profile.Height, profile.Steps
+	if widthDefault == 0 {
+		widthDefault = 1024
+	}
+	if heightDefault == 0 {
+		heightDefault = 1024
+	}
+	if stepsDefault == 0 {
+		stepsDefault = 4
+	}
 	fs := flag.NewFlagSet("image", flag.ContinueOnError)
 	prompt := fs.String("prompt", "", "image description")
 	negative := fs.String("negative-prompt", "", "content to steer away from")
 	output := fs.String("output", "", "output PNG path")
-	width := fs.Int("width", 1024, "image width (divisible by 16)")
-	height := fs.Int("height", 1024, "image height (divisible by 16)")
-	steps := fs.Int("steps", 4, "denoising steps")
+	width := fs.Int("width", widthDefault, "image width (divisible by 16)")
+	height := fs.Int("height", heightDefault, "image height (divisible by 16)")
+	steps := fs.Int("steps", stepsDefault, "denoising steps")
 	seed := fs.Uint64("seed", 0, "random seed")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err

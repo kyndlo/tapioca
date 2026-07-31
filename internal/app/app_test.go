@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/carlos/tapioca/internal/catalog"
 )
 
 func TestLauncherConfigurations(t *testing.T) {
@@ -100,6 +102,70 @@ func TestChatExitCommand(t *testing.T) {
 	for _, input := range []string{"bye", "/bye now", "hello"} {
 		if isChatExit(input) {
 			t.Errorf("%q should be sent to the model", input)
+		}
+	}
+}
+
+func TestVideoValidationBeforeDownload(t *testing.T) {
+	tests := []struct {
+		args []string
+		want string
+	}{
+		{
+			[]string{"ltx-video:2b-fp16", "--prompt", "test", "--frames", "13"},
+			"8n+1",
+		},
+		{
+			[]string{"wan2.2-video:5b-q8-mlx", "--prompt", "test", "--fps", "12"},
+			"24 fps",
+		},
+		{
+			[]string{"stable-video-diffusion:xt-fp16", "--prompt", "test"},
+			"requires --image",
+		},
+	}
+	for _, test := range tests {
+		err := video(test.args)
+		if err == nil || !strings.Contains(err.Error(), test.want) {
+			t.Errorf("video(%q) error = %v, want %q", test.args, err, test.want)
+		}
+	}
+}
+
+func TestVideoPresets(t *testing.T) {
+	model, err := catalog.ResolveFor("wan2.2-video:5b-q8-mlx", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		preset                string
+		width, height, frames int
+		steps                 int
+	}{
+		{"low-memory", 640, 352, 41, 30},
+		{"balanced", 832, 480, 41, 40},
+		{"quality", 1280, 704, 81, 40},
+	}
+	for _, test := range tests {
+		got, err := videoPreset(model, test.preset)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := videoDefaults{test.width, test.height, test.frames, test.steps}
+		if got != want {
+			t.Errorf("%s = %#v, want %#v", test.preset, got, want)
+		}
+	}
+	if _, err := videoPreset(model, "extreme"); err == nil {
+		t.Fatal("expected invalid preset to fail")
+	}
+}
+
+func TestEnhanceVideoPrompt(t *testing.T) {
+	got := enhanceVideoPrompt("A fox runs")
+	for _, phrase := range []string{"A fox runs", "coherent temporal motion", "consistent subject appearance"} {
+		if !strings.Contains(got, phrase) {
+			t.Errorf("enhanced prompt missing %q: %s", phrase, got)
 		}
 	}
 }

@@ -1,0 +1,45 @@
+package app
+
+import "testing"
+
+func TestImageFP16SnapshotFile(t *testing.T) {
+	included := []string{
+		"model_index.json",
+		"scheduler/scheduler_config.json",
+		"text_encoder/model.fp16.safetensors",
+		"text_encoder_2/model.fp16.safetensors",
+		"tokenizer_2/tokenizer_config.json",
+		"unet/diffusion_pytorch_model.fp16.safetensors",
+		"vae/diffusion_pytorch_model.fp16.safetensors",
+	}
+	for _, name := range included {
+		if !imageFP16SnapshotFile(name) {
+			t.Errorf("expected %s to be included", name)
+		}
+	}
+
+	excluded := []string{
+		"sd_xl_turbo_1.0_fp16.safetensors",
+		"unet/diffusion_pytorch_model.safetensors",
+		"unet/model.onnx",
+		"unet/model.onnx_data",
+		"README.md",
+	}
+	for _, name := range excluded {
+		if imageFP16SnapshotFile(name) {
+			t.Errorf("expected %s to be excluded", name)
+		}
+	}
+}
+
+func TestImageFP16SnapshotIncludesVideoFeatureExtractor(t *testing.T) {
+	if !imageFP16SnapshotFile("feature_extractor/preprocessor_config.json") {
+		t.Fatal("expected video feature extractor config to be included")
+	}
+	if !imageFP16SnapshotFile("unet/diffusion_pytorch_model.fp16.safetensors") {
+		t.Fatal("expected fp16 video UNet to be included")
+	}
+	if imageFP16SnapshotFile("unet/diffusion_pytorch_model.safetensors") {
+		t.Fatal("did not expect duplicate full-precision video UNet")
+	}
+}

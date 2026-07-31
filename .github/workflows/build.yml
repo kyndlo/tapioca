@@ -118,11 +118,58 @@ jobs:
             tapioca-windows-amd64.zip.sha256
           if-no-files-found: error
 
+  windows-arm64:
+    name: Windows ARM64 bundle
+    needs: test
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Tapioca for ARM64
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          $env:CGO_ENABLED = "0"
+          $env:GOOS = "windows"
+          $env:GOARCH = "arm64"
+          go build -trimpath -ldflags="-s -w" -o dist/tapioca.exe ./cmd/tapioca
+
+      - name: Bundle native ARM64 llama.cpp
+        shell: pwsh
+        run: |
+          $url = "https://github.com/ggml-org/llama.cpp/releases/download/$env:LLAMA_CPP_VERSION/llama-$env:LLAMA_CPP_VERSION-bin-win-cpu-arm64.zip"
+          Invoke-WebRequest -Uri $url -OutFile llama.cpp.zip
+          New-Item -ItemType Directory -Force dist/runtime/llama.cpp | Out-Null
+          Expand-Archive llama.cpp.zip -DestinationPath dist/runtime/llama.cpp
+          if (-not (Test-Path dist/runtime/llama.cpp/llama-server.exe)) {
+            throw "ARM64 llama-server.exe was not found in the llama.cpp archive"
+          }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path dist/tapioca.exe,dist/runtime -DestinationPath tapioca-windows-arm64.zip
+          (Get-FileHash tapioca-windows-arm64.zip -Algorithm SHA256).Hash.ToLower() + "  tapioca-windows-arm64.zip" |
+            Set-Content tapioca-windows-arm64.zip.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tapioca-windows-arm64
+          path: |
+            tapioca-windows-arm64.zip
+            tapioca-windows-arm64.zip.sha256
+          if-no-files-found: error
+
   release:
     name: Publish GitHub Release
     needs:
       - macos-arm64
       - windows-amd64
+      - windows-arm64
     if: >-
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')

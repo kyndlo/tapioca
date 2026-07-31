@@ -43,3 +43,15 @@ func TestImageFP16SnapshotIncludesVideoFeatureExtractor(t *testing.T) {
 		t.Fatal("did not expect duplicate full-precision video UNet")
 	}
 }
+
+func TestImageSnapshotIncludesSplitONNXVAE(t *testing.T) {
+	for _, name := range []string{
+		"vae_decoder/model.onnx",
+		"vae_encoder/model.onnx",
+		"unet/model.onnx_data",
+	} {
+		if !imageSnapshotFile(name) {
+			t.Errorf("imageSnapshotFile(%q) = false", name)
+		}
+	}
+}

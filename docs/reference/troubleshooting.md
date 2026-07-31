@@ -35,9 +35,23 @@ xcodebuild -downloadComponent MetalToolchain
 
 ## Windows image or video generation cannot find CUDA
 
-The current diffusion backend requires Windows x64, Python 3.10 or newer, a
-current NVIDIA driver, and a CUDA-capable NVIDIA GPU. AMD/Intel diffusion and
-Windows ARM64 diffusion are not supported yet.
+Use `sd-turbo:fp16` only with Windows x64, a current NVIDIA driver, and CUDA.
+For an AMD or Intel DirectX 12 GPU, use:
+
+```powershell
+tapioca image sd-turbo:onnx-directml --prompt "A red fox in snow"
+```
+
+DirectML requires x64 Python 3.11–3.14. On Windows ARM64, use untagged
+`sd-turbo` (or `sd-turbo:onnx-arm64`) with native ARM64 Python 3.11–3.14.
+Check the interpreter architecture:
+
+```powershell
+python -c "import platform; print(platform.machine())"
+```
+
+The ARM64 backend runs on CPU and will be slower. Video generation still
+requires Windows x64 with NVIDIA CUDA.
 
 ## The computer runs out of memory
 

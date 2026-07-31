@@ -43,6 +43,30 @@ func TestDiffusersArgumentsIncludeRepeatedInputsAndAdapters(t *testing.T) {
 	}
 }
 
+func TestONNXArgumentsSelectProvider(t *testing.T) {
+	args := onnxArguments("/runtime", Request{
+		ModelPath: "/models/sd-turbo", Prompt: "fox", Output: "/out.png",
+		Width: 512, Height: 512, Steps: 4, Seed: 42, Backend: "onnx-directml",
+	})
+	provider := slices.Index(args, "--provider")
+	if provider < 0 || provider+1 >= len(args) ||
+		args[provider+1] != "DmlExecutionProvider" {
+		t.Fatalf("unexpected ONNX arguments: %v", args)
+	}
+	if slices.Contains(args, "--image") || slices.Contains(args, "--adapter") {
+		t.Fatalf("static ONNX arguments include unsupported options: %v", args)
+	}
+}
+
+func TestONNXArgumentsSelectARMCPU(t *testing.T) {
+	args := onnxArguments("/runtime", Request{Backend: "onnx-cpu"})
+	provider := slices.Index(args, "--provider")
+	if provider < 0 || provider+1 >= len(args) ||
+		args[provider+1] != "CPUExecutionProvider" {
+		t.Fatalf("unexpected ONNX arguments: %v", args)
+	}
+}
+
 func count(values []string, target string) int {
 	total := 0
 	for _, value := range values {

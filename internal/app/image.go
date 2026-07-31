@@ -81,6 +81,20 @@ func imageCommand(args []string, requireInput bool) error {
 				"use a compatible MFLUX model on macOS or Diffusers model on Windows",
 		)
 	}
+	if len(adapterValues) > 0 &&
+		(profile.Backend == "onnx-directml" || profile.Backend == "onnx-cpu") {
+		return errors.New(
+			"ONNX diffusion models use static graphs and cannot load LoRA adapters at runtime; " +
+				"use a CUDA Diffusers or macOS MFLUX model for LoRA support",
+		)
+	}
+	if len(inputImages) > 0 &&
+		(profile.Backend == "onnx-directml" || profile.Backend == "onnx-cpu") {
+		return errors.New(
+			"the curated ONNX diffusion backend currently supports text-to-image only; " +
+				"remove --image or use CUDA Diffusers/macOS MFLUX for editing",
+		)
+	}
 	if len(inputImages) > 0 && profile.Backend == "mlx" {
 		return errors.New(
 			"the native Qwen Image Flash MLX backend currently supports text-to-image only; " +

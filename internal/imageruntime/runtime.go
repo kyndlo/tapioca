@@ -13,7 +13,7 @@ import (
 	"github.com/carlos/tapioca/internal/adapter"
 )
 
-//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py requirements.txt requirements-mflux.txt
+//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py onnx_diffusion.py requirements.txt requirements-mflux.txt requirements-onnx.txt
 var source embed.FS
 
 type Request struct {
@@ -45,9 +45,99 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 		return runDiffusers(ctx, cacheDir, request)
 	case "mflux":
 		return runMFlux(ctx, cacheDir, request)
+	case "onnx-directml", "onnx-cpu":
+		return runONNX(ctx, cacheDir, request)
 	default:
 		return fmt.Errorf("unsupported image backend %q", request.Backend)
 	}
+}
+
+func runONNX(ctx context.Context, cacheDir string, request Request) error {
+	if runtime.GOOS != "windows" {
+		return errors.New("the ONNX diffusion backends currently require Windows")
+	}
+	if request.Backend == "onnx-directml" && runtime.GOARCH != "amd64" {
+		return errors.New("DirectML requires Windows x64; use sd-turbo:onnx-arm64 on Windows ARM64")
+	}
+	if request.Backend == "onnx-cpu" && runtime.GOARCH != "arm64" {
+		return errors.New("the curated ONNX CPU backend is intended for Windows ARM64")
+	}
+	root := filepath.Join(cacheDir, "onnx-image-runtime", "0.1.0-"+request.Backend)
+	for _, name := range []string{"onnx_diffusion.py", "requirements-onnx.txt"} {
+		data, err := source.ReadFile(name)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		if err := os.WriteFile(target, data, 0o644); err != nil {
+			return err
+		}
+	}
+	venv := filepath.Join(root, "venv")
+	python := filepath.Join(venv, "Scripts", "python.exe")
+	ready := filepath.Join(venv, ".tapioca-ready")
+	if _, err := os.Stat(ready); err != nil {
+		system, prefix, err := systemPython()
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "creating the %s image runtime (first run only)...\n", request.Backend)
+		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("create Python environment: %w", err)
+		}
+		for _, args := range [][]string{
+			{"-m", "pip", "install", "--upgrade", "pip"},
+			{"-m", "pip", "install", "-r", filepath.Join(root, "requirements-onnx.txt")},
+		} {
+			cmd = exec.CommandContext(ctx, python, args...)
+			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+			if err := cmd.Run(); err != nil {
+				return fmt.Errorf("install ONNX image dependencies: %w", err)
+			}
+		}
+		providerPackage := "onnxruntime"
+		if request.Backend == "onnx-directml" {
+			providerPackage = "onnxruntime-directml"
+		}
+		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", providerPackage)
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("install %s: %w", providerPackage, err)
+		}
+		if err := os.WriteFile(ready, []byte("ready\n"), 0o644); err != nil {
+			return err
+		}
+	}
+	args := onnxArguments(root, request)
+	cmd := exec.CommandContext(ctx, python, args...)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("ONNX image generation failed: %w", err)
+	}
+	return nil
+}
+
+func onnxArguments(root string, request Request) []string {
+	provider := "CPUExecutionProvider"
+	if request.Backend == "onnx-directml" {
+		provider = "DmlExecutionProvider"
+	}
+	args := []string{
+		filepath.Join(root, "onnx_diffusion.py"),
+		"--model", request.ModelPath, "--prompt", request.Prompt,
+		"--output", request.Output, "--width", fmt.Sprint(request.Width),
+		"--height", fmt.Sprint(request.Height), "--steps", fmt.Sprint(request.Steps),
+		"--seed", fmt.Sprint(request.Seed), "--provider", provider,
+	}
+	if request.NegativePrompt != "" {
+		args = append(args, "--negative-prompt", request.NegativePrompt)
+	}
+	return args
 }
 
 func runMFlux(ctx context.Context, cacheDir string, request Request) error {

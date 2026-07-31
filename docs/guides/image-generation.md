@@ -24,6 +24,36 @@ tapioca image qwen-image-flash:int8 \
 Qwen Image Flash is approximately 28 GiB and requires Apple Silicon and
 macOS 26 in the current release.
 
+## Windows x64 with AMD or Intel graphics
+
+Use the ONNX DirectML variant:
+
+```powershell
+tapioca image sd-turbo:onnx-directml `
+  --prompt "A red fox in snow" `
+  --output fox.png
+```
+
+This supports DirectX 12 GPUs from AMD, Intel, and NVIDIA. The first run creates
+an isolated Python environment under `%USERPROFILE%\.tapioca\runtime` and
+installs ONNX Runtime DirectML. Python 3.11–3.14 is required. Integrated GPUs
+share system memory, so close memory-heavy applications before generating.
+
+## Windows ARM64
+
+On Snapdragon and other Windows ARM64 devices:
+
+```powershell
+tapioca image sd-turbo `
+  --prompt "A red fox in snow" `
+  --output fox.png
+```
+
+The untagged `sd-turbo` name automatically selects `onnx-arm64`. This uses
+native ARM64 ONNX Runtime on the CPU. It works without CUDA or x64 emulation,
+but generation is slower than GPU-backed DirectML. Python 3.11–3.14 ARM64 is
+required; verify it with `python -c "import platform; print(platform.machine())"`.
+
 ## Windows x64 with NVIDIA CUDA
 
 Start with SD Turbo:
@@ -36,6 +66,8 @@ tapioca image sd-turbo:fp16 `
 
 | Model | Download | Default output | Notes |
 | --- | ---: | ---: | --- |
+| `sd-turbo:onnx-directml` | ~4.8 GiB | 512×512 | AMD/Intel/NVIDIA DirectX 12 |
+| `sd-turbo:onnx-arm64` | ~4.8 GiB | 512×512 | Windows ARM64 CPU; slower |
 | `sd-turbo:fp16` | ~3 GiB | 512×512 | Best first model |
 | `sdxl-turbo:fp16` | ~7 GiB | 1024×1024 | Better detail |
 | `qwen-image-flash:bf16` | ~58 GiB | 1024×1024 | Ampere+; very high memory |
@@ -100,7 +132,12 @@ tapioca image hf://OWNER/REPOSITORY \
   --output fox.png
 ```
 
-On Apple Silicon, the repository must be supported by MFLUX. On Windows, it
-must be loadable by the installed Diffusers version and CUDA backend. A model
-being hosted on Hugging Face does not by itself guarantee runtime
+On Apple Silicon, the repository must be supported by MFLUX. Direct Hugging
+Face models on Windows still use CUDA Diffusers; DirectML and ARM64 require a
+pre-exported ONNX model and currently use the curated `sd-turbo` entries. A
+model being hosted on Hugging Face does not by itself guarantee runtime
 compatibility.
+
+ONNX models use static computation graphs, so Tapioca cannot attach arbitrary
+LoRAs to the DirectML or ARM64 variants at runtime. Use CUDA Diffusers or
+macOS MFLUX when dynamic LoRA loading is required.

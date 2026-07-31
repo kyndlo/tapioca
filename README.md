@@ -44,13 +44,13 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 
 ## Platform summary
 
-| Capability | macOS Apple Silicon | Windows x64 |
-| --- | --- | --- |
-| GGUF text models | Metal-enabled llama.cpp | Vulkan-enabled llama.cpp |
-| Native MLX text | Yes | No |
-| Image generation | MLX/MFLUX | NVIDIA CUDA/Diffusers |
-| Video generation | MLX | NVIDIA CUDA/Diffusers |
-| Coding-agent APIs | Yes | Yes |
+| Capability | macOS Apple Silicon | Windows x64 | Windows ARM64 |
+| --- | --- | --- | --- |
+| GGUF text models | Metal llama.cpp | Vulkan llama.cpp | CPU llama.cpp |
+| Native MLX text | Yes | No | No |
+| Image generation | MLX/MFLUX | CUDA or ONNX DirectML | ONNX Runtime CPU |
+| Video generation | MLX | NVIDIA CUDA/Diffusers | Not yet |
+| Coding-agent APIs | Yes | Yes | Yes |
 
 Run `tapioca catalog` for the exact models, download sizes, memory guidance,
 GPU requirements, and supported platforms in the installed release.
@@ -80,5 +80,5 @@ can also accept direct `hf://OWNER/REPOSITORY` base-model references. LoRA
 support is backend-specific: MFLUX image models, CUDA Diffusers pipelines, and
 Wan models through MLX-video can load compatible adapters. Tapioca validates
 obvious model-family mismatches, but the upstream runtime remains the final
-authority for less common adapters. Windows AMD/Intel diffusion and Windows
-ARM64 diffusion are not implemented.
+authority for less common adapters. Windows x64 AMD/Intel GPUs use ONNX
+DirectML; Windows ARM64 uses native ONNX Runtime CPU inference.

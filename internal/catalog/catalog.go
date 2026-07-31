@@ -214,16 +214,34 @@ var models = map[string]Model{
 		Height:  512,
 		Steps:   4,
 		Files: map[string]string{
-			"fp16": "",
+			"fp16":          "",
+			"onnx-directml": "",
+			"onnx-arm64":    "",
 		},
 		Backends: map[string]string{
-			"fp16": "diffusers",
+			"fp16":          "diffusers",
+			"onnx-directml": "onnx-directml",
+			"onnx-arm64":    "onnx-cpu",
+		},
+		Repos: map[string]string{
+			"onnx-directml": "Heliosoph/sd-turbo-onnx",
+			"onnx-arm64":    "Heliosoph/sd-turbo-onnx",
 		},
 		Sizes: map[string]string{
-			"fp16": "~3 GiB",
+			"fp16":          "~3 GiB",
+			"onnx-directml": "~4.8 GiB",
+			"onnx-arm64":    "~4.8 GiB",
 		},
-		Memory: map[string]string{"fp16": "16 GiB min; 24 GiB recommended"},
-		GPUs:   map[string]string{"fp16": "NVIDIA CUDA, 6 GiB+ VRAM"},
+		Memory: map[string]string{
+			"fp16":          "16 GiB min; 24 GiB recommended",
+			"onnx-directml": "12 GiB min; 16 GiB recommended",
+			"onnx-arm64":    "12 GiB min; 16 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"fp16":          "NVIDIA CUDA, 6 GiB+ VRAM",
+			"onnx-directml": "AMD, Intel, or NVIDIA DirectX 12 GPU",
+			"onnx-arm64":    "CPU (native Windows ARM64)",
+		},
 	},
 	"sdxl-turbo": {
 		Name:    "sdxl-turbo",
@@ -338,10 +356,14 @@ type Resolved struct {
 }
 
 func Resolve(ref string) (Resolved, error) {
-	return ResolveFor(ref, runtime.GOOS)
+	return ResolveForPlatform(ref, runtime.GOOS, runtime.GOARCH)
 }
 
 func ResolveFor(ref, goos string) (Resolved, error) {
+	return ResolveForPlatform(ref, goos, runtime.GOARCH)
+}
+
+func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	name, tag, _ := strings.Cut(ref, ":")
 	m, ok := models[strings.ToLower(name)]
 	if !ok {
@@ -358,6 +380,10 @@ func ResolveFor(ref, goos string) (Resolved, error) {
 		} else {
 			tag = "bf16"
 		}
+	}
+	if m.Name == "sd-turbo" && !strings.Contains(ref, ":") &&
+		goos == "windows" && goarch == "arm64" {
+		tag = "onnx-arm64"
 	}
 	filename, ok := m.Files[strings.ToLower(tag)]
 	if !ok {
@@ -384,6 +410,10 @@ func ResolveFor(ref, goos string) (Resolved, error) {
 		if backend == "diffusers-video" {
 			platform = "Windows x64 NVIDIA"
 		}
+	case "onnx-directml":
+		platform = "Windows x64 AMD/Intel/NVIDIA"
+	case "onnx-cpu":
+		platform = "Windows ARM64"
 	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{

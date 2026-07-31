@@ -43,8 +43,29 @@ Add `%USERPROFILE%\Apps\tapioca` to the Windows user `Path` environment
 variable to make the command available in future PowerShell windows.
 
 Keep `runtime`, its DLLs, and `tapioca.exe` together. GGUF text models use
-Vulkan. Image and video generation additionally require Python 3.10 or newer,
-a current NVIDIA driver, and a CUDA-capable NVIDIA GPU.
+Vulkan. CUDA image/video generation requires an NVIDIA GPU. Image generation
+on AMD or Intel GPUs uses DirectML and Python 3.11–3.14:
+
+```powershell
+tapioca image sd-turbo:onnx-directml --prompt "A red fox in snow"
+```
+
+## Windows ARM64
+
+Download `tapioca-windows-arm64.zip` from
+[GitHub Releases](https://github.com/kyndlo/tapioca/releases), then use the
+same PowerShell installation steps above with that archive name. The bundle
+contains native ARM64 Tapioca and CPU llama.cpp binaries.
+
+Image generation uses native ARM64 ONNX Runtime on the CPU:
+
+```powershell
+tapioca image sd-turbo --prompt "A red fox in snow"
+```
+
+Install native ARM64 Python 3.11–3.14 first. CPU diffusion is functional but
+slower than x64 DirectML or CUDA. Windows ARM64 video diffusion is not yet
+supported.
 
 ## Verify the installation
 

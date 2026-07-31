@@ -131,7 +131,8 @@ func textSnapshotFile(name string) bool {
 func imageSnapshotFile(name string) bool {
 	for _, prefix := range []string{
 		"transformer/", "text_encoder/", "text_encoder_2/", "tokenizer/",
-		"tokenizer_2/", "feature_extractor/", "vae/", "scheduler/", "unet/",
+		"tokenizer_2/", "feature_extractor/", "vae/", "vae_decoder/",
+		"vae_encoder/", "scheduler/", "unet/",
 	} {
 		if strings.HasPrefix(name, prefix) {
 			return true

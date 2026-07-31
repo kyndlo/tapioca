@@ -57,7 +57,7 @@ func TestResolveCompactWindowsModels(t *testing.T) {
 	}
 	for ref, filename := range tests {
 		t.Run(ref, func(t *testing.T) {
-			got, err := ResolveFor(ref, "windows")
+			got, err := ResolveForPlatform(ref, "windows", "amd64")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -98,7 +98,7 @@ func TestResolveTurboImageProfiles(t *testing.T) {
 	}
 	for ref, expected := range tests {
 		t.Run(ref, func(t *testing.T) {
-			got, err := ResolveFor(ref, "windows")
+			got, err := ResolveForPlatform(ref, "windows", "amd64")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -107,6 +107,27 @@ func TestResolveTurboImageProfiles(t *testing.T) {
 				t.Fatalf("unexpected image profile for %s: %#v", ref, got)
 			}
 		})
+	}
+}
+
+func TestResolveWindowsDiffusionProfiles(t *testing.T) {
+	directml, err := ResolveForPlatform("sd-turbo:onnx-directml", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if directml.Backend != "onnx-directml" ||
+		directml.Platform != "Windows x64 AMD/Intel/NVIDIA" ||
+		directml.Repo != "Heliosoph/sd-turbo-onnx" {
+		t.Fatalf("unexpected DirectML profile: %#v", directml)
+	}
+
+	arm, err := ResolveForPlatform("sd-turbo", "windows", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if arm.Name != "sd-turbo:onnx-arm64" || arm.Backend != "onnx-cpu" ||
+		arm.Platform != "Windows ARM64" {
+		t.Fatalf("unexpected ARM64 profile: %#v", arm)
 	}
 }
 

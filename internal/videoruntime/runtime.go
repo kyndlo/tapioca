@@ -40,8 +40,8 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 		}
 		return runPython(ctx, cacheDir, request, "mlx")
 	case "diffusers-video":
-		if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
-			return errors.New("the CUDA video backend currently requires Windows x64 with an NVIDIA GPU")
+		if (runtime.GOOS != "windows" && runtime.GOOS != "linux") || runtime.GOARCH != "amd64" {
+			return errors.New("the CUDA video backend requires Windows or Linux x64 with an NVIDIA GPU")
 		}
 		return runPython(ctx, cacheDir, request, "diffusers")
 	default:

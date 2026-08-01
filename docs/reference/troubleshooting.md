@@ -53,6 +53,43 @@ python -c "import platform; print(platform.machine())"
 The ARM64 backend runs on CPU and will be slower. Video generation still
 requires Windows x64 with NVIDIA CUDA.
 
+## Linux cannot use the GPU
+
+Text models use the bundled Vulkan runtime. Confirm the GPU and Vulkan loader
+are visible:
+
+```bash
+vulkaninfo --summary
+```
+
+Image, video, and GPU-accelerated speech use NVIDIA CUDA. Confirm the host can
+see the driver before running Tapioca:
+
+```bash
+nvidia-smi
+```
+
+If either command is missing, install the current driver and the distribution's
+Vulkan utilities or NVIDIA CUDA packages. See the [Linux guide](../guides/linux.md).
+
+## Speech generation is slow on the first run
+
+The first `tapioca tts` command creates an isolated Python environment, installs
+the selected backend, and downloads model weights. Later runs reuse all three.
+CPU generation works but can be much slower than Apple MPS, MLX, or NVIDIA
+CUDA. Use `chatterbox:nano` for a lighter first test.
+
+## A cloned voice does not sound like the sample
+
+- Use a clean 3–10 second recording with one speaker and no music.
+- Remove long silence at the beginning and end.
+- Supply the exact transcript spoken in the sample for Qwen3-TTS.
+- Avoid switching languages or speaking styles between sample and output.
+- Try WAV input and normal conversational volume.
+
+Run `tapioca voice inspect NAME` to confirm the saved model family, transcript,
+and reference file before generating again.
+
 ## The computer runs out of memory
 
 - Choose a smaller model or quantization.

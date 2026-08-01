@@ -6,6 +6,12 @@ when they are first used.
 
 ## macOS Apple Silicon
 
+The simplest installation is:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.sh | sh
+```
+
 The macOS build requires an Apple Silicon Mac. Download
 `tapioca-darwin-arm64.tar.gz` from
 [GitHub Releases](https://github.com/kyndlo/tapioca/releases), then run:
@@ -27,6 +33,12 @@ Do not move the bundled `runtime` directory away from the `tapioca`
 executable. It contains llama.cpp, Metal support, and the native image runtime.
 
 ## Windows x64
+
+The simplest PowerShell installation is:
+
+```powershell
+irm https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.ps1 | iex
+```
 
 Download `tapioca-windows-amd64.zip` from
 [GitHub Releases](https://github.com/kyndlo/tapioca/releases). Open PowerShell
@@ -66,6 +78,29 @@ tapioca image sd-turbo --prompt "A red fox in snow"
 Install native ARM64 Python 3.11–3.14 first. CPU diffusion is functional but
 slower than x64 DirectML or CUDA. Windows ARM64 video diffusion is not yet
 supported.
+
+## Linux x64
+
+The installer detects x64 and ARM64 automatically:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.sh | sh
+```
+
+The x64 bundle includes Vulkan-enabled llama.cpp for GGUF text models. NVIDIA
+CUDA is used by compatible Diffusers image/video models and PyTorch speech
+models. Install Python 3.10 or newer and a current NVIDIA driver before the
+first image, video, or speech run.
+
+Manual archive name: `tapioca-linux-amd64.tar.gz`.
+
+## Linux ARM64
+
+Use the same installer command. The ARM64 bundle includes native Tapioca and
+Vulkan llama.cpp. Text models and CPU speech generation are supported; CUDA
+image/video generation is not included in the first ARM64 release.
+
+Manual archive name: `tapioca-linux-arm64.tar.gz`.
 
 ## Verify the installation
 

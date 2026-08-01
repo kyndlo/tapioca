@@ -6,13 +6,13 @@
 
 <p align="center"><strong>Your local models, ready to roll.</strong></p>
 
-Tapioca is a small local-model runtime for language, image, and video models.
+Tapioca is a small local-model runtime for language, speech, image, and video models.
 It downloads supported models on demand, chooses a native backend for the
 computer, and can expose local models to coding agents.
 
 ## Start here
 
-1. [Install Tapioca on macOS or Windows](docs/getting-started/installation.md)
+1. [Install Tapioca on macOS, Windows, or Linux](docs/getting-started/installation.md)
 2. [Run your first local model](docs/getting-started/quickstart.md)
 3. [Choose a model for your computer](docs/guides/choosing-models.md)
 4. Explore the task-specific guides below.
@@ -39,6 +39,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 - [Coding agents: Codex, Claude Code, OpenCode, OpenClaw, and Hermes](docs/guides/coding-agents.md)
 - [Image generation](docs/guides/image-generation.md)
 - [Video generation](docs/guides/video-generation.md)
+- [Text to speech and voice cloning](docs/guides/speech-and-voices.md)
 - [LoRA adapters and model composition](docs/concepts/lora-adapters.md)
 
 ### Reference and help
@@ -50,13 +51,14 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 
 ## Platform summary
 
-| Capability | macOS Apple Silicon | Windows x64 | Windows ARM64 |
-| --- | --- | --- | --- |
-| GGUF text models | Metal llama.cpp | Vulkan llama.cpp | CPU llama.cpp |
-| Native MLX text | Yes | No | No |
-| Image generation | MLX/MFLUX | CUDA or ONNX DirectML | ONNX Runtime CPU |
-| Video generation | MLX | NVIDIA CUDA/Diffusers | Not yet |
-| Coding-agent APIs | Yes | Yes | Yes |
+| Capability | macOS Apple Silicon | Windows x64 | Windows ARM64 | Linux x64 | Linux ARM64 |
+| --- | --- | --- | --- | --- | --- |
+| GGUF text models | Metal llama.cpp | Vulkan llama.cpp | CPU llama.cpp | Vulkan llama.cpp | Vulkan llama.cpp |
+| Native MLX text | Yes | No | No | No | No |
+| Speech and voice cloning | MLX or MPS/CPU | CUDA or CPU | CPU | CUDA or CPU | CPU |
+| Image generation | MLX/MFLUX | CUDA or ONNX DirectML | ONNX Runtime CPU | NVIDIA CUDA | Not yet |
+| Video generation | MLX | NVIDIA CUDA/Diffusers | Not yet | NVIDIA CUDA/Diffusers | Not yet |
+| Coding-agent APIs | Yes | Yes | Yes | Yes | Yes |
 
 Run `tapioca catalog` for the exact models, download sizes, memory guidance,
 GPU requirements, and supported platforms in the installed release.
@@ -72,6 +74,8 @@ tapioca serve MODEL [--port 11435] [--context TOKENS]
 tapioca image MODEL --prompt TEXT [--output image.png]
 tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
 tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
+tapioca tts MODEL --text TEXT [--voice NAME] [--output speech.wav]
+tapioca voice (create|list|inspect|remove) [NAME]
 tapioca adapter (inspect|pull|list) [hf://OWNER/REPOSITORY]
 tapioca create NAME --base MODEL [--adapter REFERENCE]
 tapioca launch CLIENT MODEL [-- CLIENT_ARGS...]

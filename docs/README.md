@@ -12,6 +12,8 @@ Then choose what you want to do:
 - [Launch a coding agent](guides/coding-agents.md)
 - [Generate an image](guides/image-generation.md)
 - [Generate a video](guides/video-generation.md)
+- [Generate speech and clone a voice](guides/speech-and-voices.md)
+- [Run Tapioca on Linux](guides/linux.md)
 - [Understand LoRA adapters](concepts/lora-adapters.md)
 
 Reference material:

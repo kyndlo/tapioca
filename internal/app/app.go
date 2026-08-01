@@ -23,7 +23,7 @@ import (
 	"github.com/carlos/tapioca/internal/server"
 )
 
-const version = "0.1.0"
+const version = "0.4.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -45,6 +45,10 @@ func Run(args []string) error {
 		return edit(args[1:])
 	case "video":
 		return video(args[1:])
+	case "tts":
+		return tts(args[1:])
+	case "voice":
+		return voiceCommand(args[1:])
 	case "adapter":
 		return adapterCommand(args[1:])
 	case "create":
@@ -65,7 +69,7 @@ func Run(args []string) error {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, `Tapioca runs local language and diffusion models.
+	fmt.Fprintln(w, `Tapioca runs local language, speech, image, and video models.
 
 Usage:
   tapioca pull MODEL[:QUANT]
@@ -74,6 +78,8 @@ Usage:
   tapioca image MODEL --prompt TEXT [--output image.png]
   tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
   tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
+  tapioca tts MODEL --text TEXT [--voice NAME | --voice-sample FILE] [--output speech.wav]
+  tapioca voice (create|list|inspect|remove) [NAME]
   tapioca adapter (inspect|pull|list) [hf://OWNER/REPOSITORY]
   tapioca create NAME --base MODEL [--adapter REFERENCE]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
@@ -87,6 +93,8 @@ Examples:
   tapioca pull qwen-image-flash:int8
   tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
   tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow"
+  tapioca voice create narrator --model chatterbox:nano --audio voice.wav
+  tapioca tts chatterbox:nano --voice narrator --text "Hello from Tapioca"
   tapioca adapter inspect hf://Alissonerdx/BFS-Best-Face-Swap
   tapioca launch codex glm-4.7-flash:q8_0
   tapioca launch openclaw glm-4.7-flash:q8_0
@@ -115,7 +123,7 @@ func pull(args []string) error {
 }
 
 func showCatalog() error {
-	fmt.Println("MODEL\tKIND\tBACKEND\tDOWNLOAD\tMEMORY\tGPU\tPLATFORM")
+	fmt.Println("MODEL\tKIND\tBACKEND\tDOWNLOAD\tMEMORY\tGPU\tPLATFORM\tLANGUAGES\tFEATURES")
 	for _, ref := range catalog.Refs() {
 		model, err := catalog.Resolve(ref)
 		if err != nil {
@@ -129,8 +137,9 @@ func showCatalog() error {
 		if backend == "" {
 			backend = "llama.cpp"
 		}
-		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			model.Name, kind, backend, model.Size, model.Memory, model.GPU, model.Platform)
+		fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+			model.Name, kind, backend, model.Size, model.Memory, model.GPU,
+			model.Platform, model.Languages, model.Features)
 	}
 	return nil
 }
@@ -141,7 +150,7 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 		return config.Model{}, err
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
-	if resolved.Kind == "image" || resolved.Kind == "video" {
+	if resolved.Kind == "image" || resolved.Kind == "video" || resolved.Kind == "speech" {
 		if err := pullSnapshot(resolved, dir, force); err != nil {
 			return config.Model{}, err
 		}

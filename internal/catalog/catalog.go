@@ -8,25 +8,102 @@ import (
 )
 
 type Model struct {
-	Name     string
-	Repo     string
-	Files    map[string]string
-	Template string
-	Kind     string
-	Backends map[string]string
-	Repos    map[string]string
-	Default  string
-	Width    int
-	Height   int
-	Steps    int
-	Frames   int
-	FPS      int
-	Sizes    map[string]string
-	Memory   map[string]string
-	GPUs     map[string]string
+	Name      string
+	Repo      string
+	Files     map[string]string
+	Template  string
+	Kind      string
+	Backends  map[string]string
+	Repos     map[string]string
+	Default   string
+	Width     int
+	Height    int
+	Steps     int
+	Frames    int
+	FPS       int
+	Sizes     map[string]string
+	Memory    map[string]string
+	GPUs      map[string]string
+	Languages map[string]string
+	Features  map[string]string
 }
 
 var models = map[string]Model{
+	"chatterbox": {
+		Name:    "chatterbox",
+		Repo:    "ResembleAI/chatterbox",
+		Kind:    "speech",
+		Default: "multilingual",
+		Files: map[string]string{
+			"nano":         "",
+			"multilingual": "",
+		},
+		Backends: map[string]string{
+			"nano":         "speech-chatterbox",
+			"multilingual": "speech-chatterbox",
+		},
+		Repos: map[string]string{
+			"nano":         "ResembleAI/chatterbox-nano",
+			"multilingual": "ResembleAI/chatterbox",
+		},
+		Sizes: map[string]string{
+			"nano":         "~1 GiB",
+			"multilingual": "~4 GiB",
+		},
+		Memory: map[string]string{
+			"nano":         "8 GiB min; 12 GiB recommended",
+			"multilingual": "12 GiB min; 16 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"nano":         "CPU, Apple MPS, or NVIDIA CUDA",
+			"multilingual": "CPU, Apple MPS, or NVIDIA CUDA",
+		},
+		Languages: map[string]string{
+			"nano":         "English",
+			"multilingual": "23+ languages",
+		},
+		Features: map[string]string{
+			"nano":         "voice cloning, paralinguistic tags, watermarked",
+			"multilingual": "voice cloning, multilingual, emotion control, watermarked",
+		},
+	},
+	"qwen3-tts": {
+		Name:    "qwen3-tts",
+		Kind:    "speech",
+		Default: "0.6b",
+		Files: map[string]string{
+			"0.6b":     "",
+			"0.6b-mlx": "",
+		},
+		Backends: map[string]string{
+			"0.6b":     "speech-qwen",
+			"0.6b-mlx": "speech-qwen-mlx",
+		},
+		Repos: map[string]string{
+			"0.6b":     "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+			"0.6b-mlx": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
+		},
+		Sizes: map[string]string{
+			"0.6b":     "~2.5 GiB",
+			"0.6b-mlx": "~2.5 GiB",
+		},
+		Memory: map[string]string{
+			"0.6b":     "12 GiB min; 16 GiB recommended",
+			"0.6b-mlx": "12 GiB min; 16 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"0.6b":     "NVIDIA CUDA recommended; CPU supported",
+			"0.6b-mlx": "Apple Silicon GPU",
+		},
+		Languages: map[string]string{
+			"0.6b":     "10 languages",
+			"0.6b-mlx": "10 languages",
+		},
+		Features: map[string]string{
+			"0.6b":     "3-second voice cloning, streaming architecture",
+			"0.6b-mlx": "3-second voice cloning, Apple Silicon optimized",
+		},
+	},
 	"glm-4.7-flash": {
 		Name:    "glm-4.7-flash",
 		Repo:    "ggml-org/GLM-4.7-Flash-GGUF",
@@ -338,21 +415,23 @@ var models = map[string]Model{
 }
 
 type Resolved struct {
-	Name     string
-	Repo     string
-	Filename string
-	URL      string
-	Kind     string
-	Backend  string
-	Width    int
-	Height   int
-	Steps    int
-	Frames   int
-	FPS      int
-	Size     string
-	Platform string
-	Memory   string
-	GPU      string
+	Name      string
+	Repo      string
+	Filename  string
+	URL       string
+	Kind      string
+	Backend   string
+	Width     int
+	Height    int
+	Steps     int
+	Frames    int
+	FPS       int
+	Size      string
+	Platform  string
+	Memory    string
+	GPU       string
+	Languages string
+	Features  string
 }
 
 func Resolve(ref string) (Resolved, error) {
@@ -385,6 +464,10 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		goos == "windows" && goarch == "arm64" {
 		tag = "onnx-arm64"
 	}
+	if m.Name == "qwen3-tts" && !strings.Contains(ref, ":") &&
+		goos == "darwin" && goarch == "arm64" {
+		tag = "0.6b-mlx"
+	}
 	filename, ok := m.Files[strings.ToLower(tag)]
 	if !ok {
 		return Resolved{}, fmt.Errorf("unknown variant %q for %s", tag, name)
@@ -403,13 +486,14 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	backend := m.Backends[strings.ToLower(tag)]
 	platform := "Windows, macOS, Linux"
 	switch backend {
-	case "mlx", "mlx-vlm", "mlx-video", "mflux":
+	case "mlx", "mlx-vlm", "mlx-video", "mflux", "speech-qwen-mlx":
 		platform = "macOS Apple Silicon"
 	case "diffusers", "diffusers-video":
 		platform = "Windows/Linux NVIDIA"
-		if backend == "diffusers-video" {
-			platform = "Windows x64 NVIDIA"
-		}
+	case "speech-chatterbox":
+		platform = "Windows, macOS, Linux"
+	case "speech-qwen":
+		platform = "Windows/Linux NVIDIA or CPU"
 	case "onnx-directml":
 		platform = "Windows x64 AMD/Intel/NVIDIA"
 	case "onnx-cpu":
@@ -417,21 +501,23 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{
-		Name:     m.Name + ":" + strings.ToLower(tag),
-		Repo:     repo,
-		Filename: filename,
-		URL:      url,
-		Kind:     m.Kind,
-		Backend:  backend,
-		Width:    m.Width,
-		Height:   m.Height,
-		Steps:    m.Steps,
-		Frames:   m.Frames,
-		FPS:      m.FPS,
-		Size:     m.Sizes[strings.ToLower(tag)],
-		Platform: platform,
-		Memory:   memory,
-		GPU:      gpu,
+		Name:      m.Name + ":" + strings.ToLower(tag),
+		Repo:      repo,
+		Filename:  filename,
+		URL:       url,
+		Kind:      m.Kind,
+		Backend:   backend,
+		Width:     m.Width,
+		Height:    m.Height,
+		Steps:     m.Steps,
+		Frames:    m.Frames,
+		FPS:       m.FPS,
+		Size:      m.Sizes[strings.ToLower(tag)],
+		Platform:  platform,
+		Memory:    memory,
+		GPU:       gpu,
+		Languages: m.Languages[strings.ToLower(tag)],
+		Features:  m.Features[strings.ToLower(tag)],
 	}, nil
 }
 
@@ -441,7 +527,7 @@ func requirements(model Model, variant, backend string) (string, string) {
 	}
 	size := model.Sizes[variant]
 	switch backend {
-	case "mlx", "mlx-vlm", "mflux":
+	case "mlx", "mlx-vlm", "mflux", "speech-qwen-mlx":
 		switch {
 		case strings.Contains(size, "~36"):
 			return "48 GiB min; 64 GiB recommended", "Apple Silicon GPU"

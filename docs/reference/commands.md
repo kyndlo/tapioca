@@ -26,7 +26,7 @@ tapioca pull MODEL[:VARIANT]
 tapioca pull MODEL[:VARIANT] --force
 ```
 
-Explicit pull is optional for `run`, `serve`, `launch`, `image`, and `video`;
+Explicit pull is optional for `run`, `serve`, `launch`, `image`, `video`, and `tts`;
 they download a missing catalog model automatically.
 
 ## `run`
@@ -79,6 +79,29 @@ and `--seed`.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
 `--adapter-scale`.
+
+## `tts`
+
+Generate a WAV file from text:
+
+```bash
+tapioca tts MODEL --text TEXT [flags]
+```
+
+Flags include `--output`, `--language`, `--voice`, `--voice-sample`,
+`--transcript`, and `--transcript-file`.
+
+## `voice`
+
+Save and reuse reference voices:
+
+```bash
+tapioca voice create NAME --model MODEL --audio FILE \
+  [--transcript TEXT | --transcript-file FILE]
+tapioca voice list
+tapioca voice inspect NAME
+tapioca voice remove NAME
+```
 
 ## `adapter inspect`
 

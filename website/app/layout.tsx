@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const protocol = incoming.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
   const title = "Tapioca — Your local models, ready to roll";
-  const description = "A friendly local runtime for language, image, video, and coding-agent models on Mac and Windows.";
+  const description = "A friendly local runtime for language, speech, image, video, and coding-agent models on Mac, Windows, and Linux.";
   return {
     metadataBase: new URL(origin),
     title,

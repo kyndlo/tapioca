@@ -164,12 +164,90 @@ jobs:
             tapioca-windows-arm64.zip.sha256
           if-no-files-found: error
 
+  linux-amd64:
+    name: Linux x64 bundle
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Tapioca
+        env:
+          CGO_ENABLED: "0"
+        run: go build -trimpath -ldflags="-s -w" -o dist/tapioca ./cmd/tapioca
+
+      - name: Bundle llama.cpp with Vulkan support
+        run: |
+          curl -fL \
+            "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-vulkan-x64.tar.gz" \
+            -o llama.cpp.tar.gz
+          mkdir -p dist/runtime/llama.cpp
+          tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
+          test -x dist/runtime/llama.cpp/llama-server
+
+      - name: Package
+        run: |
+          tar -C dist -czf tapioca-linux-amd64.tar.gz tapioca runtime
+          sha256sum tapioca-linux-amd64.tar.gz > tapioca-linux-amd64.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tapioca-linux-amd64
+          path: |
+            tapioca-linux-amd64.tar.gz
+            tapioca-linux-amd64.tar.gz.sha256
+          if-no-files-found: error
+
+  linux-arm64:
+    name: Linux ARM64 bundle
+    needs: test
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build Tapioca
+        env:
+          CGO_ENABLED: "0"
+        run: go build -trimpath -ldflags="-s -w" -o dist/tapioca ./cmd/tapioca
+
+      - name: Bundle native ARM64 llama.cpp
+        run: |
+          curl -fL \
+            "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-vulkan-arm64.tar.gz" \
+            -o llama.cpp.tar.gz
+          mkdir -p dist/runtime/llama.cpp
+          tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
+          test -x dist/runtime/llama.cpp/llama-server
+
+      - name: Package
+        run: |
+          tar -C dist -czf tapioca-linux-arm64.tar.gz tapioca runtime
+          sha256sum tapioca-linux-arm64.tar.gz > tapioca-linux-arm64.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tapioca-linux-arm64
+          path: |
+            tapioca-linux-arm64.tar.gz
+            tapioca-linux-arm64.tar.gz.sha256
+          if-no-files-found: error
+
   release:
     name: Publish GitHub Release
     needs:
       - macos-arm64
       - windows-amd64
       - windows-arm64
+      - linux-amd64
+      - linux-arm64
     if: >-
       startsWith(github.ref, 'refs/tags/v') ||
       (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')

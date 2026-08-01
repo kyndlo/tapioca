@@ -20,6 +20,9 @@ type hubModel struct {
 
 func pullSnapshot(model catalog.Resolved, destination string, force bool) error {
 	include := imageSnapshotFile
+	if model.Kind == "speech" {
+		include = textSnapshotFile
+	}
 	if model.Repo == "stabilityai/sd-turbo" ||
 		model.Repo == "stabilityai/sdxl-turbo" ||
 		model.Repo == "stabilityai/stable-video-diffusion-img2vid-xt" {

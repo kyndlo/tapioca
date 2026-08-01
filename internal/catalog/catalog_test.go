@@ -159,8 +159,8 @@ func TestLowMemoryVideoProfiles(t *testing.T) {
 	}{
 		{"wan2.2-video:5b-q8-mlx", "mlx-video", "macOS Apple Silicon"},
 		{"yume-video:5b-mlx", "mlx-video", "macOS Apple Silicon"},
-		{"ltx-video:2b-fp16", "diffusers-video", "Windows x64 NVIDIA"},
-		{"stable-video-diffusion:xt-fp16", "diffusers-video", "Windows x64 NVIDIA"},
+		{"ltx-video:2b-fp16", "diffusers-video", "Windows/Linux NVIDIA"},
+		{"stable-video-diffusion:xt-fp16", "diffusers-video", "Windows/Linux NVIDIA"},
 	}
 	for _, test := range tests {
 		model, err := ResolveFor(test.ref, "darwin")
@@ -173,6 +173,33 @@ func TestLowMemoryVideoProfiles(t *testing.T) {
 		if model.Width == 0 || model.Height == 0 || model.Frames == 0 || model.FPS == 0 {
 			t.Errorf("%s lacks generation defaults: %#v", test.ref, model)
 		}
+	}
+}
+
+func TestSpeechProfiles(t *testing.T) {
+	mac, err := ResolveForPlatform("qwen3-tts", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mac.Name != "qwen3-tts:0.6b-mlx" || mac.Backend != "speech-qwen-mlx" ||
+		mac.Kind != "speech" {
+		t.Fatalf("unexpected macOS speech profile: %#v", mac)
+	}
+	linux, err := ResolveForPlatform("qwen3-tts", "linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if linux.Name != "qwen3-tts:0.6b" || linux.Backend != "speech-qwen" ||
+		linux.Platform != "Windows/Linux NVIDIA or CPU" {
+		t.Fatalf("unexpected Linux speech profile: %#v", linux)
+	}
+	portable, err := ResolveForPlatform("chatterbox:nano", "linux", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if portable.Backend != "speech-chatterbox" || portable.Languages != "English" ||
+		portable.Features == "" {
+		t.Fatalf("unexpected portable speech profile: %#v", portable)
 	}
 }
 

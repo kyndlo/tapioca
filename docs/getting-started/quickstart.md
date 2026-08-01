@@ -41,8 +41,25 @@ tapioca run glm-4.7-flash:q8_0 --show-thinking=false
 tapioca list
 ```
 
+## 5. Try another local medium
+
+Generate speech:
+
+```bash
+tapioca tts chatterbox:nano \
+  --text "Tapioca is running locally." \
+  --output hello.wav
+```
+
+Or make an image:
+
+```bash
+tapioca image sd-turbo --prompt "A friendly pearl astronaut"
+```
+
 See [Choosing models](../guides/choosing-models.md) before downloading a large
 model and [Storage](../reference/storage.md) to find the downloaded files.
 
 When you are ready to customize image or video models, continue with the
-[beginner LoRA guide](../concepts/lora-adapters.md).
+[beginner LoRA guide](../concepts/lora-adapters.md). For speech and reusable
+voices, follow the [voice guide](../guides/speech-and-voices.md).

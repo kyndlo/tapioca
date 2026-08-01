@@ -1,4 +1,10 @@
-# Tapioca
+<p align="center">
+  <img src="docs/assets/brand/tapioca-icon-512.png" width="180" alt="Tapioca mascot: a friendly tapioca pearl with a terminal prompt">
+</p>
+
+<h1 align="center">Tapioca</h1>
+
+<p align="center"><strong>Your local models, ready to roll.</strong></p>
 
 Tapioca is a small local-model runtime for language, image, and video models.
 It downloads supported models on demand, chooses a native backend for the

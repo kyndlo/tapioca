@@ -90,10 +90,11 @@ tapioca video ltx-video:2b-fp16 \
 
 ## 5. Generate speech
 
-Chatterbox Nano is a practical first test:
+Chatterbox Multilingual includes a built-in voice and is a practical first
+text-only test:
 
 ```bash
-tapioca tts chatterbox:nano \
+tapioca tts chatterbox:multilingual \
   --text "This Linux server can speak locally." \
   --output hello.wav
 ```

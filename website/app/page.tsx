@@ -53,6 +53,7 @@ export default function Home() {
           <span>tapioca</span>
         </a>
         <div className="navlinks">
+          <a href="#desktop">Desktop app</a>
           <a href="#start">Get started</a>
           <a href="#voices">Voices</a>
           <a href="#commands">Commands</a>
@@ -67,7 +68,8 @@ export default function Home() {
           <h1>Your models.<br /><em>Ready to roll.</em></h1>
           <p className="lede">
             Run language, speech, image, video, and coding-agent models on your own
-            Mac, Windows PC, or Linux server—with one friendly command-line tool.
+            Mac, Windows PC, or Linux server—with a friendly desktop studio and
+            one compact command-line tool.
           </p>
           <div className="actions">
             <a className="button primary" href="#start">Make your first pearl →</a>
@@ -97,6 +99,41 @@ export default function Home() {
         <i>●</i><span>HERMES</span><i>●</i><span>OPENCLAW</span>
       </section>
 
+      <section className="section desktopShowcase" id="desktop">
+        <div className="desktopIntro">
+          <p className="kicker light">New · Tapioca Desktop</p>
+          <h2>Local AI now has<br />a friendly face.</h2>
+          <p>
+            Chat, create images and videos, clone voices, manage models, and
+            launch coding agents without living in a terminal. The same local
+            Tapioca runtime powers everything underneath.
+          </p>
+          <div className="desktopFeatures">
+            <span><b>Private chat</b>Run GGUF and MLX models locally</span>
+            <span><b>Creative studio</b>Images, video, speech, and voice cloning</span>
+            <span><b>Agent cockpit</b>Codex, Claude Code, OpenCode, OpenClaw, and Hermes</span>
+            <span><b>Model manager</b>Discover, pull, remove, and inspect models</span>
+          </div>
+          <div className="actions">
+            <a className="button cream" href={`${repo}/releases/latest`}>Download the desktop app →</a>
+            <a className="button darkGhost" href={`${repo}/tree/main/desktop`}>Explore the source</a>
+          </div>
+          <small>Available in the latest release for supported macOS and Windows builds.</small>
+        </div>
+        <figure className="desktopFrame">
+          <div className="desktopFrameTop">
+            <i /><i /><i /><span>Tapioca · Images</span>
+          </div>
+          <img
+            src="/tapioca-desktop-ui.png"
+            alt="Tapioca Desktop image studio running Qwen Image Flash locally"
+          />
+          <figcaption>
+            One workspace for chat, media generation, voices, agents, models, and APIs.
+          </figcaption>
+        </figure>
+      </section>
+
       <section className="section start" id="start">
         <div className="sectionHead">
           <p className="kicker">01 · Beginner lane</p>
@@ -107,9 +144,9 @@ export default function Home() {
           <article>
             <span className="stepNo">1</span>
             <p className="label">Install</p>
-            <h3>Get the app</h3>
+            <h3>Get Tapioca</h3>
             <pre><code>curl -fsSL https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.sh | sh</code></pre>
-            <p>That command covers macOS and Linux. Windows gets an equally tiny PowerShell installer.</p>
+            <p>Download the new desktop app, or use this command for the CLI on macOS and Linux. Windows gets an equally tiny PowerShell installer.</p>
           </article>
           <article>
             <span className="stepNo">2</span>

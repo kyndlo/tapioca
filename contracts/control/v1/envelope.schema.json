@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tapioca.rootfruit.cc/contracts/control/v1/envelope.schema.json",
+  "title": "Tapioca control protocol v1 envelope",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/successResponse" },
+    { "$ref": "#/$defs/errorResponse" },
+    { "$ref": "#/$defs/event" }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "id", "method"],
+      "properties": {
+        "version": { "const": 1 },
+        "type": { "const": "request" },
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "method": {
+          "enum": [
+            "handshake",
+            "capabilities.get",
+            "health.get",
+            "system.info",
+            "storage.info",
+            "catalog.list",
+            "catalog.get",
+            "installed.list",
+            "model.pull",
+            "model.remove",
+            "server.start",
+            "server.stop",
+            "server.status",
+            "chat.request",
+            "chat.describe",
+            "agent.describe",
+            "creator.capabilities",
+            "creator.catalog",
+            "image.generate",
+            "video.generate",
+            "speech.generate",
+            "voice.clone",
+            "lora.list",
+            "lora.inspect",
+            "job.cancel"
+          ],
+          "maxLength": 128
+        },
+        "params": {},
+        "job_id": { "type": "string", "maxLength": 128 }
+      }
+    },
+    "successResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "id", "result"],
+      "properties": {
+        "version": { "const": 1 },
+        "type": { "const": "response" },
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Correlates a valid request. Empty only when the input could not be decoded or validated enough to recover a request ID."
+        },
+        "result": {}
+      }
+    },
+    "errorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "type", "id", "error"],
+      "properties": {
+        "version": { "const": 1 },
+        "type": { "const": "response" },
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Correlates a valid request. Empty only when the input could not be decoded or validated enough to recover a request ID."
+        },
+        "error": { "$ref": "#/$defs/error" }
+      }
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message", "retryable"],
+      "properties": {
+        "code": { "type": "string" },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "details": {}
+      }
+    },
+    "chatMessage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "enum": ["system", "developer", "user", "assistant", "tool"]
+        },
+        "content": {},
+        "reasoning_content": { "type": "string", "maxLength": 1048576 },
+        "tool_calls": {
+          "type": "array",
+          "maxItems": 128,
+          "items": {}
+        },
+        "tool_call_id": { "type": "string", "maxLength": 256 }
+      }
+    },
+    "chatResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "object", "created", "model", "choices"],
+      "properties": {
+        "id": { "type": "string" },
+        "object": { "type": "string" },
+        "created": { "type": "integer" },
+        "model": { "type": "string" },
+        "choices": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["index", "message", "finish_reason"],
+            "properties": {
+              "index": { "type": "integer" },
+              "message": { "$ref": "#/$defs/chatMessage" },
+              "finish_reason": { "type": "string" }
+            }
+          }
+        },
+        "usage": { "type": "object" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "type",
+        "event",
+        "job_id",
+        "sequence",
+        "timestamp"
+      ],
+      "properties": {
+        "version": { "const": 1 },
+        "type": { "const": "event" },
+        "event": {
+          "enum": [
+            "job.started",
+            "job.progress",
+            "job.log",
+            "job.completed",
+            "job.failed"
+          ]
+        },
+        "job_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "sequence": { "type": "integer", "minimum": 1 },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "data": {}
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+{"version":1,"type":"event","event":"job.started","job_id":"job-catalog","sequence":1,"timestamp":"2026-08-01T12:00:00Z","data":{"request_id":"req-catalog","method":"catalog.list"}}
+{"version":1,"type":"event","event":"job.completed","job_id":"job-catalog","sequence":2,"timestamp":"2026-08-01T12:00:00.125Z","data":{"request_id":"req-catalog"}}
+{"version":1,"type":"event","event":"job.failed","job_id":"job-installed","sequence":2,"timestamp":"2026-08-01T12:00:00.250Z","data":{"request_id":"req-installed","error":{"code":"internal_error","message":"registry unavailable","retryable":true}}}
+{"version":1,"type":"event","event":"job.progress","job_id":"job-pull","sequence":2,"timestamp":"2026-08-01T12:00:00.100Z","data":{"stage":"progress","bytes":1048576,"total_bytes":4194304}}
+{"version":1,"type":"event","event":"job.log","job_id":"job-pull","sequence":3,"timestamp":"2026-08-01T12:00:00.150Z","data":{"message":"downloading model files"}}
+{"version":1,"type":"event","event":"job.progress","job_id":"job-image","sequence":2,"timestamp":"2026-08-01T12:00:01Z","data":{"stage":"starting","output":"/Users/example/.tapioca/outputs/images/fox.png"}}
+{"version":1,"type":"event","event":"job.log","job_id":"job-video","sequence":2,"timestamp":"2026-08-01T12:00:01Z","data":{"message":"loading video pipeline"}}

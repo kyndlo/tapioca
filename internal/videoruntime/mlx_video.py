@@ -1,4 +1,5 @@
 import argparse
+import os
 import subprocess
 import sys
 
@@ -50,6 +51,22 @@ def main():
     for path, scale in zip(args.adapter, args.adapter_scale):
         command.extend(["--lora", path, str(scale)])
     subprocess.run(command, check=True)
+    # mlx-video currently encodes WAN outputs at the model's native 24 FPS.
+    # Re-time the generated frames when the user requested a different playback
+    # rate so the CLI/UI FPS control has an observable effect.
+    if args.fps != 24:
+        import imageio.v2 as imageio
+
+        temporary = args.output + ".fps.mp4"
+        reader = imageio.get_reader(args.output)
+        writer = imageio.get_writer(temporary, fps=args.fps, codec="libx264", quality=8)
+        try:
+            for frame in reader:
+                writer.append_data(frame)
+        finally:
+            reader.close()
+            writer.close()
+        os.replace(temporary, args.output)
 
 
 if __name__ == "__main__":

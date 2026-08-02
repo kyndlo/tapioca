@@ -84,9 +84,9 @@ func runONNX(ctx context.Context, cacheDir string, request Request) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(os.Stderr, "creating the %s image runtime (first run only)...\n", request.Backend)
+		fmt.Fprintf(runtimeStderr(ctx), "creating the %s image runtime (first run only)...\n", request.Backend)
 		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("create Python environment: %w", err)
 		}
@@ -95,7 +95,7 @@ func runONNX(ctx context.Context, cacheDir string, request Request) error {
 			{"-m", "pip", "install", "-r", filepath.Join(root, "requirements-onnx.txt")},
 		} {
 			cmd = exec.CommandContext(ctx, python, args...)
-			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+			cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 			if err := cmd.Run(); err != nil {
 				return fmt.Errorf("install ONNX image dependencies: %w", err)
 			}
@@ -105,7 +105,7 @@ func runONNX(ctx context.Context, cacheDir string, request Request) error {
 			providerPackage = "onnxruntime-directml"
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", providerPackage)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install %s: %w", providerPackage, err)
 		}
@@ -115,7 +115,7 @@ func runONNX(ctx context.Context, cacheDir string, request Request) error {
 	}
 	args := onnxArguments(root, request)
 	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStdout(ctx), runtimeStderr(ctx)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("ONNX image generation failed: %w", err)
 	}
@@ -164,19 +164,19 @@ func runMFlux(ctx context.Context, cacheDir string, request Request) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(os.Stderr, "creating the MFLUX image runtime (first run only)...")
+		fmt.Fprintln(runtimeStderr(ctx), "creating the MFLUX image runtime (first run only)...")
 		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("create Python environment: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "--upgrade", "pip")
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", requirements)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install MFLUX: %w", err)
 		}
@@ -187,7 +187,7 @@ func runMFlux(ctx context.Context, cacheDir string, request Request) error {
 	commandName, args := mfluxArguments(request)
 	command := filepath.Join(venv, "bin", commandName)
 	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStdout(ctx), runtimeStderr(ctx)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("MFLUX image generation failed: %w", err)
 	}
@@ -251,9 +251,9 @@ func runMLX(ctx context.Context, cacheDir string, request Request) error {
 	}
 	binary := filepath.Join(root, ".build", "release", "tapioca-image-runtime")
 	if _, err := os.Stat(binary); err != nil {
-		fmt.Fprintln(os.Stderr, "building the MLX image runtime (first run only)...")
+		fmt.Fprintln(runtimeStderr(ctx), "building the MLX image runtime (first run only)...")
 		cmd := exec.CommandContext(ctx, "swift", "build", "-c", "release", "--package-path", root)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("build MLX image runtime: %w", err)
 		}
@@ -293,7 +293,7 @@ func runMLXBinary(ctx context.Context, binary string, request Request) error {
 		args = append(args, "--negative-prompt", request.NegativePrompt)
 	}
 	cmd := exec.CommandContext(ctx, binary, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStdout(ctx), runtimeStderr(ctx)
 	return cmd.Run()
 }
 
@@ -303,7 +303,7 @@ func buildMLXMetallib(ctx context.Context, root, binaryDir string) error {
 		return nil
 	}
 
-	fmt.Fprintln(os.Stderr, "building MLX Metal shaders (first run only)...")
+	fmt.Fprintln(runtimeStderr(ctx), "building MLX Metal shaders (first run only)...")
 	cmlxRoot := filepath.Join(root, ".build", "checkouts", "mlx-swift", "Source", "Cmlx")
 	shaderRoot := filepath.Join(cmlxRoot, "mlx-generated", "metal")
 	airRoot := filepath.Join(root, ".build", "tapioca-metal-air")
@@ -334,7 +334,7 @@ func buildMLXMetallib(ctx context.Context, root, binaryDir string) error {
 			"-I" + cmlxRoot, "-o", airPath,
 		}
 		cmd := exec.CommandContext(ctx, "xcrun", args...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("compile MLX Metal shader %s: %w", shader, err)
 		}
@@ -344,7 +344,7 @@ func buildMLXMetallib(ctx context.Context, root, binaryDir string) error {
 	args := append([]string{"-sdk", "macosx", "metallib"}, airFiles...)
 	args = append(args, "-o", metallib)
 	cmd := exec.CommandContext(ctx, "xcrun", args...)
-	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("link MLX Metal shader library: %w", err)
 	}
@@ -396,15 +396,15 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(os.Stderr, "creating the CUDA image runtime (first run only)...")
+		fmt.Fprintln(runtimeStderr(ctx), "creating the CUDA image runtime (first run only)...")
 		venvArgs := append(prefix, "-m", "venv", venv)
 		cmd := exec.CommandContext(ctx, name, venvArgs...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("create Python environment: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "--upgrade", "pip")
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
@@ -412,12 +412,12 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 			ctx, python, "-m", "pip", "install",
 			"torch>=2.7", "--index-url", "https://download.pytorch.org/whl/cu128",
 		)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install CUDA-enabled PyTorch: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", filepath.Join(root, "requirements.txt"))
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install CUDA image dependencies: %w", err)
 		}
@@ -427,7 +427,7 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 	}
 	args := diffusersArguments(root, request)
 	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStdout(ctx), runtimeStderr(ctx)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("Diffusers image generation failed: %w", err)
 	}

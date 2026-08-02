@@ -43,6 +43,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
 
       - name: Build Tapioca
         env:
@@ -61,6 +66,15 @@ jobs:
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
 
+      - name: Build Tapioca Desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          mkdir -p desktop/runtime
+          cp -R dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          npm ci --prefix desktop
+          npm run package --prefix desktop
+
       - name: Package
         run: |
           tar -C dist -czf tapioca-darwin-arm64.tar.gz tapioca runtime
@@ -72,6 +86,8 @@ jobs:
           path: |
             tapioca-darwin-arm64.tar.gz
             tapioca-darwin-arm64.tar.gz.sha256
+            desktop/release/*.dmg
+            desktop/release/*-mac.zip
           if-no-files-found: error
 
   windows-amd64:
@@ -84,6 +100,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
 
       - name: Build Tapioca
         shell: pwsh
@@ -103,6 +124,14 @@ jobs:
             throw "llama-server.exe was not found in the llama.cpp archive"
           }
 
+      - name: Build Tapioca Desktop
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force desktop/runtime | Out-Null
+          Copy-Item -Recurse -Force dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          npm ci --prefix desktop
+          npm run package --prefix desktop
+
       - name: Package
         shell: pwsh
         run: |
@@ -116,6 +145,8 @@ jobs:
           path: |
             tapioca-windows-amd64.zip
             tapioca-windows-amd64.zip.sha256
+            desktop/release/*.exe
+            desktop/release/*-win.zip
           if-no-files-found: error
 
   windows-arm64:
@@ -128,6 +159,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
 
       - name: Build Tapioca for ARM64
         shell: pwsh
@@ -149,6 +185,15 @@ jobs:
             throw "ARM64 llama-server.exe was not found in the llama.cpp archive"
           }
 
+      - name: Build Tapioca Desktop for ARM64
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force desktop/runtime | Out-Null
+          Copy-Item -Recurse -Force dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          npm ci --prefix desktop
+          $env:npm_config_arch = "arm64"
+          npm run package --prefix desktop -- --arm64
+
       - name: Package
         shell: pwsh
         run: |
@@ -162,6 +207,8 @@ jobs:
           path: |
             tapioca-windows-arm64.zip
             tapioca-windows-arm64.zip.sha256
+            desktop/release/*.exe
+            desktop/release/*-win.zip
           if-no-files-found: error
 
   linux-amd64:
@@ -174,6 +221,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
 
       - name: Build Tapioca
         env:
@@ -189,6 +241,13 @@ jobs:
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
 
+      - name: Build Tapioca Desktop
+        run: |
+          mkdir -p desktop/runtime
+          cp -R dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          npm ci --prefix desktop
+          npm run package --prefix desktop
+
       - name: Package
         run: |
           tar -C dist -czf tapioca-linux-amd64.tar.gz tapioca runtime
@@ -200,6 +259,8 @@ jobs:
           path: |
             tapioca-linux-amd64.tar.gz
             tapioca-linux-amd64.tar.gz.sha256
+            desktop/release/*.AppImage
+            desktop/release/*-linux.tar.gz
           if-no-files-found: error
 
   linux-arm64:
@@ -212,6 +273,11 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
 
       - name: Build Tapioca
         env:
@@ -227,6 +293,13 @@ jobs:
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
 
+      - name: Build Tapioca Desktop for ARM64
+        run: |
+          mkdir -p desktop/runtime
+          cp -R dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          npm ci --prefix desktop
+          npm_config_arch=arm64 npm run package --prefix desktop -- --arm64
+
       - name: Package
         run: |
           tar -C dist -czf tapioca-linux-arm64.tar.gz tapioca runtime
@@ -238,6 +311,8 @@ jobs:
           path: |
             tapioca-linux-arm64.tar.gz
             tapioca-linux-arm64.tar.gz.sha256
+            desktop/release/*.AppImage
+            desktop/release/*-linux.tar.gz
           if-no-files-found: error
 
   release:

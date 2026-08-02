@@ -40,6 +40,7 @@
   "build": {
     "appId": "cc.rootfruit.tapioca",
     "productName": "Tapioca",
+    "executableName": "tapioca",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
       "output": "release"

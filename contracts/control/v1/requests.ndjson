@@ -1,0 +1,23 @@
+{"version":1,"type":"request","id":"req-handshake","method":"handshake"}
+{"version":1,"type":"request","id":"req-capabilities","method":"capabilities.get"}
+{"version":1,"type":"request","id":"req-health","method":"health.get"}
+{"version":1,"type":"request","id":"req-catalog","method":"catalog.list","job_id":"job-catalog"}
+{"version":1,"type":"request","id":"req-installed","method":"installed.list","job_id":"job-installed"}
+{"version":1,"type":"request","id":"req-cancel","method":"job.cancel","params":{"job_id":"job-catalog"}}
+{"version":1,"type":"request","id":"req-system","method":"system.info"}
+{"version":1,"type":"request","id":"req-storage","method":"storage.info"}
+{"version":1,"type":"request","id":"req-detail","method":"catalog.get","params":{"name":"gemma3:12b-mlx"}}
+{"version":1,"type":"request","id":"req-pull","method":"model.pull","params":{"name":"gemma3:12b-mlx"},"job_id":"job-pull"}
+{"version":1,"type":"request","id":"req-remove-plan","method":"model.remove","params":{"name":"gemma3:12b-mlx"},"job_id":"job-remove-plan"}
+{"version":1,"type":"request","id":"req-server-status","method":"server.status","params":{}}
+{"version":1,"type":"request","id":"req-chat-describe","method":"chat.describe","params":{"model":"gemma3:12b-mlx","port":11435}}
+{"version":1,"type":"request","id":"req-chat-tools","method":"chat.request","params":{"model":"gemma3:12b-mlx","port":11435,"messages":[{"role":"user","content":"What is the weather?"}],"tools":[{"type":"function","function":{"name":"weather","parameters":{"type":"object","properties":{"city":{"type":"string"}}}}}],"tool_choice":"auto","reasoning_format":"deepseek"},"job_id":"job-chat-tools"}
+{"version":1,"type":"request","id":"req-agent","method":"agent.describe","params":{"agent":"codex","model":"gemma3:12b-mlx","port":11435}}
+{"version":1,"type":"request","id":"req-creator-capabilities","method":"creator.capabilities"}
+{"version":1,"type":"request","id":"req-creator-catalog","method":"creator.catalog"}
+{"version":1,"type":"request","id":"req-image","method":"image.generate","params":{"model":"flux2-klein:4b-q4-mlx","prompt":"A fox in snow","width":1024,"height":1024,"steps":4,"output_name":"fox.png"},"job_id":"job-image"}
+{"version":1,"type":"request","id":"req-video","method":"video.generate","params":{"model":"ltx-video:2b-fp16","prompt":"A fox running in snow","input_image":"/Users/example/input.png","width":768,"height":512,"frames":25,"steps":20,"fps":8,"output_name":"fox.mp4"},"job_id":"job-video"}
+{"version":1,"type":"request","id":"req-speech","method":"speech.generate","params":{"model":"chatterbox:nano","text":"Hello Tapioca"},"job_id":"job-speech"}
+{"version":1,"type":"request","id":"req-voice","method":"voice.clone","params":{"model":"chatterbox:nano","text":"Hello","voice_sample":"/Users/example/voice.wav"},"job_id":"job-voice"}
+{"version":1,"type":"request","id":"req-loras","method":"lora.list"}
+{"version":1,"type":"request","id":"req-lora-inspect","method":"lora.inspect","params":{"reference":"hf://creator/cinematic-motion@0.8"}}

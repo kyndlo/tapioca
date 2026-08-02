@@ -5,6 +5,7 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +27,16 @@ type Request struct {
 }
 
 func Run(ctx context.Context, cacheDir string, request Request) error {
+	return RunWithWriters(ctx, cacheDir, request, os.Stdout, os.Stderr)
+}
+
+func RunWithWriters(
+	ctx context.Context,
+	cacheDir string,
+	request Request,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
 	flavor := ""
 	switch request.Backend {
 	case "speech-chatterbox":
@@ -43,11 +54,18 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 	default:
 		return fmt.Errorf("unsupported speech backend %q", request.Backend)
 	}
-	return runPython(ctx, cacheDir, request, flavor)
+	return runPython(ctx, cacheDir, request, flavor, stdout, stderr)
 }
 
-func runPython(ctx context.Context, cacheDir string, request Request, flavor string) error {
-	root := filepath.Join(cacheDir, "speech-runtime", "0.1.0-"+flavor)
+func runPython(
+	ctx context.Context,
+	cacheDir string,
+	request Request,
+	flavor string,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
+	root := filepath.Join(cacheDir, "speech-runtime", "0.1.3-"+flavor)
 	requirementsName := "requirements-" + flavor + ".txt"
 	for _, name := range []string{"speech.py", requirementsName} {
 		data, err := source.ReadFile(name)
@@ -74,19 +92,19 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(os.Stderr, "creating the %s speech runtime (first run only)...\n", flavor)
+		fmt.Fprintf(stderr, "creating the %s speech runtime (first run only)...\n", flavor)
 		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = stderr, stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("create Python environment: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "--upgrade", "pip")
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = stderr, stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", filepath.Join(root, requirementsName))
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = stderr, stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install %s speech dependencies: %w", flavor, err)
 		}
@@ -96,7 +114,7 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 	}
 
 	cmd := exec.CommandContext(ctx, python, pythonArguments(root, request)...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = stdout, stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s speech generation failed: %w", flavor, err)
 	}

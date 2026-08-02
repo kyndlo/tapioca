@@ -46,7 +46,7 @@ tapioca list
 Generate speech:
 
 ```bash
-tapioca tts chatterbox:nano \
+tapioca tts chatterbox:multilingual \
   --text "Tapioca is running locally." \
   --output hello.wav
 ```

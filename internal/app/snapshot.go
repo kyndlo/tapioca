@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -19,6 +20,18 @@ type hubModel struct {
 }
 
 func pullSnapshot(model catalog.Resolved, destination string, force bool) error {
+	return pullSnapshotWithContext(
+		context.Background(), model, destination, force, cliPullReporter,
+	)
+}
+
+func pullSnapshotWithContext(
+	ctx context.Context,
+	model catalog.Resolved,
+	destination string,
+	force bool,
+	report PullReporter,
+) error {
 	include := imageSnapshotFile
 	if model.Kind == "speech" {
 		include = textSnapshotFile
@@ -34,11 +47,23 @@ func pullSnapshot(model catalog.Resolved, destination string, force bool) error 
 	if model.Backend == "mflux" {
 		include = textSnapshotFile
 	}
-	return pullHubSnapshot(model, destination, force, include)
+	return pullHubSnapshotWithContext(ctx, model, destination, force, include, report)
 }
 
 func pullTextSnapshot(model catalog.Resolved, destination string, force bool) error {
-	return pullHubSnapshot(model, destination, force, textSnapshotFile)
+	return pullTextSnapshotWithContext(
+		context.Background(), model, destination, force, cliPullReporter,
+	)
+}
+
+func pullTextSnapshotWithContext(
+	ctx context.Context,
+	model catalog.Resolved,
+	destination string,
+	force bool,
+	report PullReporter,
+) error {
+	return pullHubSnapshotWithContext(ctx, model, destination, force, textSnapshotFile, report)
 }
 
 func pullHubSnapshot(
@@ -46,6 +71,19 @@ func pullHubSnapshot(
 	destination string,
 	force bool,
 	include func(string) bool,
+) error {
+	return pullHubSnapshotWithContext(
+		context.Background(), model, destination, force, include, cliPullReporter,
+	)
+}
+
+func pullHubSnapshotWithContext(
+	ctx context.Context,
+	model catalog.Resolved,
+	destination string,
+	force bool,
+	include func(string) bool,
+	report PullReporter,
 ) error {
 	req, err := http.NewRequest(
 		http.MethodGet, "https://huggingface.co/api/models/"+model.Repo, nil,
@@ -60,6 +98,7 @@ func pullHubSnapshot(
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
+	req = req.WithContext(ctx)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -96,7 +135,11 @@ func pullHubSnapshot(
 	if len(files) == 0 {
 		return fmt.Errorf("%s contains no supported model files", model.Repo)
 	}
-	fmt.Printf("pulling %s snapshot from %s (%d files)\n", model.Name, model.Repo, len(files))
+	reportPull(report, PullProgress{
+		Stage:   "starting",
+		Message: fmt.Sprintf("pulling %s snapshot from %s (%d files)", model.Name, model.Repo, len(files)),
+		Count:   len(files),
+	})
 	for index, name := range files {
 		path := filepath.Join(destination, filepath.FromSlash(name))
 		if _, err := os.Stat(path); err == nil && !force {
@@ -105,17 +148,23 @@ func pullHubSnapshot(
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
-		fmt.Printf("[%d/%d] %s\n", index+1, len(files), name)
+		reportPull(report, PullProgress{
+			Stage:   "file",
+			Message: fmt.Sprintf("[%d/%d] %s", index+1, len(files), name),
+			File:    name, Index: index + 1, Count: len(files),
+		})
 		partial := path + ".partial"
 		url := "https://huggingface.co/" + model.Repo + "/resolve/main/" + name
-		if err := download(url, partial); err != nil {
+		if err := downloadWithContext(ctx, url, partial, report); err != nil {
 			return err
 		}
 		if err := os.Rename(partial, path); err != nil {
 			return err
 		}
 	}
-	fmt.Printf("saved %s\n", destination)
+	reportPull(report, PullProgress{
+		Stage: "complete", Message: "saved " + destination, Path: destination,
+	})
 	return nil
 }
 

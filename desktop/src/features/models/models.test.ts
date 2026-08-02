@@ -1,0 +1,179 @@
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { ModelsScreen } from "./ModelsScreen";
+import {
+  estimatedDiskAfterInstall,
+  modelCompatibility,
+} from "./model-utils";
+import type {
+  MachineProfile,
+  ModelHubAdapter,
+  ModelRecord,
+  PullOptions,
+} from "./types";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
+  true;
+
+const gib = 1024 ** 3;
+const machine: MachineProfile = {
+  platform: "macos",
+  memoryBytes: 32 * gib,
+  availableDiskBytes: 100 * gib,
+  accelerators: ["apple"],
+};
+const model: ModelRecord = {
+  id: "pearl-chat",
+  name: "Pearl Chat 8B",
+  creator: "Tapioca Community",
+  description: "A fast local conversation model.",
+  kind: "chat",
+  backend: "mlx",
+  tags: ["tools", "conversation"],
+  requirements: {
+    memoryBytes: 12 * gib,
+    recommendedMemoryBytes: 16 * gib,
+    diskBytes: 6 * gib,
+    platforms: ["macos"],
+    accelerators: ["apple"],
+  },
+  installed: false,
+};
+
+let container: HTMLDivElement | undefined;
+let root: ReturnType<typeof createRoot> | undefined;
+
+afterEach(async () => {
+  if (root) await act(() => root?.unmount());
+  container?.remove();
+  root = undefined;
+  container = undefined;
+});
+
+describe("model compatibility", () => {
+  it("uses structured machine requirements and produces a disk estimate", () => {
+    expect(modelCompatibility(model, machine)).toEqual({
+      level: "compatible",
+      reasons: ["Good fit for this machine"],
+    });
+    expect(estimatedDiskAfterInstall(model, machine)).toEqual({
+      required: "6.0 GB",
+      remaining: "94 GB",
+    });
+  });
+
+  it("reports every incompatible constraint", () => {
+    expect(
+      modelCompatibility(model, {
+        platform: "windows",
+        memoryBytes: 8 * gib,
+        availableDiskBytes: 2 * gib,
+        accelerators: ["intel"],
+      }),
+    ).toMatchObject({
+      level: "incompatible",
+      reasons: [
+        "Not available for windows",
+        "Not enough memory",
+        "Not enough disk space",
+        "No supported accelerator",
+      ],
+    });
+  });
+});
+
+describe("ModelsScreen", () => {
+  it("loads real adapter records and starts a cancellable pull", async () => {
+    let pullOptions: PullOptions | undefined;
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([model]),
+      pullModel: vi.fn((_id, options) => {
+        pullOptions = options;
+        return new Promise<ModelRecord>(() => undefined);
+      }),
+      cancelPull: vi.fn().mockResolvedValue(undefined),
+      removeModel: vi.fn().mockResolvedValue(undefined),
+    };
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+
+    await act(async () => {
+      root?.render(createElement(ModelsScreen, { adapter, machine }));
+    });
+    expect(container.textContent).toContain("Pearl Chat 8B");
+    const pull = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Pull model",
+    );
+    await act(() => pull?.click());
+    expect(adapter.pullModel).toHaveBeenCalledWith(
+      "pearl-chat",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    await act(() =>
+      pullOptions?.onProgress({
+        receivedBytes: 3 * gib,
+        totalBytes: 6 * gib,
+      }),
+    );
+    expect(container.textContent).toContain("Downloading 50%");
+
+    const cancel = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Cancel",
+    );
+    await act(async () => cancel?.click());
+    expect(adapter.cancelPull).toHaveBeenCalledWith("pearl-chat");
+    expect(pullOptions?.signal.aborted).toBe(true);
+  });
+
+  it("shows an accessible empty state after a search misses", async () => {
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([]),
+      pullModel: vi.fn(),
+      cancelPull: vi.fn(),
+      removeModel: vi.fn(),
+    };
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root?.render(createElement(ModelsScreen, { adapter, machine }));
+    });
+    expect(container.textContent).toContain("No models match those filters.");
+    expect(
+      Array.from(container.querySelectorAll("button")).some(
+        (button) => button.textContent === "Clear filters",
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the removal dialog open and reports backend rejection", async () => {
+    const installed = { ...model, installed: true };
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([installed]),
+      pullModel: vi.fn(),
+      cancelPull: vi.fn(),
+      removeModel: vi.fn().mockRejectedValue(new Error("model is serving")),
+    };
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(createElement(ModelsScreen, { adapter, machine })));
+    const manage = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Manage",
+    );
+    await act(() => manage?.click());
+    const remove = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Remove model",
+    );
+    await act(() => remove?.click());
+    const confirm = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "Remove local files",
+    );
+    await act(async () => confirm?.click());
+    expect(container.textContent).toContain("model is serving");
+    expect(container.textContent).toContain("Remove local files");
+  });
+});

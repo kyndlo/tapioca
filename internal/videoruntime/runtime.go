@@ -78,27 +78,27 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(os.Stderr, "creating the video runtime (first run only)...")
+		fmt.Fprintln(runtimeStderr(ctx), "creating the video runtime (first run only)...")
 		cmd := exec.CommandContext(ctx, system, append(prefix, "-m", "venv", venv)...)
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("create Python environment: %w", err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "--upgrade", "pip")
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
 		if flavor == "diffusers" {
 			cmd = exec.CommandContext(ctx, python, "-m", "pip", "install",
 				"torch>=2.7", "--index-url", "https://download.pytorch.org/whl/cu128")
-			cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+			cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 			if err := cmd.Run(); err != nil {
 				return fmt.Errorf("install CUDA-enabled PyTorch: %w", err)
 			}
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", filepath.Join(root, requirements))
-		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("install video dependencies: %w", err)
 		}
@@ -109,7 +109,7 @@ func runPython(ctx context.Context, cacheDir string, request Request, flavor str
 
 	args := pythonArguments(root, script, request)
 	cmd := exec.CommandContext(ctx, python, args...)
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	cmd.Stdout, cmd.Stderr = runtimeStdout(ctx), runtimeStderr(ctx)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s video generation failed: %w", flavor, err)
 	}

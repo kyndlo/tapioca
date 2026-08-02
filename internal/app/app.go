@@ -23,7 +23,7 @@ import (
 	"github.com/carlos/tapioca/internal/server"
 )
 
-const version = "0.4.0"
+const version = "0.5.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -145,13 +145,27 @@ func showCatalog() error {
 }
 
 func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
+	return pullResolvedWithContext(
+		context.Background(),
+		resolved,
+		force,
+		cliPullReporter,
+	)
+}
+
+func pullResolvedWithContext(
+	ctx context.Context,
+	resolved catalog.Resolved,
+	force bool,
+	report PullReporter,
+) (config.Model, error) {
 	home, err := config.Home()
 	if err != nil {
 		return config.Model{}, err
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
 	if resolved.Kind == "image" || resolved.Kind == "video" || resolved.Kind == "speech" {
-		if err := pullSnapshot(resolved, dir, force); err != nil {
+		if err := pullSnapshotWithContext(ctx, resolved, dir, force, report); err != nil {
 			return config.Model{}, err
 		}
 		if err := register(resolved, dir); err != nil {
@@ -160,7 +174,7 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 		return modelFromResolved(resolved, dir), nil
 	}
 	if resolved.Backend == "mlx-vlm" {
-		if err := pullTextSnapshot(resolved, dir, force); err != nil {
+		if err := pullTextSnapshotWithContext(ctx, resolved, dir, force, report); err != nil {
 			return config.Model{}, err
 		}
 		if err := register(resolved, dir); err != nil {
@@ -170,7 +184,10 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !force {
-		fmt.Printf("%s already exists at %s\n", resolved.Name, path)
+		reportPull(report, PullProgress{
+			Stage: "complete", Message: fmt.Sprintf("%s already exists at %s", resolved.Name, path),
+			Path: path,
+		})
 		if err := register(resolved, path); err != nil {
 			return config.Model{}, err
 		}
@@ -180,8 +197,11 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 		return config.Model{}, err
 	}
 	partial := path + ".partial"
-	fmt.Printf("pulling %s from %s\n", resolved.Name, resolved.Repo)
-	if err := download(resolved.URL, partial); err != nil {
+	reportPull(report, PullProgress{
+		Stage: "starting", Message: fmt.Sprintf("pulling %s from %s", resolved.Name, resolved.Repo),
+		Path: path,
+	})
+	if err := downloadWithContext(ctx, resolved.URL, partial, report); err != nil {
 		return config.Model{}, err
 	}
 	if err := os.Rename(partial, path); err != nil {
@@ -190,7 +210,7 @@ func pullResolved(resolved catalog.Resolved, force bool) (config.Model, error) {
 	if err := register(resolved, path); err != nil {
 		return config.Model{}, err
 	}
-	fmt.Printf("saved %s\n", path)
+	reportPull(report, PullProgress{Stage: "complete", Message: "saved " + path, Path: path})
 	return modelFromResolved(resolved, path), nil
 }
 
@@ -214,11 +234,20 @@ func register(resolved catalog.Resolved, path string) error {
 }
 
 func download(url, destination string) error {
+	return downloadWithContext(context.Background(), url, destination, cliPullReporter)
+}
+
+func downloadWithContext(
+	ctx context.Context,
+	url string,
+	destination string,
+	report PullReporter,
+) error {
 	var offset int64
 	if info, err := os.Stat(destination); err == nil {
 		offset = info.Size()
 	}
-	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if strings.EqualFold(req.URL.Host, "huggingface.co") {
 		token := os.Getenv("HF_TOKEN")
 		if token == "" {
@@ -256,9 +285,14 @@ func download(url, destination string) error {
 	if total > 0 {
 		total += offset
 	}
-	progress := &progressWriter{w: file, written: offset, total: total, last: time.Now()}
+	progress := &progressWriter{
+		w: file, written: offset, total: total, last: time.Now(), report: report,
+	}
 	_, err = io.Copy(progress, resp.Body)
-	fmt.Fprintln(os.Stderr)
+	reportPull(report, PullProgress{
+		Stage: "progress", Bytes: progress.written, TotalBytes: progress.total,
+	})
+	reportPull(report, PullProgress{Stage: "transfer_complete"})
 	return err
 }
 
@@ -267,17 +301,16 @@ type progressWriter struct {
 	written int64
 	total   int64
 	last    time.Time
+	report  PullReporter
 }
 
 func (p *progressWriter) Write(b []byte) (int, error) {
 	n, err := p.w.Write(b)
 	p.written += int64(n)
 	if time.Since(p.last) > time.Second {
-		if p.total > 0 {
-			fmt.Fprintf(os.Stderr, "\r%.1f%%  %.1f / %.1f GB", float64(p.written)*100/float64(p.total), float64(p.written)/1e9, float64(p.total)/1e9)
-		} else {
-			fmt.Fprintf(os.Stderr, "\r%.1f GB", float64(p.written)/1e9)
-		}
+		reportPull(p.report, PullProgress{
+			Stage: "progress", Bytes: p.written, TotalBytes: p.total,
+		})
 		p.last = time.Now()
 	}
 	return n, err

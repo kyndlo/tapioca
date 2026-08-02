@@ -22,6 +22,8 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /<title>Tapioca — Your local models, ready to roll<\/title>/i);
   assert.match(html, /Your models\./);
   assert.match(html, /From zero to chatting/);
+  assert.match(html, /Local AI now has/);
+  assert.match(html, /tapioca-desktop-ui\.png/);
   assert.match(html, /Windows ARM64/);
   assert.match(html, /OpenAI-compatible API/);
   assert.match(html, /tapioca run qwen3:8b-q4_k_m/);
@@ -37,6 +39,7 @@ test("ships production brand assets and metadata", async () => {
     access(new URL("../public/tapioca.png", import.meta.url)),
     access(new URL("../public/favicon.png", import.meta.url)),
     access(new URL("../public/og.png", import.meta.url)),
+    access(new URL("../public/tapioca-desktop-ui.png", import.meta.url)),
   ]);
 
   assert.match(layout, /summary_large_image/);

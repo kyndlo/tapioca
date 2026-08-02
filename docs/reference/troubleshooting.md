@@ -77,7 +77,8 @@ Vulkan utilities or NVIDIA CUDA packages. See the [Linux guide](../guides/linux.
 The first `tapioca tts` command creates an isolated Python environment, installs
 the selected backend, and downloads model weights. Later runs reuse all three.
 CPU generation works but can be much slower than Apple MPS, MLX, or NVIDIA
-CUDA. Use `chatterbox:nano` for a lighter first test.
+CUDA. Use `chatterbox:multilingual` for a text-only test. Chatterbox Nano is
+lighter but requires `--voice-sample` or a saved `--voice`.
 
 ## A cloned voice does not sound like the sample
 

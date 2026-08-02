@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-electron/
+coverage/
+release/
+release*/
+.DS_Store
+*.log

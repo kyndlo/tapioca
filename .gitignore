@@ -3,3 +3,5 @@
 *.partial
 **/.build/
 **/__pycache__/
+/desktop/runtime/
+.DS_Store

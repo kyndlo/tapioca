@@ -6,13 +6,40 @@
 
 <p align="center"><strong>Your local models, ready to roll.</strong></p>
 
-Tapioca is a small local-model runtime for language, speech, image, and video models.
-It downloads supported models on demand, chooses a native backend for the
-computer, and can expose local models to coding agents.
+Tapioca is a local AI runtime and desktop studio for language, speech, image,
+and video models. It downloads supported models on demand, chooses a native
+backend for the computer, and can expose local models to coding agents.
+
+Use the friendly desktop app or the full CLI—both run the same private,
+local-first engine.
+
+## Tapioca Desktop
+
+Tapioca Desktop brings the complete local workflow into one interface:
+
+- Chat with installed models and see model reasoning as it streams.
+- Generate and manage images, videos, speech, and cloned voices.
+- Pull models, inspect hardware requirements, and track local storage.
+- Launch Codex, Claude Code, OpenCode, OpenClaw, and Hermes with a local model.
+- Monitor active jobs and keep generated media in a local gallery.
+
+Download the latest installer from
+[GitHub Releases](https://github.com/kyndlo/tapioca/releases/latest):
+
+| Platform | Desktop package | CLI package |
+| --- | --- | --- |
+| macOS Apple Silicon | `.dmg` | `tapioca-darwin-arm64.tar.gz` |
+| Windows x64 | `.exe` | `tapioca-windows-amd64.zip` |
+| Windows ARM64 | `.exe` | `tapioca-windows-arm64.zip` |
+| Linux x64 | `.AppImage` | `tapioca-linux-amd64.tar.gz` |
+| Linux ARM64 | `.AppImage` | `tapioca-linux-arm64.tar.gz` |
+
+![Tapioca Desktop showing the local image-generation workspace](website/public/tapioca-desktop-ui.png)
 
 ## Start here
 
-1. [Install Tapioca on macOS, Windows, or Linux](docs/getting-started/installation.md)
+1. [Download the desktop app](https://github.com/kyndlo/tapioca/releases/latest)
+   or [install the CLI](docs/getting-started/installation.md)
 2. [Run your first local model](docs/getting-started/quickstart.md)
 3. [Choose a model for your computer](docs/guides/choosing-models.md)
 4. Explore the task-specific guides below.
@@ -59,6 +86,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 | Image generation | MLX/MFLUX | CUDA or ONNX DirectML | ONNX Runtime CPU | NVIDIA CUDA | Not yet |
 | Video generation | MLX | NVIDIA CUDA/Diffusers | Not yet | NVIDIA CUDA/Diffusers | Not yet |
 | Coding-agent APIs | Yes | Yes | Yes | Yes | Yes |
+| Desktop app | Yes | Yes | Yes | Yes | Yes |
 
 Run `tapioca catalog` for the exact models, download sizes, memory guidance,
 GPU requirements, and supported platforms in the installed release.

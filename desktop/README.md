@@ -1,8 +1,22 @@
 # Tapioca Desktop
 
-Electron, React, TypeScript, and Vite foundation for the Tapioca desktop app.
-This package currently provides the secure application shell and typed
-sidecar boundary. Feature screens are intentionally placeholders.
+Tapioca Desktop is the graphical interface for the Tapioca local AI runtime.
+It is built with Electron, React, TypeScript, and Vite and ships with the
+native Tapioca control sidecar and llama.cpp runtime.
+
+The app provides:
+
+- Local model chat with streaming output and visible reasoning.
+- Image and video generation with local output galleries.
+- Text-to-speech, voice creation, and voice cloning.
+- Model discovery, downloads, hardware guidance, and storage management.
+- Local coding-agent launch flows for Codex, Claude Code, OpenCode, OpenClaw,
+  and Hermes.
+- Persistent job state, cancellation, runtime health, and error recovery.
+
+End users should download a packaged installer from
+[Tapioca Releases](https://github.com/kyndlo/tapioca/releases/latest). The
+instructions below are for contributors.
 
 ## Requirements
 
@@ -75,7 +89,7 @@ environment rather than stored in this package.
 ```text
 electron/          Electron main process and preload bridge
 src/app/           App shell and navigation
-src/routes/        Placeholder feature screens
+src/routes/        Shared and fallback routes
 src/shared/        IPC and NDJSON contracts
 src/styles/        Tapioca design tokens and application styles
 public/            Copied, package-local brand assets

@@ -1,0 +1,32 @@
+{
+  "model": "glm-4.7-flash:q8_0",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Denver?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Read the current weather for a city.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "city"
+          ],
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto",
+  "stream": false
+}

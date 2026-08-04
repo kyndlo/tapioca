@@ -1,0 +1,11 @@
+{
+  "name": "tapioca-local-ai",
+  "description": "Run private local language, image, video, and speech models with Tapioca.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Kyndlo"
+  },
+  "homepage": "https://tapioca.rootfruit.cc/llm",
+  "repository": "https://github.com/kyndlo/tapioca",
+  "license": "MIT"
+}

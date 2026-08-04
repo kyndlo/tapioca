@@ -58,6 +58,7 @@ export default function Home() {
           <a href="#voices">Voices</a>
           <a href="#commands">Commands</a>
           <a href="#experts">For experts</a>
+          <a href="/llm">For agents</a>
           <a className="button small ghost" href={repo}>GitHub ↗</a>
         </div>
       </nav>
@@ -321,7 +322,7 @@ export default function Home() {
       <footer>
         <a className="brand" href="#top"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Local AI should feel like yours. Built in the open.</p>
-        <div><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
+        <div><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
       </footer>
     </main>
   );

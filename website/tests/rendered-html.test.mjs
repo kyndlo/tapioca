@@ -32,10 +32,11 @@ test("renders the Tapioca documentation homepage", async () => {
 });
 
 test("ships production brand assets and metadata", async () => {
-  const [layout, page, packageJson] = await Promise.all([
+  const [layout, page, packageJson, wrangler] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../dist/server/wrangler.json", import.meta.url), "utf8"),
     access(new URL("../public/tapioca.png", import.meta.url)),
     access(new URL("../public/favicon.png", import.meta.url)),
     access(new URL("../public/og.png", import.meta.url)),
@@ -46,6 +47,7 @@ test("ships production brand assets and metadata", async () => {
   assert.match(layout, /x-forwarded-host/);
   assert.match(page, /tapioca-local-ai|github\.com\/kyndlo\/tapioca/i);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
+  assert.equal(JSON.parse(wrangler).assets.run_worker_first, true);
 });
 
 test("renders the dedicated LLM and agent guide", async () => {

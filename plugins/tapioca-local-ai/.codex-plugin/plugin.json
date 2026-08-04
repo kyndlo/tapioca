@@ -1,0 +1,28 @@
+{
+  "name": "tapioca-local-ai",
+  "version": "0.1.0",
+  "description": "Run local language, image, video, and speech models safely with Tapioca.",
+  "author": {
+    "name": "Kyndlo"
+  },
+  "homepage": "https://tapioca.rootfruit.cc/llm",
+  "repository": "https://github.com/kyndlo/tapioca",
+  "license": "MIT",
+  "keywords": ["local-ai", "llm", "image-generation", "video-generation", "speech"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Tapioca Local AI",
+    "shortDescription": "Use private local AI models and media.",
+    "longDescription": "Select, run, serve, and diagnose Tapioca models; generate local media; and launch coding agents with isolated configuration.",
+    "developerName": "Kyndlo",
+    "category": "Developer Tools",
+    "capabilities": ["Local model orchestration", "Media generation", "Coding agents"],
+    "websiteURL": "https://tapioca.rootfruit.cc/llm",
+    "brandColor": "#9D24FF",
+    "defaultPrompt": [
+      "Use Tapioca and a suitable local model to complete this task.",
+      "Diagnose this Tapioca model or runtime issue without deleting user data.",
+      "Generate this media locally with Tapioca and report the output path."
+    ]
+  }
+}

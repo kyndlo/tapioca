@@ -1,0 +1,4 @@
+interface:
+  display_name: "Use Tapioca"
+  short_description: "Run local AI models and media with Tapioca"
+  default_prompt: "Use Tapioca to complete this task with a suitable local model."

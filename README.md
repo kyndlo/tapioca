@@ -63,6 +63,9 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 ### Use Tapioca
 
 - [Text chat and local APIs](docs/guides/text-models.md)
+- [LLM and agent operating guide](docs/agents/agent-guide.md)
+- [Agent API reference](docs/agents/api-reference.md)
+- [Install the Codex plugin or Claude Code skill](docs/agents/install-integrations.md)
 - [Coding agents: Codex, Claude Code, OpenCode, OpenClaw, and Hermes](docs/guides/coding-agents.md)
 - [Image generation](docs/guides/image-generation.md)
 - [Video generation](docs/guides/video-generation.md)
@@ -75,6 +78,10 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 - [Files, models, and disk storage](docs/reference/storage.md)
 - [Troubleshooting](docs/reference/troubleshooting.md)
 - [Build from source](docs/reference/building.md)
+
+Agents can start at [tapioca.rootfruit.cc/llm](https://tapioca.rootfruit.cc/llm)
+or read the machine-oriented
+[llms-full.txt](https://tapioca.rootfruit.cc/llms-full.txt).
 
 ## Platform summary
 

@@ -32,10 +32,28 @@ jobs:
           cache: true
       - run: go vet ./...
       - run: go test ./...
+      - name: Validate agent contract and helper
+        run: |
+          python3 scripts/validate-agent-contract.py
+          python3 scripts/test-tapioca-agent-helper.py
+
+  website:
+    name: Website and agent docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci --prefix website
+      - run: npm run lint --prefix website
+      - run: npm test --prefix website
 
   macos-arm64:
     name: macOS Apple Silicon bundle
-    needs: test
+    needs: [test, website]
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +110,7 @@ jobs:
 
   windows-amd64:
     name: Windows x64 bundle
-    needs: test
+    needs: [test, website]
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
@@ -151,7 +169,7 @@ jobs:
 
   windows-arm64:
     name: Windows ARM64 bundle
-    needs: test
+    needs: [test, website]
     runs-on: windows-2025
     steps:
       - uses: actions/checkout@v4
@@ -213,7 +231,7 @@ jobs:
 
   linux-amd64:
     name: Linux x64 bundle
-    needs: test
+    needs: [test, website]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -265,7 +283,7 @@ jobs:
 
   linux-arm64:
     name: Linux ARM64 bundle
-    needs: test
+    needs: [test, website]
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4

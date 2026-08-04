@@ -1,0 +1,11 @@
+{
+  "model": "glm-4.7-flash:q8_0",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Explain why the sky is blue in two sentences."
+    }
+  ],
+  "temperature": 0.2,
+  "stream": false
+}

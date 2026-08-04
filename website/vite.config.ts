@@ -14,6 +14,11 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  // Pages and route handlers are rendered by the vinext worker. Without this,
+  // Cloudflare Assets returns its own 404 before paths such as /llm reach it.
+  assets: {
+    run_worker_first: true,
+  },
   d1_databases: d1
     ? [
         {

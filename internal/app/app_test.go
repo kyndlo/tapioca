@@ -161,6 +161,27 @@ func TestVideoPresets(t *testing.T) {
 	}
 }
 
+func TestMiniMaxH3VideoPresets(t *testing.T) {
+	model, err := catalog.ResolveForPlatform("minimax-h3", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	low, err := videoPreset(model, "low-memory")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if low != (videoDefaults{640, 352, 73, 10}) {
+		t.Fatalf("unexpected low-memory H3 preset: %#v", low)
+	}
+	balanced, err := videoPreset(model, "balanced")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balanced != (videoDefaults{864, 480, 73, 20}) {
+		t.Fatalf("unexpected balanced H3 preset: %#v", balanced)
+	}
+}
+
 func TestEnhanceVideoPrompt(t *testing.T) {
 	got := enhanceVideoPrompt("A fox runs")
 	for _, phrase := range []string{"A fox runs", "coherent temporal motion", "consistent subject appearance"} {

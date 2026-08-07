@@ -262,7 +262,7 @@ export function CreatorScreen({
             {(mode === "voice-clone" || mode === "speech") && <FilePicker title={selectedModel?.requiresVoiceReference ? "Voice reference (required)" : "Voice reference (optional)"} description="Use a clear, consented recording with little background noise." file={voiceReference} accept="audio" onPick={() => void pickFile("audio", setVoiceReference)} onClear={() => setVoiceReference(undefined)} />}
           </section>
 
-          {(mode === "image" || mode === "video") && (
+          {(mode === "image" || mode === "video") && selectedModel?.supportsLoRA !== false && (
             <LoraEditor
               loras={loras}
               reference={hfReference}

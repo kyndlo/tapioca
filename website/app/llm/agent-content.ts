@@ -57,6 +57,8 @@ Agent contract: ${contractVersion}
 - Text and tool calls: OpenAI Chat Completions and Responses APIs.
 - Claude compatibility: Anthropic Messages API.
 - Media: \`tapioca image\`, \`tapioca video\`, and \`tapioca tts\`.
+- Bundle-aware video: resolve \`minimax-h3\` through the catalog; never assemble its weights manually.
+- LoRA stacks: inspect adapters first, then use ordered repeated \`--adapter\` flags.
 - Coding agents: \`tapioca launch codex|claude|opencode|openclaw|hermes MODEL\`.
 - Model discovery: \`tapioca catalog\`.
 
@@ -124,6 +126,40 @@ tapioca tts MODEL --text "Hello from Tapioca." --output hello.wav
 CPU image and video generation may take minutes. An absent percentage does not
 necessarily mean a job is stalled. Confirm input paths exist and report exact
 output paths.
+
+### MiniMax-H3
+
+\`minimax-h3\` is a platform-resolved four-file bundle for Apple Silicon MPS
+or Windows/Linux NVIDIA CUDA. Treat the catalog model ID as the contract; do
+not download individual files or construct a ComfyUI graph. ComfyUI is a
+private, replaceable engine detail.
+
+\`\`\`bash
+tapioca pull minimax-h3
+tapioca video minimax-h3 \\
+  --prompt 'A friendly presenter says exactly: "Hello from Tapioca."' \\
+  --preset low-memory --output minimax-h3.mp4
+\`\`\`
+
+The low-memory preset is 640x352, 73 frames, 10 steps, and 24 FPS. MiniMax-H3
+frame counts must have the form \`17n+5\`.
+
+Inspect a LoRA before pulling it. Proceed only if its model card identifies
+MiniMax-H3 as the base architecture:
+
+\`\`\`bash
+tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca adapter pull hf://OWNER/REPOSITORY --file adapter.safetensors
+tapioca video minimax-h3 \\
+  --prompt "A cinematic tracking shot" \\
+  --adapter 'hf://OWNER/REPOSITORY#adapter.safetensors@0.8' \\
+  --output adapted.mp4
+\`\`\`
+
+Repeat \`--adapter\` for an ordered transformer LoRA stack. A safetensors file
+is not compatible merely because its extension matches. Wait for the process
+to exit, confirm the returned MP4 exists, and verify video/audio streams with
+\`ffprobe\` when available.
 
 ## Coding agents
 

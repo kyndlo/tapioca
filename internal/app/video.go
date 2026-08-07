@@ -81,7 +81,11 @@ func video(args []string) error {
 	if *width <= 0 || *height <= 0 || *width%32 != 0 || *height%32 != 0 {
 		return errors.New("width and height must be positive and divisible by 32")
 	}
-	if *frames <= 0 || (*frames-1)%4 != 0 {
+	if profile.Backend == "comfy-h3-mps" || profile.Backend == "comfy-h3-cuda" {
+		if *frames < 5 || (*frames-5)%17 != 0 {
+			return errors.New("MiniMax-H3 frames must have the form 17n+5 (for example 5, 73, or 124)")
+		}
+	} else if *frames <= 0 || (*frames-1)%4 != 0 {
 		return errors.New("frames must be positive and have the form 4n+1 (for example 17, 41, or 81)")
 	}
 	if profile.Name == "ltx-video:2b-fp16" && (*frames-1)%8 != 0 {
@@ -99,7 +103,6 @@ func video(args []string) error {
 	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
 	}
-
 	var explicitScale *float64
 	if adapterScale.set {
 		explicitScale = &adapterScale.value
@@ -178,6 +181,8 @@ func videoPreset(model catalog.Resolved, preset string) (videoDefaults, error) {
 			return videoDefaults{640, 352, 41, 30}, nil
 		case "ltx-video:2b-fp16":
 			return videoDefaults{512, 320, 17, 6}, nil
+		case "minimax-h3:fl2va-int8-mac", "minimax-h3:fl2va-int8-cuda":
+			return videoDefaults{640, 352, 73, 10}, nil
 		default:
 			return balanced, nil
 		}
@@ -189,6 +194,8 @@ func videoPreset(model catalog.Resolved, preset string) (videoDefaults, error) {
 			return videoDefaults{1280, 704, 81, 30}, nil
 		case "ltx-video:2b-fp16":
 			return videoDefaults{1024, 576, 97, 8}, nil
+		case "minimax-h3:fl2va-int8-mac", "minimax-h3:fl2va-int8-cuda":
+			return videoDefaults{768, 1376, 73, 20}, nil
 		default:
 			return balanced, nil
 		}

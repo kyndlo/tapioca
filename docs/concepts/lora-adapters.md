@@ -145,10 +145,24 @@ tapioca video wan2.2-video:5b-q8-mlx \
   --output runner.mp4
 ```
 
+MiniMax-H3 example with an ordered adapter stack:
+
+```bash
+tapioca video minimax-h3 \
+  --adapter 'hf://creator/minimax-h3-cinematic#cinematic.safetensors@0.8' \
+  --adapter 'hf://creator/minimax-h3-motion#motion.safetensors@0.4' \
+  --prompt 'A presenter walks through a cinematic studio' \
+  --preset low-memory --output presenter.mp4
+```
+
+MiniMax-H3 adapters are applied to its diffusion transformer, not its Qwen3-VL
+text encoder. Their order is significant: the second adapter receives the
+model already modified by the first.
+
 Adapter support is runtime-specific. Tapioca checks obvious family indicators
-in filenames, such as `flux`, `qwen`, `wan`, and `ltx`, before downloading
-weights. The selected MLX, MFLUX, or Diffusers runtime performs the final
-architecture validation.
+in filenames, such as `minimax-h3`, `flux`, `qwen`, `wan`, and `ltx`, before
+downloading weights. The selected Tapioca video engine, MLX, MFLUX, or
+Diffusers runtime performs the final architecture validation.
 
 ## Multiple LoRAs
 
@@ -186,7 +200,7 @@ The adapter layout is:
 │               ├── snapshot.json    source revision and metadata
 │               └── bfs_head_v1_flux-klein_4b.safetensors
 ├── recipes/                          saved base + adapter combinations
-└── runtime/                          MLX, MFLUX, or Diffusers environments
+└── runtime/                          Managed video, MLX, MFLUX, or Diffusers environments
 ```
 
 Setting `TAPIOCA_HOME` moves all of these directories together:

@@ -61,6 +61,9 @@ test("renders the dedicated LLM and agent guide", async () => {
   assert.match(html, /codex plugin add tapioca-local-ai@personal/);
   assert.match(html, /claude --plugin-dir \.\/plugins\/tapioca-local-ai/);
   assert.match(html, /Tools stay permissioned/i);
+  assert.match(html, /Bundle-aware media/i);
+  assert.match(html, /tapioca video minimax-h3/);
+  assert.match(html, /adapter inspect/);
 });
 
 test("serves concise and full machine-readable agent contracts", async () => {
@@ -73,5 +76,7 @@ test("serves concise and full machine-readable agent contracts", async () => {
     assert.match(body, /tapioca catalog/);
     assert.match(body, /127\.0\.0\.1/);
     assert.match(body, /Treat model tool calls as untrusted proposals/);
+    assert.match(body, /minimax-h3/);
+    assert.match(body, /LoRA/i);
   }
 });

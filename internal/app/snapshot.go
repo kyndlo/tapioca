@@ -32,6 +32,9 @@ func pullSnapshotWithContext(
 	force bool,
 	report PullReporter,
 ) error {
+	if len(model.Artifacts) > 0 {
+		return pullArtifactsWithContext(ctx, model, destination, force, report)
+	}
 	include := imageSnapshotFile
 	if model.Kind == "speech" {
 		include = textSnapshotFile
@@ -48,6 +51,49 @@ func pullSnapshotWithContext(
 		include = textSnapshotFile
 	}
 	return pullHubSnapshotWithContext(ctx, model, destination, force, include, report)
+}
+
+func pullArtifactsWithContext(
+	ctx context.Context,
+	model catalog.Resolved,
+	destination string,
+	force bool,
+	report PullReporter,
+) error {
+	reportPull(report, PullProgress{
+		Stage: "starting", Count: len(model.Artifacts),
+		Message: fmt.Sprintf("pulling %s bundle (%d files)", model.Name, len(model.Artifacts)),
+	})
+	for index, artifact := range model.Artifacts {
+		clean := filepath.Clean(filepath.FromSlash(artifact.Target))
+		if clean == "." || filepath.IsAbs(clean) || clean == ".." ||
+			strings.HasPrefix(clean, ".."+string(filepath.Separator)) {
+			return fmt.Errorf("invalid artifact target %q", artifact.Target)
+		}
+		path := filepath.Join(destination, clean)
+		if _, err := os.Stat(path); err == nil && !force {
+			continue
+		}
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			return err
+		}
+		reportPull(report, PullProgress{
+			Stage: "file", File: artifact.Target, Index: index + 1, Count: len(model.Artifacts),
+			Message: fmt.Sprintf("[%d/%d] %s", index+1, len(model.Artifacts), artifact.Target),
+		})
+		partial := path + ".partial"
+		url := "https://huggingface.co/" + artifact.Repo + "/resolve/main/" + artifact.Filename
+		if err := downloadWithContext(ctx, url, partial, report); err != nil {
+			return fmt.Errorf("download %s from %s: %w", artifact.Filename, artifact.Repo, err)
+		}
+		if err := os.Rename(partial, path); err != nil {
+			return err
+		}
+	}
+	reportPull(report, PullProgress{
+		Stage: "complete", Message: "saved " + destination, Path: destination,
+	})
+	return nil
 }
 
 func pullTextSnapshot(model catalog.Resolved, destination string, force bool) error {

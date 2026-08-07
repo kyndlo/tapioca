@@ -32,6 +32,10 @@ def main() -> int:
     api_docs = read("docs/agents/api-reference.md")
     page_contract = read("website/app/llm/agent-content.ts")
     skill = read("plugins/tapioca-local-ai/skills/use-tapioca/SKILL.md")
+    workflows = read("docs/agents/workflows.md")
+    media_reference = read(
+        "plugins/tapioca-local-ai/skills/use-tapioca/references/media-and-safety.md"
+    )
 
     registered = set(re.findall(r'mux\.HandleFunc\("([^"]+)"', server))
     for endpoint in EXPECTED_ENDPOINTS:
@@ -44,6 +48,15 @@ def main() -> int:
 
     for path in sorted((ROOT / "docs/agents/examples").glob("*.json")):
         json.loads(path.read_text(encoding="utf-8"))
+
+    for name, content in {
+        "website machine contract": page_contract,
+        "agent workflows": workflows,
+        "agent skill media reference": media_reference,
+    }.items():
+        for marker in ("minimax-h3", "adapter inspect", "17n+5"):
+            if marker not in content:
+                fail(f"{name} is missing MiniMax-H3 marker {marker!r}")
 
     codex = json.loads(
         read("plugins/tapioca-local-ai/.codex-plugin/plugin.json")

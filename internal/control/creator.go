@@ -123,7 +123,7 @@ func (h *Handler) handleCreator(
 				case "video":
 					item.SupportsInputImage = true
 					item.RequiresInputImage = strings.Contains(model.Name, "stable-video-diffusion")
-					item.SupportsLoRA = true
+					item.SupportsLoRA = !strings.Contains(model.Name, "stable-video-diffusion")
 				case "speech":
 					item.Operation = "speech.generate"
 				}
@@ -303,6 +303,10 @@ func (h *Handler) generateVideo(
 	}
 	if err := validateVideo(params); err != nil {
 		return nil, err
+	}
+	if (model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda") &&
+		(params.Frames < 5 || (params.Frames-5)%17 != 0) {
+		return nil, invalidParams("MiniMax-H3 frames must have the form 17n+5", nil)
 	}
 	var input string
 	if params.InputImage != "" {

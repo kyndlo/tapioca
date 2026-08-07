@@ -26,6 +26,15 @@ type Model struct {
 	GPUs      map[string]string
 	Languages map[string]string
 	Features  map[string]string
+	Artifacts map[string][]Artifact
+}
+
+// Artifact is one explicitly selected file in a multi-repository model bundle.
+// Target is relative to the model directory and uses forward slashes.
+type Artifact struct {
+	Repo     string
+	Filename string
+	Target   string
 }
 
 var models = map[string]Model{
@@ -376,6 +385,55 @@ var models = map[string]Model{
 		Memory: map[string]string{"5b-mlx": "32 GiB min; 48 GiB recommended"},
 		GPUs:   map[string]string{"5b-mlx": "Apple Silicon GPU"},
 	},
+	"minimax-h3": {
+		Name:    "minimax-h3",
+		Repo:    "Comfy-Org/MiniMax-H3",
+		Kind:    "video",
+		Default: "fl2va-int8-mac",
+		Width:   864,
+		Height:  480,
+		Steps:   20,
+		Frames:  73,
+		FPS:     24,
+		Files: map[string]string{
+			"fl2va-int8-mac":  "",
+			"fl2va-int8-cuda": "",
+		},
+		Backends: map[string]string{
+			"fl2va-int8-mac":  "comfy-h3-mps",
+			"fl2va-int8-cuda": "comfy-h3-cuda",
+		},
+		Sizes: map[string]string{
+			"fl2va-int8-mac":  "~41 GiB",
+			"fl2va-int8-cuda": "~41 GiB",
+		},
+		Memory: map[string]string{
+			"fl2va-int8-mac":  "48 GiB min; 64 GiB recommended",
+			"fl2va-int8-cuda": "32 GiB system RAM; 16 GiB VRAM recommended",
+		},
+		GPUs: map[string]string{
+			"fl2va-int8-mac":  "Apple Silicon GPU",
+			"fl2va-int8-cuda": "NVIDIA CUDA, 16 GiB VRAM (4070 Ti SUPER supported)",
+		},
+		Features: map[string]string{
+			"fl2va-int8-mac":  "text/image-to-video, native stereo audio, LoRA stacks, managed ComfyUI",
+			"fl2va-int8-cuda": "text/image-to-video, native stereo audio, LoRA stacks, managed ComfyUI",
+		},
+		Artifacts: map[string][]Artifact{
+			"fl2va-int8-mac": {
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", Target: "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"},
+				{Repo: "realrebelai/MiniMax-H3_GGUFs", Filename: "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf", Target: "text_encoders/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"},
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "vae/minimax_h3_video_vae_fp16.safetensors", Target: "vae/minimax_h3_video_vae_fp16.safetensors"},
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "vae/minimax_h3_audio_vae_fp32.safetensors", Target: "vae/minimax_h3_audio_vae_fp32.safetensors"},
+			},
+			"fl2va-int8-cuda": {
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors", Target: "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"},
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors", Target: "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"},
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "vae/minimax_h3_video_vae_fp16.safetensors", Target: "vae/minimax_h3_video_vae_fp16.safetensors"},
+				{Repo: "Comfy-Org/MiniMax-H3", Filename: "vae/minimax_h3_audio_vae_fp32.safetensors", Target: "vae/minimax_h3_audio_vae_fp32.safetensors"},
+			},
+		},
+	},
 	"ltx-video": {
 		Name:    "ltx-video",
 		Repo:    "Lightricks/LTX-Video-0.9.5",
@@ -432,6 +490,7 @@ type Resolved struct {
 	GPU       string
 	Languages string
 	Features  string
+	Artifacts []Artifact
 }
 
 func Resolve(ref string) (Resolved, error) {
@@ -468,6 +527,13 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		goos == "darwin" && goarch == "arm64" {
 		tag = "0.6b-mlx"
 	}
+	if m.Name == "minimax-h3" && !strings.Contains(ref, ":") {
+		if goos == "darwin" && goarch == "arm64" {
+			tag = "fl2va-int8-mac"
+		} else {
+			tag = "fl2va-int8-cuda"
+		}
+	}
 	filename, ok := m.Files[strings.ToLower(tag)]
 	if !ok {
 		return Resolved{}, fmt.Errorf("unknown variant %q for %s", tag, name)
@@ -489,6 +555,10 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	case "mlx", "mlx-vlm", "mlx-video", "mflux", "speech-qwen-mlx":
 		platform = "macOS Apple Silicon"
 	case "diffusers", "diffusers-video":
+		platform = "Windows/Linux NVIDIA"
+	case "comfy-h3-mps":
+		platform = "macOS Apple Silicon"
+	case "comfy-h3-cuda":
 		platform = "Windows/Linux NVIDIA"
 	case "speech-chatterbox":
 		platform = "Windows, macOS, Linux"
@@ -518,6 +588,7 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		GPU:       gpu,
 		Languages: m.Languages[strings.ToLower(tag)],
 		Features:  m.Features[strings.ToLower(tag)],
+		Artifacts: append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
 	}, nil
 }
 

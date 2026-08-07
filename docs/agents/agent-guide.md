@@ -37,6 +37,9 @@ Current agent contract: `v1`.
    - `tapioca image`, `video`, or `tts` for local media.
    - `tapioca launch` to run a supported coding agent with an isolated profile.
 
+   Media models may be multi-file bundles. Treat the model ID as the contract;
+   do not download individual weights or construct runtime graphs yourself.
+
 6. Start an API server on loopback and wait for health:
 
    ```bash
@@ -71,11 +74,18 @@ Current agent contract: `v1`.
   exact output path returned by Tapioca.
 - Add `--verbose` only for diagnosis. Normal commands intentionally suppress
   noisy backend logs.
+- For LoRAs, inspect the repository before pulling and require the declared
+  base architecture to match the selected model. A `.safetensors` extension
+  alone does not establish compatibility.
+- Do not expose ComfyUI workflow IDs or directories to users. MiniMax-H3 uses
+  a replaceable managed video engine behind Tapioca's stable CLI contract.
 
 ## References
 
 - [HTTP API](api-reference.md)
 - [Task workflows](workflows.md)
 - [Safety and permissions](safety.md)
+- [Video engine boundary](../concepts/video-engines.md)
+- [LoRA adapters](../concepts/lora-adapters.md)
 - [Coding-agent guide](../guides/coding-agents.md)
 - [Command reference](../reference/commands.md)

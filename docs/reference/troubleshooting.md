@@ -108,8 +108,8 @@ startup and requests.
 ## A LoRA is incompatible
 
 LoRAs are architecture-specific. Check the adapter model card and select the
-weight file trained for the exact base-model family. `flux`, `qwen`, `wan`,
-and `ltx` in filenames are useful indicators but not complete guarantees.
+weight file trained for the exact base-model family. `minimax-h3`, `flux`,
+`qwen`, `wan`, and `ltx` in filenames are useful indicators but not complete guarantees.
 Use `tapioca adapter inspect REFERENCE` before pulling.
 
 The native Qwen Image Flash Swift/MLX backend does not load LoRAs. On macOS,

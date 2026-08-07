@@ -39,6 +39,19 @@ Tapioca stores isolated launch configuration under `TAPIOCA_HOME/launch`.
 Prefer a coder or tool-oriented model. Tool quality depends on the model,
 quantization, chat template, and runtime support.
 
+## Adapters
+
+```bash
+tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca adapter pull hf://OWNER/REPOSITORY --file adapter.safetensors
+tapioca adapter list
+```
+
+Use `#FILE` to select a repository file and `@SCALE` to set its weight inside
+an adapter reference: `hf://OWNER/REPOSITORY#adapter.safetensors@0.8`.
+Repeated `--adapter` flags are ordered. Never infer compatibility solely from
+the `.safetensors` extension.
+
 ## Diagnose
 
 Retry a failing `run`, `serve`, or `launch` command with `--verbose`. Report the

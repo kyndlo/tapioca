@@ -315,8 +315,11 @@ func ValidateCompatibility(baseName, backend string, local Local) error {
 }
 
 func modelFamily(value string) string {
-	for _, family := range []string{"flux", "qwen", "wan", "ltx"} {
+	for _, family := range []string{"minimax-h3", "minimax_h3", "flux", "qwen", "wan", "ltx"} {
 		if strings.Contains(value, family) {
+			if strings.HasPrefix(family, "minimax") {
+				return "minimax-h3"
+			}
 			return family
 		}
 	}

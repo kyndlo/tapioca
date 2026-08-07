@@ -71,6 +71,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 - [Video generation](docs/guides/video-generation.md)
 - [Text to speech and voice cloning](docs/guides/speech-and-voices.md)
 - [LoRA adapters and model composition](docs/concepts/lora-adapters.md)
+- [Replaceable video engines](docs/concepts/video-engines.md)
 
 ### Reference and help
 
@@ -98,6 +99,13 @@ or read the machine-oriented
 Run `tapioca catalog` for the exact models, download sizes, memory guidance,
 GPU requirements, and supported platforms in the installed release.
 
+MiniMax-H3 is available for Apple Silicon and Windows/Linux NVIDIA as
+`minimax-h3`. It supports text-to-video, image-to-video, and native stereo
+audio through a managed ComfyUI runtime. The four-file model bundle is about
+41 GiB; Apple Silicon needs at least 48 GiB unified memory, while the CUDA
+variant is designed for 16 GiB GPUs such as the RTX 4070 Ti SUPER. Compatible
+MiniMax-H3 transformer LoRAs can be stacked with repeated `--adapter` flags.
+
 ## Everyday commands
 
 ```text
@@ -122,8 +130,9 @@ See the [command reference](docs/reference/commands.md) for flags and examples.
 
 The built-in catalog provides tested defaults, while image and video commands
 can also accept direct `hf://OWNER/REPOSITORY` base-model references. LoRA
-support is backend-specific: MFLUX image models, CUDA Diffusers pipelines, and
-Wan models through MLX-video can load compatible adapters. Tapioca validates
+support is backend-specific: MFLUX image models, CUDA Diffusers pipelines,
+Wan models through MLX-video, and MiniMax-H3 through Tapioca's managed video
+engine can load compatible adapters. Tapioca validates
 obvious model-family mismatches, but the upstream runtime remains the final
 authority for less common adapters. Windows x64 AMD/Intel GPUs use ONNX
 DirectML; Windows ARM64 uses native ONNX Runtime CPU inference.

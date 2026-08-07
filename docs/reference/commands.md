@@ -78,7 +78,15 @@ Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 and `--seed`.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
-`--adapter-scale`.
+`--adapter-scale` when the selected backend supports LoRAs. MiniMax-H3 uses a
+managed ComfyUI engine, generates native audio, and accepts compatible
+transformer LoRA stacks:
+
+```bash
+tapioca video minimax-h3 --prompt 'A musician says: "Ready."' \
+  --adapter 'hf://creator/minimax-h3-style@0.7' \
+  --preset low-memory --output musician.mp4
+```
 
 ## `tts`
 

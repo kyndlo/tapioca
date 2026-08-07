@@ -59,6 +59,44 @@ tapioca video MODEL \
 When an input image is provided, preserve its path exactly and confirm it
 exists before starting the job.
 
+### MiniMax-H3 video and LoRAs
+
+`minimax-h3` is a platform-resolved four-file bundle. On Apple Silicon it uses
+the MPS variant; Windows and Linux NVIDIA hosts use the CUDA variant. Always
+let `tapioca pull` resolve and verify the complete bundle:
+
+```bash
+tapioca pull minimax-h3
+tapioca video minimax-h3 \
+  --prompt 'A friendly presenter says exactly: "Hello from Tapioca."' \
+  --preset low-memory \
+  --output minimax-h3.mp4
+```
+
+The low-memory preset generates 640×352, 73 frames, 10 sampling steps, and
+24 FPS. MiniMax-H3 frame counts must have the form `17n+5`.
+
+Before using an adapter, inspect it and verify that its model card declares
+MiniMax-H3 as the base architecture:
+
+```bash
+tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca adapter pull hf://OWNER/REPOSITORY --file adapter.safetensors
+tapioca video minimax-h3 \
+  --prompt "A cinematic tracking shot" \
+  --adapter 'hf://OWNER/REPOSITORY#adapter.safetensors@0.8' \
+  --output adapted.mp4
+```
+
+Repeat `--adapter` to create an ordered stack. Tapioca applies MiniMax-H3 LoRAs
+to the diffusion transformer in command order. Do not assume a Flux, Wan,
+Qwen, LTX, or Stable Diffusion LoRA is compatible.
+
+Model download and first-run runtime setup can be long. A generation that only
+reports elapsed time is not necessarily stalled. Wait for the command to exit,
+then validate that the returned MP4 exists and contains the expected streams;
+use `ffprobe` when it is installed.
+
 ## Speech and voices
 
 ```bash

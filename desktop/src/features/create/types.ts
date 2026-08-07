@@ -13,6 +13,7 @@ export interface CreatorModel {
     maxFrames?: number;
   };
   supportsInputImage?: boolean;
+  supportsLoRA?: boolean;
   requiresInputImage?: boolean;
   requiresVoiceReference?: boolean;
   defaults?: Partial<CreatorAdvancedSettings>;

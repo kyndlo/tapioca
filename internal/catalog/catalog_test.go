@@ -176,6 +176,34 @@ func TestLowMemoryVideoProfiles(t *testing.T) {
 	}
 }
 
+func TestResolveMiniMaxH3PlatformBundles(t *testing.T) {
+	mac, err := ResolveForPlatform("minimax-h3", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mac.Name != "minimax-h3:fl2va-int8-mac" ||
+		mac.Backend != "comfy-h3-mps" || len(mac.Artifacts) != 4 {
+		t.Fatalf("unexpected macOS MiniMax-H3 bundle: %#v", mac)
+	}
+	if mac.Artifacts[1].Repo != "realrebelai/MiniMax-H3_GGUFs" ||
+		mac.Artifacts[1].Target != "text_encoders/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf" {
+		t.Fatalf("unexpected macOS text encoder: %#v", mac.Artifacts[1])
+	}
+
+	windows, err := ResolveForPlatform("minimax-h3", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windows.Name != "minimax-h3:fl2va-int8-cuda" ||
+		windows.Backend != "comfy-h3-cuda" || len(windows.Artifacts) != 4 {
+		t.Fatalf("unexpected Windows MiniMax-H3 bundle: %#v", windows)
+	}
+	if windows.Artifacts[1].Filename !=
+		"text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" {
+		t.Fatalf("unexpected CUDA text encoder: %#v", windows.Artifacts[1])
+	}
+}
+
 func TestSpeechProfiles(t *testing.T) {
 	mac, err := ResolveForPlatform("qwen3-tts", "darwin", "arm64")
 	if err != nil {

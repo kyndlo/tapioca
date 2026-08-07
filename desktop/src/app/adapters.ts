@@ -475,6 +475,7 @@ export function createRendererAdapters(
               : `Install from Models · ${model.backend}`,
         limits: { maxWidth: 4096, maxHeight: 4096, maxFrames: 513 },
         supportsInputImage: model.supports_input_image,
+        supportsLoRA: model.supports_lora,
         requiresInputImage: model.requires_input_image,
         requiresVoiceReference:
           kind === "speech" &&

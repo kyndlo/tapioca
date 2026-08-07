@@ -17,6 +17,7 @@ Then choose what you want to do:
 - [Generate speech and clone a voice](guides/speech-and-voices.md)
 - [Run Tapioca on Linux](guides/linux.md)
 - [Understand LoRA adapters](concepts/lora-adapters.md)
+- [Understand replaceable video engines](concepts/video-engines.md)
 
 Reference material:
 

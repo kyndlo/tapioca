@@ -20,6 +20,8 @@ host agent's normal permission model.
    - Programmatic text or tools: `tapioca serve MODEL`.
    - Media: `tapioca image`, `tapioca video`, or `tapioca tts`.
    - Coding client: `tapioca launch CLIENT MODEL`.
+   Treat catalog media IDs as bundle contracts. Do not manually assemble model
+   weights or runtime graphs.
 5. For HTTP work, bind to `127.0.0.1`, wait for `/health`, and use the endpoint
    matching the client.
 6. Stop any server or child agent started for the task.
@@ -38,6 +40,8 @@ requests, or managed server lifecycle are useful.
 - Do not delete models, voices, adapters, or outputs without an explicit request.
 - Save generated files to the requested workspace and report their paths.
 - Use `--verbose` only for diagnosis.
+- Inspect LoRA metadata before pulling it. Require the declared base family to
+  match the selected model; file extensions are not compatibility evidence.
 
 ## References
 

@@ -39,6 +39,14 @@ const toolExample = `{
   }
 }`;
 
+const videoExample = `tapioca pull minimax-h3
+tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca video minimax-h3 \\
+  --prompt "A cinematic tracking shot" \\
+  --adapter 'hf://OWNER/REPOSITORY#adapter.safetensors@0.8' \\
+  --preset low-memory \\
+  --output adapted.mp4`;
+
 export default function LlmGuide() {
   return (
     <main className="llmPage">
@@ -52,6 +60,7 @@ export default function LlmGuide() {
         <div>
           <a href="#quickstart">Quickstart</a>
           <a href="#api">API</a>
+          <a href="#media">Media</a>
           <a href="#skills">Agent skills</a>
           <a href="/llms.txt">llms.txt</a>
           <a className="button small ghost" href={repo}>GitHub ↗</a>
@@ -149,9 +158,30 @@ export default function LlmGuide() {
         <pre className="toolCard"><code>{toolExample}</code></pre>
       </section>
 
+      <section className="llmSection apiSection" id="media">
+        <div className="llmSectionHead">
+          <p className="kicker light">04 · Bundle-aware media</p>
+          <h2>Ask for a model.<br />Not a pile of weights.</h2>
+          <p>
+            Agents treat catalog IDs as bundle contracts. MiniMax-H3 resolves
+            the correct MPS or CUDA bundle, while Tapioca privately owns the
+            engine graph, adapter ordering, and output path.
+          </p>
+        </div>
+        <div className="apiGrid">
+          <div className="endpointList">
+            <article><span>1</span><code>tapioca catalog</code><p>Confirm platform, memory, and the exact model ID.</p></article>
+            <article><span>2</span><code>adapter inspect</code><p>Require MiniMax-H3 as the declared base before pulling a LoRA.</p></article>
+            <article><span>3</span><code>ordered --adapter</code><p>Apply transformer LoRAs in command order; never infer compatibility by extension.</p></article>
+            <article><span>4</span><code>verify output</code><p>Wait for exit, preserve the returned path, and inspect video plus audio streams.</p></article>
+          </div>
+          <pre className="agentCode"><code>{videoExample}</code></pre>
+        </div>
+      </section>
+
       <section className="llmSection clientSection">
         <div className="llmSectionHead">
-          <p className="kicker">04 · Coding clients</p>
+          <p className="kicker">05 · Coding clients</p>
           <h2>Launch the agent.<br />Keep its real profile clean.</h2>
           <p>
             Tapioca creates isolated configuration under
@@ -168,7 +198,7 @@ export default function LlmGuide() {
 
       <section className="llmSection skillsSection" id="skills">
         <div>
-          <p className="kicker light">05 · Installable knowledge</p>
+          <p className="kicker light">06 · Installable knowledge</p>
           <h2>Give Codex and Claude the playbook.</h2>
           <p>
             The repository ships one Agent Skills-compatible package with both
@@ -198,7 +228,7 @@ export default function LlmGuide() {
 
       <section className="llmSection safetySection">
         <div className="llmSectionHead">
-          <p className="kicker">06 · Non-negotiables</p>
+          <p className="kicker">07 · Non-negotiables</p>
           <h2>Local power needs clear boundaries.</h2>
         </div>
         <div className="safetyGrid">

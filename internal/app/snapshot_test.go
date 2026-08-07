@@ -1,6 +1,12 @@
 package app
 
-import "testing"
+import (
+	"context"
+	"strings"
+	"testing"
+
+	"github.com/carlos/tapioca/internal/catalog"
+)
 
 func TestImageFP16SnapshotFile(t *testing.T) {
 	included := []string{
@@ -53,5 +59,23 @@ func TestImageSnapshotIncludesSplitONNXVAE(t *testing.T) {
 		if !imageSnapshotFile(name) {
 			t.Errorf("imageSnapshotFile(%q) = false", name)
 		}
+	}
+}
+
+func TestPullArtifactsRejectsEscapingTarget(t *testing.T) {
+	err := pullArtifactsWithContext(
+		context.Background(),
+		catalog.Resolved{
+			Name: "unsafe:test",
+			Artifacts: []catalog.Artifact{{
+				Repo: "owner/repo", Filename: "model.bin", Target: "../model.bin",
+			}},
+		},
+		t.TempDir(),
+		false,
+		nil,
+	)
+	if err == nil || !strings.Contains(err.Error(), "invalid artifact target") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }

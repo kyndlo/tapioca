@@ -73,6 +73,61 @@ func TestH3GraphChainsAdaptersIntoSchedulerAndGuider(t *testing.T) {
 	}
 }
 
+func TestH3CUDAInstallsMatchedWheelsAfterComfyRequirements(t *testing.T) {
+	commands := h3DependencyCommands("python", "requirements.txt", "comfy-h3-cuda")
+	if len(commands) != 3 {
+		t.Fatalf("commands = %#v", commands)
+	}
+	if got := commands[1].args; len(got) < 5 || got[3] != "-r" || got[4] != "requirements.txt" {
+		t.Fatalf("requirements command = %v", got)
+	}
+	last := commands[2].args
+	for _, want := range []string{"--force-reinstall", "--no-deps", "torch==2.11.0+cu128", "torchvision==0.26.0+cu128", "torchaudio==2.11.0+cu128"} {
+		found := false
+		for _, value := range last {
+			if value == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("CUDA command missing %q: %v", want, last)
+		}
+	}
+}
+
+func TestH3CUDAServerAggressivelyOffloadsBetweenNodes(t *testing.T) {
+	args := h3ServerArgs("C:/ComfyUI", "C:/extra.yaml", 8188, "comfy-h3-cuda")
+	foundDisableSmartMemory := false
+	for _, value := range args {
+		if value == "--lowvram" {
+			t.Fatalf("CUDA server args enable pathological low-VRAM mode: %v", args)
+		}
+		if value == "--disable-smart-memory" {
+			foundDisableSmartMemory = true
+		}
+	}
+	if !foundDisableSmartMemory {
+		t.Fatalf("CUDA server args do not force inter-node offload: %v", args)
+	}
+	foundReserve := false
+	for index, value := range args {
+		if value == "--reserve-vram" && index+1 < len(args) && args[index+1] == "1" {
+			foundReserve = true
+		}
+	}
+	if !foundReserve {
+		t.Fatalf("CUDA server args do not reserve 1 GiB: %v", args)
+	}
+}
+
+func TestWindowsPythonCandidatesAvoidStoreAliasFirst(t *testing.T) {
+	candidates := pythonCandidates("windows")
+	if len(candidates) != 3 || candidates[0].name != "py" || candidates[1].name != "python" || candidates[2].name != "python3" {
+		t.Fatalf("Windows candidates = %#v", candidates)
+	}
+}
+
 func TestEngineForKeepsBackendDetailsBehindStableBoundary(t *testing.T) {
 	tests := map[string]string{
 		"mlx-video": "mlx", "diffusers-video": "diffusers",

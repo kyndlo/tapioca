@@ -99,16 +99,7 @@ func runH3(ctx context.Context, cacheDir string, request Request) error {
 		return err
 	}
 	defer log.Close()
-	args := []string{
-		filepath.Join(comfy, "main.py"), "--listen", "127.0.0.1", "--port", fmt.Sprint(port),
-		"--extra-model-paths-config", filepath.Join(root, "extra_model_paths.yaml"),
-		"--disable-auto-launch",
-	}
-	if request.Backend == "comfy-h3-mps" {
-		args = append(args, "--reserve-vram", "10", "--cache-none", "--disable-smart-memory")
-	} else {
-		args = append(args, "--lowvram", "--fast", "fp16_accumulation")
-	}
+	args := h3ServerArgs(comfy, filepath.Join(root, "extra_model_paths.yaml"), port, request.Backend)
 	server := exec.CommandContext(ctx, python, args...)
 	server.Dir = comfy
 	server.Stdout, server.Stderr = log, log
@@ -155,6 +146,20 @@ func runH3(ctx context.Context, cacheDir string, request Request) error {
 		return fmt.Errorf("MiniMax-H3 generation failed: %w; see %s", err, logPath)
 	}
 	return nil
+}
+
+func h3ServerArgs(comfy, extraPaths string, port int, backend string) []string {
+	args := []string{
+		filepath.Join(comfy, "main.py"), "--listen", "127.0.0.1", "--port", fmt.Sprint(port),
+		"--extra-model-paths-config", extraPaths, "--disable-auto-launch",
+	}
+	if backend == "comfy-h3-mps" {
+		return append(args, "--reserve-vram", "10", "--cache-none", "--disable-smart-memory")
+	}
+	// Aggressively unload the 20 GiB transformer when the 4.9 GiB VAE requests
+	// memory. Unlike --lowvram, this still lets the VAE stay resident during
+	// decode instead of swapping its layers for every frame.
+	return append(args, "--reserve-vram", "1", "--disable-smart-memory", "--fast", "fp16_accumulation")
 }
 
 func yamlQuote(value string) string {
@@ -220,7 +225,11 @@ func ensureH3Runtime(
 ) error {
 	ready := filepath.Join(root, ".tapioca-"+backend+"-ready")
 	if _, err := os.Stat(ready); err == nil {
-		return nil
+		if backend != "comfy-h3-cuda" || verifyCUDA(ctx, python) == nil {
+			return nil
+		}
+		fmt.Fprintln(runtimeStderr(ctx), "repairing the managed MiniMax-H3 CUDA runtime...")
+		_ = os.Remove(ready)
 	}
 	if _, err := exec.LookPath("git"); err != nil {
 		return errors.New("Git is required for the first MiniMax-H3 runtime setup")
@@ -254,18 +263,15 @@ func ensureH3Runtime(
 			return err
 		}
 	}
-	if err := run(root, python, "-m", "pip", "install", "--upgrade", "pip"); err != nil {
-		return err
-	}
-	if backend == "comfy-h3-cuda" {
-		if err := run(root, python, "-m", "pip", "install", "torch>=2.7",
-			"--index-url", "https://download.pytorch.org/whl/cu128"); err != nil {
+	for _, command := range h3DependencyCommands(python, filepath.Join(comfy, "requirements.txt"), backend) {
+		if err := run(root, command.name, command.args...); err != nil {
 			return err
 		}
 	}
-	if err := run(root, python, "-m", "pip", "install", "-r",
-		filepath.Join(comfy, "requirements.txt")); err != nil {
-		return err
+	if backend == "comfy-h3-cuda" {
+		if err := verifyCUDA(ctx, python); err != nil {
+			return fmt.Errorf("MiniMax-H3 CUDA runtime validation failed: %w", err)
+		}
 	}
 	if backend == "comfy-h3-mps" {
 		nodes := filepath.Join(comfy, "custom_nodes")
@@ -306,6 +312,39 @@ func ensureH3Runtime(
 		return err
 	}
 	return os.WriteFile(ready, []byte("ready\n"), 0o644)
+}
+
+type runtimeCommand struct {
+	name string
+	args []string
+}
+
+func h3DependencyCommands(python, requirements, backend string) []runtimeCommand {
+	commands := []runtimeCommand{
+		{name: python, args: []string{"-m", "pip", "install", "--upgrade", "pip"}},
+		{name: python, args: []string{"-m", "pip", "install", "-r", requirements}},
+	}
+	if backend == "comfy-h3-cuda" {
+		// ComfyUI's unconstrained requirements can replace a CUDA wheel with the
+		// CPU-only PyPI build. Install the matched CUDA trio last and without
+		// dependencies so the generic requirements cannot overwrite it.
+		commands = append(commands, runtimeCommand{name: python, args: []string{
+			"-m", "pip", "install", "--force-reinstall", "--no-deps",
+			"torch==2.11.0+cu128", "torchvision==0.26.0+cu128", "torchaudio==2.11.0+cu128",
+			"--index-url", "https://download.pytorch.org/whl/cu128",
+		}})
+	}
+	return commands
+}
+
+func verifyCUDA(ctx context.Context, python string) error {
+	cmd := exec.CommandContext(ctx, python, "-c",
+		"import torch; assert torch.cuda.is_available(), 'PyTorch was installed without CUDA support'; print(torch.__version__, torch.cuda.get_device_name(0))")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("%s: %w", string(output), err)
+	}
+	return nil
 }
 
 func downloadVerified(ctx context.Context, url, destination, wantSHA string) error {
@@ -466,12 +505,28 @@ func pythonArguments(root, script string, request Request) []string {
 	return args
 }
 
+type pythonCandidate struct {
+	name   string
+	prefix []string
+}
+
+func pythonCandidates(goos string) []pythonCandidate {
+	if goos == "windows" {
+		// `python3.exe` is commonly a nonfunctional Microsoft Store alias.
+		return []pythonCandidate{{"py", []string{"-3"}}, {"python", nil}, {"python3", nil}}
+	}
+	return []pythonCandidate{{"python3", nil}, {"python", nil}}
+}
+
 func systemPython() (string, []string, error) {
-	for _, candidate := range []struct {
-		name   string
-		prefix []string
-	}{{"python3", nil}, {"python", nil}, {"py", []string{"-3"}}} {
-		if path, err := exec.LookPath(candidate.name); err == nil {
+	for _, candidate := range pythonCandidates(runtime.GOOS) {
+		path, err := exec.LookPath(candidate.name)
+		if err != nil {
+			continue
+		}
+		args := append(append([]string{}, candidate.prefix...), "--version")
+		check := exec.Command(path, args...)
+		if err := check.Run(); err == nil {
 			return path, candidate.prefix, nil
 		}
 	}

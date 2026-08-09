@@ -79,7 +79,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
 
   const visibleModels = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    return (models ?? []).filter((model) => {
+    const filtered = (models ?? []).filter((model) => {
       if (kind !== "all" && model.kind !== kind) return false;
       if (
         platform !== "all" &&
@@ -105,7 +105,23 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
         .toLowerCase()
         .includes(normalizedQuery);
     });
+    return [...filtered].sort((left, right) => {
+      const score = (model: ModelRecord) =>
+        (model.installed ? 100 : 0) +
+        (modelCompatibility(model, machine).level === "compatible" ? 30 : 0) +
+        (model.name.startsWith("minimax-h3") ? 10 : 0);
+      return score(right) - score(left) || left.name.localeCompare(right.name);
+    });
   }, [compatibleOnly, kind, machine, models, platform, query]);
+
+  const kindCounts = useMemo(() => {
+    const counts: Record<"all" | ModelKind, number> = { all: 0, chat: 0, image: 0, video: 0, speech: 0 };
+    for (const model of models ?? []) {
+      counts.all += 1;
+      counts[model.kind] += 1;
+    }
+    return counts;
+  }, [models]);
 
   const pull = async (model: ModelRecord) => {
     const controller = new AbortController();
@@ -286,6 +302,20 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
           <span>Fits this machine</span>
         </label>
       </div>
+      <div className="models-kind-shortcuts" aria-label="Model categories">
+        {kinds.map((item) => (
+          <button
+            type="button"
+            key={item.value}
+            className={kind === item.value ? "models-kind-shortcut models-kind-shortcut--active" : "models-kind-shortcut"}
+            onClick={() => setKind(item.value)}
+          >
+            <strong>{kindCounts[item.value]}</strong>
+            <span>{item.label}</span>
+          </button>
+        ))}
+        <p>{kind === "video" ? "Every video variant is listed, including MiniMax-H3 when supported by the current platform." : "Choose a category to see every catalog entry."}</p>
+      </div>
 
       {error ? (
         <div className="models-state" role="alert">
@@ -388,7 +418,7 @@ function ModelCard({
             <span className="model-installed">✓ Installed</span>
           ) : null}
         </div>
-        <h2>{model.name}</h2>
+        <h2>{model.name}{model.name.startsWith("minimax-h3") ? <span className="model-featured">H3</span> : null}</h2>
         <p className="model-creator">by {model.creator}</p>
         <p className="model-description">{model.description}</p>
         <div className="model-badges">

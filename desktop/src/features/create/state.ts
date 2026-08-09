@@ -13,6 +13,30 @@ export const defaultCreatorSettings = (): CreatorAdvancedSettings => ({
   fps: 24,
 });
 
+export function videoDurationSeconds(frames: number, fps: number): number {
+  return fps > 0 ? frames / fps : 0;
+}
+
+export function videoFramesForDuration(
+  modelId: string,
+  seconds: number,
+  fps: number,
+  maxFrames = 513,
+): number {
+  const { offset, stride } = videoFrameShape(modelId);
+  const requested = Math.max(offset, Math.round(seconds * Math.max(1, fps)));
+  const index = Math.max(0, Math.round((requested - offset) / stride));
+  const maximumIndex = Math.max(0, Math.floor((maxFrames - offset) / stride));
+  return offset + Math.min(index, maximumIndex) * stride;
+}
+
+export function videoFrameShape(modelId: string): { offset: number; stride: number } {
+  const normalized = modelId.toLowerCase();
+  if (normalized.includes("minimax-h3")) return { offset: 5, stride: 17 };
+  if (normalized.includes("ltx-video")) return { offset: 1, stride: 8 };
+  return { offset: 1, stride: 4 };
+}
+
 export function parseHfLoraReference(value: string):
   | { reference: string; weight: number }
   | { error: string } {
@@ -59,15 +83,25 @@ export function validateCreatorRequest(request: CreatorRequest): string[] {
     errors.push("Choose a voice reference recording.");
   }
   const { width, height, steps, frames, fps, seed } = request.settings;
-  if (width < 256 || width > 2048 || width % 8 !== 0) {
-    errors.push("Width must be 256–2048 and divisible by 8.");
+  const dimensionStep = request.mode === "video" ? 32 : 8;
+  if (width < 256 || width > 2048 || width % dimensionStep !== 0) {
+    errors.push(`Width must be 256–2048 and divisible by ${dimensionStep}.`);
   }
-  if (height < 256 || height > 2048 || height % 8 !== 0) {
-    errors.push("Height must be 256–2048 and divisible by 8.");
+  if (height < 256 || height > 2048 || height % dimensionStep !== 0) {
+    errors.push(`Height must be 256–2048 and divisible by ${dimensionStep}.`);
   }
   if (steps < 1 || steps > 100) errors.push("Steps must be between 1 and 100.");
-  if (request.mode === "video" && (frames < 1 || frames > 241)) {
-    errors.push("Frames must be between 1 and 241.");
+  if (request.mode === "video" && (frames < 1 || frames > 513)) {
+    errors.push("Frames must be between 1 and 513.");
+  } else if (request.mode === "video") {
+    const { offset, stride } = videoFrameShape(request.modelId);
+    if (frames < offset || (frames - offset) % stride !== 0) {
+      errors.push(
+        request.modelId.toLowerCase().includes("minimax-h3")
+          ? "MiniMax-H3 duration must resolve to a 17n+5 frame count. Use a duration preset."
+          : `This video model requires a ${stride}n+${offset} frame count. Use a duration preset.`,
+      );
+    }
   }
   if (request.mode === "video" && (fps < 1 || fps > 60)) {
     errors.push("FPS must be between 1 and 60.");

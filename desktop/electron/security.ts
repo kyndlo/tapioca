@@ -22,3 +22,11 @@ export function isTrustedRendererUrl(
     candidate.startsWith(`${policy.packagedRendererUrl}#`)
   );
 }
+
+export function isAudioCapturePermission(
+  permission: string,
+  mediaTypes: readonly string[] | undefined,
+): boolean {
+  if (permission !== "media" || !mediaTypes?.length) return false;
+  return mediaTypes.every((type) => type === "audio");
+}

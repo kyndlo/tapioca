@@ -190,7 +190,49 @@ func systemInfo() map[string]any {
 	return map[string]any{
 		"goos": runtime.GOOS, "goarch": runtime.GOARCH,
 		"cpu_count": runtime.NumCPU(), "protocol_version": ProtocolVersion,
+		"accelerators": detectAccelerators(),
 	}
+}
+
+func detectAccelerators() []string {
+	accelerators := []string{"cpu"}
+	seen := map[string]bool{"cpu": true}
+	add := func(name string) {
+		if !seen[name] {
+			seen[name] = true
+			accelerators = append(accelerators, name)
+		}
+	}
+	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
+		add("apple")
+	}
+	if _, err := exec.LookPath("nvidia-smi"); err == nil {
+		add("nvidia")
+	}
+	var description string
+	switch runtime.GOOS {
+	case "windows":
+		if output, err := exec.Command(
+			"powershell", "-NoProfile", "-Command",
+			"(Get-CimInstance Win32_VideoController).Name -join ';'",
+		).Output(); err == nil {
+			description = strings.ToLower(string(output))
+		}
+	case "linux":
+		if output, err := exec.Command("lspci").Output(); err == nil {
+			description = strings.ToLower(string(output))
+		}
+	}
+	if strings.Contains(description, "nvidia") {
+		add("nvidia")
+	}
+	if strings.Contains(description, "amd") || strings.Contains(description, "radeon") {
+		add("amd")
+	}
+	if strings.Contains(description, "intel") {
+		add("intel")
+	}
+	return accelerators
 }
 
 func storageInfo() (any, *ProtocolError) {

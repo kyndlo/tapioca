@@ -323,6 +323,20 @@ func TestLoRAListDiscoversOnlySafetensors(t *testing.T) {
 	}
 }
 
+func TestLoRAListReturnsEmptyArrayWhenNoAdaptersAreInstalled(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("TAPIOCA_HOME", home)
+
+	result, err := listLoRAs()
+	if err != nil {
+		t.Fatalf("listLoRAs error = %v", err)
+	}
+	items := result.([]map[string]any)
+	if items == nil || len(items) != 0 {
+		t.Fatalf("LoRA list = %#v, want non-nil empty slice", items)
+	}
+}
+
 func saveCreatorModel(t *testing.T, model config.Model) {
 	t.Helper()
 	registry := config.Registry{Models: map[string]config.Model{

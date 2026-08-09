@@ -45,6 +45,7 @@ export const systemSnapshotSchema = z
     platform: z.enum(["macos", "windows", "linux"]),
     arch: z.string().min(1),
     cpuCount: z.number().int().positive(),
+    accelerators: z.array(z.enum(["apple", "nvidia", "amd", "intel", "cpu"])),
     memoryBytes: z.number().int().nonnegative(),
     modelsPath: z.string().min(1),
     modelsBytes: z.number().int().nonnegative(),
@@ -249,6 +250,14 @@ export const creatorFileSelectionSchema = z
     previewUrl: z.string().url().optional(),
   })
   .strict();
+export const creatorSaveRecordingInputSchema = z
+  .object({
+    bytes: z.instanceof(Uint8Array).refine((value) => value.byteLength > 0 && value.byteLength <= 50 * 1024 * 1024, {
+      message: "Voice recording must be between 1 byte and 50 MiB",
+    }),
+    durationSeconds: z.number().positive().max(300),
+  })
+  .strict();
 const creatorLoraSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("huggingface"),
@@ -319,6 +328,7 @@ export const IPC_CHANNELS = {
   creatorCapabilities: "tapioca:creator-capabilities",
   creatorCatalog: "tapioca:creator-catalog",
   creatorPickFile: "tapioca:creator-pick-file",
+  creatorSaveRecording: "tapioca:creator-save-recording",
   creatorGenerate: "tapioca:creator-generate",
   creatorOutputs: "tapioca:creator-outputs",
   creatorLoraList: "tapioca:creator-lora-list",
@@ -353,6 +363,8 @@ export const ipcSchemas = {
   creatorCatalogResult: creatorCatalogSchema,
   creatorPickFileInput: creatorPickFileInputSchema,
   creatorPickFileResult: creatorFileSelectionSchema.optional(),
+  creatorSaveRecordingInput: creatorSaveRecordingInputSchema,
+  creatorSaveRecordingResult: creatorFileSelectionSchema,
   creatorGenerateInput: creatorGenerateInputSchema,
   creatorGenerateResult: creatorOutputSchema,
   creatorOutputsResult: z.array(creatorOutputSchema),
@@ -381,6 +393,7 @@ export interface TapiocaDesktopApi {
   creatorCapabilities(): Promise<z.infer<typeof creatorCapabilitiesSchema>>;
   creatorCatalog(): Promise<z.infer<typeof creatorCatalogSchema>>;
   creatorPickFile(input: z.infer<typeof creatorPickFileInputSchema>): Promise<z.infer<typeof creatorFileSelectionSchema> | undefined>;
+  creatorSaveRecording(input: z.infer<typeof creatorSaveRecordingInputSchema>): Promise<z.infer<typeof creatorFileSelectionSchema>>;
   creatorGenerate(input: z.infer<typeof creatorGenerateInputSchema>): Promise<z.infer<typeof creatorOutputSchema>>;
   creatorOutputs(): Promise<Array<z.infer<typeof creatorOutputSchema>>>;
   creatorLoraList(): Promise<z.infer<typeof creatorLoraListSchema>>;

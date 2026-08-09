@@ -7,8 +7,10 @@ import type { CreatorAdapter } from "./types";
 function mockAdapter(): CreatorAdapter {
   return {
     models: vi.fn().mockResolvedValue([]),
+    availableLoras: vi.fn().mockResolvedValue([]),
     outputs: vi.fn().mockResolvedValue([]),
     pickFile: vi.fn().mockResolvedValue(undefined),
+    saveVoiceRecording: vi.fn(),
     generate: vi.fn().mockResolvedValue({ jobId: "job-1" }),
     cancel: vi.fn().mockResolvedValue(undefined),
     reveal: vi.fn().mockResolvedValue(undefined),
@@ -24,6 +26,9 @@ describe("CreatorScreen", () => {
     for (const label of ["Image", "Video", "Speech / TTS", "Voice Clone"]) {
       expect(markup).toContain(label);
     }
+    expect(markup).toContain("Image setup");
+    expect(markup).toContain("exact output pixels");
+    expect(markup).toContain("Generation quality");
     expect(markup).toContain("Local processing");
     expect(markup).toContain("Your prompts and references stay on this machine.");
     expect(markup).not.toContain("/Users/");
@@ -38,8 +43,11 @@ describe("CreatorScreen", () => {
       }),
     );
     expect(markup).toContain("Video");
+    expect(markup).toContain("Video setup");
+    expect(markup).toContain("Duration");
+    expect(markup).toContain("Resolution");
+    expect(markup).toContain("Expert overrides");
     expect(markup).not.toContain("Speech / TTS");
     expect(markup).not.toContain("Choose local");
-    expect(markup).toContain("arbitrary local files are not accepted");
   });
 });

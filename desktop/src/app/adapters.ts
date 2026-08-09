@@ -57,15 +57,11 @@ export function createRendererAdapters(
 
   const machine = async (): Promise<MachineProfile> => {
     const system = await api.systemSnapshot();
-    const accelerators: Accelerator[] =
-      system.platform === "macos" && system.arch === "arm64"
-        ? ["apple", "cpu"]
-        : ["cpu"];
     return {
       platform: system.platform,
       memoryBytes: system.memoryBytes,
       availableDiskBytes: system.availableDiskBytes,
-      accelerators,
+      accelerators: system.accelerators as Accelerator[],
     };
   };
 
@@ -439,6 +435,28 @@ export function createRendererAdapters(
     outputs() {
       return api.creatorOutputs();
     },
+    async availableLoras(modelId) {
+      const baseFamily = loraFamily(modelId);
+      return (await api.creatorLoraList()).flatMap((row) => {
+        const segments = row.file.split("/").filter(Boolean);
+        if (segments.length < 3) return [];
+        const [owner, repository, ...fileParts] = segments;
+        const reference = `hf://${owner}/${repository}#${fileParts.join("/")}`;
+        const adapterFamily = loraFamily(row.file);
+        const compatible = !baseFamily || !adapterFamily || baseFamily === adapterFamily;
+        return [{
+          reference,
+          name: fileParts.at(-1) ?? row.file,
+          bytes: row.bytes,
+          compatible,
+          ...(!compatible
+            ? { reason: `Looks like ${adapterFamily}, but the selected model is ${baseFamily}.` }
+            : adapterFamily
+              ? { reason: `Matches the ${adapterFamily} model family.` }
+              : { reason: "Tapioca will validate compatibility before generation." }),
+        }];
+      });
+    },
     async models(mode) {
       const [capabilities, catalog, installed] = await Promise.all([
         api.creatorCapabilities(),
@@ -491,6 +509,9 @@ export function createRendererAdapters(
     },
     pickFile(kind) {
       return api.creatorPickFile({ kind });
+    },
+    saveVoiceRecording(bytes, durationSeconds) {
+      return api.creatorSaveRecording({ bytes, durationSeconds });
     },
     async generate(request, onEvent) {
       const jobId = `creator-${crypto.randomUUID()}`;
@@ -584,10 +605,16 @@ export function createRendererAdapters(
           platform: system.platform,
           processor: `${system.arch} · ${system.cpuCount} CPU cores`,
           memoryBytes: system.memoryBytes,
-          accelerator:
-            system.platform === "macos" && system.arch === "arm64"
-              ? "Apple Silicon"
-              : undefined,
+          accelerator: system.accelerators
+            .filter((accelerator) => accelerator !== "cpu")
+            .map((accelerator) => ({
+              apple: "Apple Silicon",
+              nvidia: "NVIDIA GPU",
+              amd: "AMD GPU",
+              intel: "Intel GPU",
+            })[accelerator])
+            .filter(Boolean)
+            .join(" + ") || undefined,
         },
         storage: {
           modelsBytes: system.modelsBytes,
@@ -629,9 +656,9 @@ function desktopKind(kind: string): ModelKind {
 
 function modelRequirements(backend: string, size?: string, memory?: string) {
   const lower = backend.toLowerCase();
-  const accelerators: Accelerator[] = lower.includes("mlx")
+  const accelerators: Accelerator[] = lower.includes("mlx") || lower.includes("comfy-h3-mps")
     ? ["apple"]
-    : lower.includes("cuda")
+    : lower.includes("cuda") || lower.includes("comfy-h3-cuda")
       ? ["nvidia"]
       : ["cpu", "apple", "nvidia", "amd", "intel"];
   return {
@@ -697,6 +724,21 @@ function textContent(content: unknown): string {
 
 function isChatModelKind(kind: string): boolean {
   return ["chat", "text", "llm"].includes(kind.trim().toLowerCase());
+}
+
+function loraFamily(value: string): string | undefined {
+  const normalized = value.toLowerCase();
+  for (const [needle, family] of [
+    ["minimax-h3", "MiniMax-H3"],
+    ["minimax_h3", "MiniMax-H3"],
+    ["flux", "Flux"],
+    ["qwen", "Qwen"],
+    ["wan", "Wan"],
+    ["ltx", "LTX"],
+  ] as const) {
+    if (normalized.includes(needle)) return family;
+  }
+  return undefined;
 }
 
 function throwIfAborted(signal?: AbortSignal): void {

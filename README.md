@@ -19,6 +19,10 @@ Tapioca Desktop brings the complete local workflow into one interface:
 
 - Chat with installed models and see model reasoning as it streams.
 - Generate and manage images, videos, speech, and cloned voices.
+- Record voice-cloning references with a live microphone level meter.
+- Choose guided image resolutions, video duration, orientation, quality, and
+  workload presets while retaining exact expert controls.
+- Assign installed LoRAs with model-family compatibility guidance.
 - Pull models, inspect hardware requirements, and track local storage.
 - Launch Codex, Claude Code, OpenCode, OpenClaw, and Hermes with a local model.
 - Monitor active jobs and keep generated media in a local gallery.

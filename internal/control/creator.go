@@ -670,7 +670,7 @@ func listLoRAs() (any, *ProtocolError) {
 		return nil, operationError(context.Background(), "storage_failed", err)
 	}
 	root := filepath.Join(home, "adapters", "huggingface")
-	var results []map[string]any
+	results := make([]map[string]any, 0)
 	err = filepath.WalkDir(root, func(path string, entry os.DirEntry, walkError error) error {
 		if errors.Is(walkError, os.ErrNotExist) {
 			return nil

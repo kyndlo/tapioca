@@ -242,6 +242,7 @@ function SettingsRoute() {
           <div><dt>Platform</dt><dd>{snapshot.platform} / {snapshot.arch}</dd></div>
           <div><dt>Model storage</dt><dd>{snapshot.modelsPath}</dd></div>
           <div><dt>CPU</dt><dd>{snapshot.cpuCount} logical cores</dd></div>
+          <div><dt>Accelerators</dt><dd>{snapshot.accelerators.join(", ")}</dd></div>
           <div><dt>Memory</dt><dd>{Math.round(snapshot.memoryBytes / 1024 ** 3)} GiB</dd></div>
         </dl>
       )}

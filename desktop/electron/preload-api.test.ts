@@ -36,6 +36,7 @@ describe("preload allowlist", () => {
         "creatorPickFile",
         "creatorReveal",
         "creatorSaveMetadata",
+        "creatorSaveRecording",
         "health",
         "modelPull",
         "modelRemove",

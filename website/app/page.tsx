@@ -54,7 +54,7 @@ export default function Home() {
         </a>
         <div className="navlinks">
           <a href="#desktop">Desktop app</a>
-          <a href="#start">Get started</a>
+          <a href="/learn">Beginner guide</a>
           <a href="#voices">Voices</a>
           <a href="#commands">Commands</a>
           <a href="#experts">For experts</a>
@@ -73,7 +73,7 @@ export default function Home() {
             one compact command-line tool.
           </p>
           <div className="actions">
-            <a className="button primary" href="#start">Make your first pearl →</a>
+            <a className="button primary" href="/learn">Start the beginner guide →</a>
             <a className="button ghost" href={`${repo}/releases/latest`}>Download Tapioca</a>
           </div>
           <div className="trust">
@@ -146,7 +146,7 @@ export default function Home() {
             <span className="stepNo">1</span>
             <p className="label">Install</p>
             <h3>Get Tapioca</h3>
-            <pre><code>curl -fsSL https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.sh | sh</code></pre>
+            <pre><code>curl -fsSL https://tapioca.rootfruit.cc/install.sh | sh</code></pre>
             <p>Download the new desktop app, or use this command for the CLI on macOS and Linux. Windows gets an equally tiny PowerShell installer.</p>
           </article>
           <article>
@@ -164,7 +164,7 @@ export default function Home() {
             <p>If the model is missing, Tapioca pulls it automatically. Type <code>/bye</code> when you&apos;re done.</p>
           </article>
         </div>
-        <p className="helper">Not sure which model? <a href={`${repo}/blob/main/docs/guides/choosing-models.md`}>Use the friendly model chooser →</a></p>
+        <p className="helper">Want every step explained? <a href="/learn">Open the complete beginner learning center →</a></p>
       </section>
 
       <section className="section platformSection">
@@ -268,7 +268,7 @@ export default function Home() {
         <div className="linuxLayout">
           <div className="installCard">
             <div><i /><i /><i /><span>bash</span></div>
-            <code>curl -fsSL https://raw.githubusercontent.com/kyndlo/tapioca/main/scripts/install.sh | sh</code>
+            <code>curl -fsSL https://tapioca.rootfruit.cc/install.sh | sh</code>
             <code className="success">✓ installed tapioca for linux/amd64</code>
             <code>tapioca catalog</code>
           </div>
@@ -314,7 +314,7 @@ export default function Home() {
         <h2>Ready to roll?</h2>
         <p>Start small. Pull a model. Make something weird and wonderful.</p>
         <div className="actions">
-          <a className="button cream" href={`${repo}/releases/latest`}>Download Tapioca</a>
+          <a className="button cream" href="/learn">Start with the beginner guide</a>
           <a className="button darkGhost" href={`${repo}/tree/main/docs`}>Read all the docs</a>
         </div>
       </section>
@@ -322,7 +322,7 @@ export default function Home() {
       <footer>
         <a className="brand" href="#top"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Local AI should feel like yours. Built in the open.</p>
-        <div><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
+        <div><a href="/learn">For beginners</a><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
       </footer>
     </main>
   );

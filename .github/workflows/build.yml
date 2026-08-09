@@ -97,6 +97,10 @@ jobs:
         run: |
           tar -C dist -czf tapioca-darwin-arm64.tar.gz tapioca runtime
           shasum -a 256 tapioca-darwin-arm64.tar.gz > tapioca-darwin-arm64.tar.gz.sha256
+          desktop_dmg="$(find desktop/release -maxdepth 1 -name '*.dmg' -print -quit)"
+          test -n "${desktop_dmg}"
+          cp "${desktop_dmg}" tapioca-desktop-macos-arm64.dmg
+          shasum -a 256 tapioca-desktop-macos-arm64.dmg > tapioca-desktop-macos-arm64.dmg.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -104,6 +108,8 @@ jobs:
           path: |
             tapioca-darwin-arm64.tar.gz
             tapioca-darwin-arm64.tar.gz.sha256
+            tapioca-desktop-macos-arm64.dmg
+            tapioca-desktop-macos-arm64.dmg.sha256
             desktop/release/*.dmg
             desktop/release/*-mac.zip
           if-no-files-found: error
@@ -156,6 +162,11 @@ jobs:
           Compress-Archive -Path dist/tapioca.exe,dist/runtime -DestinationPath tapioca-windows-amd64.zip
           (Get-FileHash tapioca-windows-amd64.zip -Algorithm SHA256).Hash.ToLower() + "  tapioca-windows-amd64.zip" |
             Set-Content tapioca-windows-amd64.zip.sha256
+          $desktopInstaller = Get-ChildItem desktop/release/*.exe | Select-Object -First 1
+          if (-not $desktopInstaller) { throw "Windows desktop installer was not produced" }
+          Copy-Item $desktopInstaller.FullName tapioca-desktop-windows-amd64.exe
+          (Get-FileHash tapioca-desktop-windows-amd64.exe -Algorithm SHA256).Hash.ToLower() + "  tapioca-desktop-windows-amd64.exe" |
+            Set-Content tapioca-desktop-windows-amd64.exe.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -163,6 +174,8 @@ jobs:
           path: |
             tapioca-windows-amd64.zip
             tapioca-windows-amd64.zip.sha256
+            tapioca-desktop-windows-amd64.exe
+            tapioca-desktop-windows-amd64.exe.sha256
             desktop/release/*.exe
             desktop/release/*-win.zip
           if-no-files-found: error
@@ -218,6 +231,11 @@ jobs:
           Compress-Archive -Path dist/tapioca.exe,dist/runtime -DestinationPath tapioca-windows-arm64.zip
           (Get-FileHash tapioca-windows-arm64.zip -Algorithm SHA256).Hash.ToLower() + "  tapioca-windows-arm64.zip" |
             Set-Content tapioca-windows-arm64.zip.sha256
+          $desktopInstaller = Get-ChildItem desktop/release/*.exe | Select-Object -First 1
+          if (-not $desktopInstaller) { throw "Windows ARM64 desktop installer was not produced" }
+          Copy-Item $desktopInstaller.FullName tapioca-desktop-windows-arm64.exe
+          (Get-FileHash tapioca-desktop-windows-arm64.exe -Algorithm SHA256).Hash.ToLower() + "  tapioca-desktop-windows-arm64.exe" |
+            Set-Content tapioca-desktop-windows-arm64.exe.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -225,6 +243,8 @@ jobs:
           path: |
             tapioca-windows-arm64.zip
             tapioca-windows-arm64.zip.sha256
+            tapioca-desktop-windows-arm64.exe
+            tapioca-desktop-windows-arm64.exe.sha256
             desktop/release/*.exe
             desktop/release/*-win.zip
           if-no-files-found: error

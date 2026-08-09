@@ -1,6 +1,8 @@
 package videoruntime
 
 import (
+	"archive/zip"
+	"bufio"
 	"context"
 	"crypto/sha256"
 	"embed"
@@ -14,6 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/carlos/tapioca/internal/adapter"
@@ -65,12 +68,29 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 }
 
 const (
-	comfyTag      = "v0.30.0"
-	h3WorkflowURL = "https://raw.githubusercontent.com/Bambushu/minimax-h3-mac/6959ac3d986909183e2a0bc9c06c1a13e2746ebf/h3_api.json"
-	h3WorkflowSHA = "26291d8f7ac3aaecca9738f066925169f5f31524eebd7c5bfcfee6ac658322a9"
+	comfyTag        = "v0.30.0"
+	comfyCommit     = "b1693ecba9f5b65f8c80ab36b195ab963ec92413"
+	comfyArchiveURL = "https://github.com/comfyanonymous/ComfyUI/archive/" + comfyCommit + ".zip"
+	comfyArchiveSHA = "912365439272d6c7cd9428f897b23be747e27a6a56dfa7f3d3132e72fb564699"
+	h3WorkflowURL   = "https://raw.githubusercontent.com/Bambushu/minimax-h3-mac/6959ac3d986909183e2a0bc9c06c1a13e2746ebf/h3_api.json"
+	h3WorkflowSHA   = "26291d8f7ac3aaecca9738f066925169f5f31524eebd7c5bfcfee6ac658322a9"
+	uvWindowsURL    = "https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-pc-windows-msvc.zip"
+	uvWindowsSHA    = "b23350c79e8ad0192b8124af13a0f17e8d4e4549524785e1aef389ae5a06990e"
 )
 
 func runH3(ctx context.Context, cacheDir string, request Request) error {
+	var cudaGPU *nvidiaGPU
+	if request.Backend == "comfy-h3-cuda" {
+		gpu, err := inspectNVIDIA(ctx)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(runtimeStderr(ctx), "using %s (%d MiB VRAM, driver %s)\n", gpu.Name, gpu.MemoryMiB, gpu.Driver)
+		if gpu.MemoryMiB < 16*1024 {
+			fmt.Fprintf(runtimeStderr(ctx), "warning: MiniMax-H3 is tested with 16 GiB VRAM; lower resolutions may work, but generation can be slow or run out of memory\n")
+		}
+		cudaGPU = &gpu
+	}
 	root := filepath.Join(cacheDir, "video-runtime", "0.2.0-h3")
 	comfy := filepath.Join(root, "ComfyUI")
 	venv := filepath.Join(root, "venv")
@@ -104,6 +124,9 @@ func runH3(ctx context.Context, cacheDir string, request Request) error {
 	server.Dir = comfy
 	server.Stdout, server.Stderr = log, log
 	server.Env = append(os.Environ(), "ASFP8_INT8_EXT=1")
+	if cudaGPU != nil {
+		server.Env = append(server.Env, "CUDA_VISIBLE_DEVICES="+strconv.Itoa(cudaGPU.Index))
+	}
 	if err := server.Start(); err != nil {
 		return fmt.Errorf("start managed ComfyUI: %w", err)
 	}
@@ -146,6 +169,58 @@ func runH3(ctx context.Context, cacheDir string, request Request) error {
 		return fmt.Errorf("MiniMax-H3 generation failed: %w; see %s", err, logPath)
 	}
 	return nil
+}
+
+type nvidiaGPU struct {
+	Index     int
+	Name      string
+	MemoryMiB int
+	Driver    string
+}
+
+func inspectNVIDIA(ctx context.Context) (nvidiaGPU, error) {
+	path, err := exec.LookPath("nvidia-smi")
+	if err != nil {
+		return nvidiaGPU{}, errors.New("MiniMax-H3 requires an NVIDIA GPU and current NVIDIA driver; nvidia-smi was not found")
+	}
+	cmd := exec.CommandContext(ctx, path, "--query-gpu=index,name,memory.total,driver_version", "--format=csv,noheader,nounits")
+	output, err := cmd.Output()
+	if err != nil {
+		return nvidiaGPU{}, fmt.Errorf("inspect NVIDIA GPU with nvidia-smi: %w", err)
+	}
+	return parseNVIDIASMI(string(output))
+}
+
+func parseNVIDIASMI(output string) (nvidiaGPU, error) {
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	var selected nvidiaGPU
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(line, ",")
+		if len(parts) < 4 {
+			return nvidiaGPU{}, fmt.Errorf("unexpected nvidia-smi output %q", line)
+		}
+		index, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+		if err != nil {
+			return nvidiaGPU{}, fmt.Errorf("parse NVIDIA GPU index from %q: %w", parts[0], err)
+		}
+		memory, err := strconv.Atoi(strings.TrimSpace(parts[2]))
+		if err != nil {
+			return nvidiaGPU{}, fmt.Errorf("parse NVIDIA VRAM from %q: %w", parts[2], err)
+		}
+		if memory > selected.MemoryMiB {
+			selected = nvidiaGPU{
+				Index: index, Name: strings.TrimSpace(parts[1]), MemoryMiB: memory, Driver: strings.TrimSpace(parts[3]),
+			}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nvidiaGPU{}, err
+	}
+	if selected.MemoryMiB == 0 {
+		return nvidiaGPU{}, errors.New("nvidia-smi reported no NVIDIA GPUs")
+	}
+	return selected, nil
 }
 
 func h3ServerArgs(comfy, extraPaths string, port int, backend string) []string {
@@ -231,9 +306,6 @@ func ensureH3Runtime(
 		fmt.Fprintln(runtimeStderr(ctx), "repairing the managed MiniMax-H3 CUDA runtime...")
 		_ = os.Remove(ready)
 	}
-	if _, err := exec.LookPath("git"); err != nil {
-		return errors.New("Git is required for the first MiniMax-H3 runtime setup")
-	}
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		return err
 	}
@@ -249,18 +321,23 @@ func ensureH3Runtime(
 	}
 	if _, err := os.Stat(filepath.Join(comfy, "main.py")); err != nil {
 		fmt.Fprintln(stderr, "installing the managed MiniMax-H3 runtime (first run only)...")
-		if err := run(root, "git", "clone", "--depth", "1", "--branch", comfyTag,
-			"https://github.com/comfyanonymous/ComfyUI.git", comfy); err != nil {
+		if err := installComfyArchive(ctx, root, comfy); err != nil {
 			return err
 		}
 	}
 	if _, err := os.Stat(python); err != nil {
-		system, prefix, err := systemPython()
-		if err != nil {
-			return err
-		}
-		if err := run(root, system, append(prefix, "-m", "venv", venv)...); err != nil {
-			return err
+		if runtime.GOOS == "windows" && runtime.GOARCH == "amd64" {
+			if err := installManagedWindowsPython(ctx, root, venv); err != nil {
+				return err
+			}
+		} else {
+			system, prefix, err := systemPython()
+			if err != nil {
+				return err
+			}
+			if err := run(root, system, append(prefix, "-m", "venv", venv)...); err != nil {
+				return err
+			}
 		}
 	}
 	for _, command := range h3DependencyCommands(python, filepath.Join(comfy, "requirements.txt"), backend) {
@@ -274,6 +351,9 @@ func ensureH3Runtime(
 		}
 	}
 	if backend == "comfy-h3-mps" {
+		if _, err := exec.LookPath("git"); err != nil {
+			return errors.New("Git is required for the first MiniMax-H3 runtime setup on macOS")
+		}
 		nodes := filepath.Join(comfy, "custom_nodes")
 		packs := []struct {
 			name   string
@@ -314,6 +394,105 @@ func ensureH3Runtime(
 	return os.WriteFile(ready, []byte("ready\n"), 0o644)
 }
 
+func installComfyArchive(ctx context.Context, root, destination string) error {
+	archive := filepath.Join(root, "ComfyUI-"+strings.TrimPrefix(comfyTag, "v")+".zip")
+	if err := downloadVerified(ctx, comfyArchiveURL, archive, comfyArchiveSHA); err != nil {
+		return fmt.Errorf("download managed ComfyUI %s: %w", comfyTag, err)
+	}
+	extracted := filepath.Join(root, "ComfyUI-"+comfyCommit)
+	if err := extractZip(archive, root); err != nil {
+		return fmt.Errorf("extract managed ComfyUI %s: %w", comfyTag, err)
+	}
+	if _, err := os.Stat(filepath.Join(extracted, "main.py")); err != nil {
+		return fmt.Errorf("managed ComfyUI archive did not contain main.py: %w", err)
+	}
+	if _, err := os.Stat(destination); err == nil {
+		backup := destination + ".incomplete-" + strconv.FormatInt(time.Now().Unix(), 10)
+		if err := os.Rename(destination, backup); err != nil {
+			return fmt.Errorf("preserve incomplete managed ComfyUI directory: %w", err)
+		}
+	}
+	if err := os.Rename(extracted, destination); err != nil {
+		return fmt.Errorf("activate managed ComfyUI %s: %w", comfyTag, err)
+	}
+	return nil
+}
+
+func installManagedWindowsPython(ctx context.Context, root, venv string) error {
+	toolsDir := filepath.Join(root, "tools")
+	uv := filepath.Join(toolsDir, "uv.exe")
+	if _, err := os.Stat(uv); err != nil {
+		if err := os.MkdirAll(toolsDir, 0o755); err != nil {
+			return err
+		}
+		archive := filepath.Join(toolsDir, "uv-windows-amd64.zip")
+		if err := downloadVerified(ctx, uvWindowsURL, archive, uvWindowsSHA); err != nil {
+			return fmt.Errorf("download managed Python bootstrap: %w", err)
+		}
+		if err := extractZip(archive, toolsDir); err != nil {
+			return fmt.Errorf("extract managed Python bootstrap: %w", err)
+		}
+	}
+	pythonDir := filepath.Join(root, "python")
+	cmd := exec.CommandContext(ctx, uv, "venv", "--python", "3.12", "--managed-python", "--seed", venv)
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "UV_PYTHON_INSTALL_DIR="+pythonDir, "UV_NO_CONFIG=1")
+	cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("create Tapioca-managed Python 3.12 environment: %w", err)
+	}
+	return nil
+}
+
+func extractZip(archivePath, destination string) error {
+	reader, err := zip.OpenReader(archivePath)
+	if err != nil {
+		return err
+	}
+	defer reader.Close()
+	cleanRoot := filepath.Clean(destination) + string(os.PathSeparator)
+	for _, entry := range reader.File {
+		target := filepath.Join(destination, filepath.FromSlash(entry.Name))
+		if !strings.HasPrefix(filepath.Clean(target)+string(os.PathSeparator), cleanRoot) {
+			return fmt.Errorf("archive contains unsafe path %q", entry.Name)
+		}
+		if entry.FileInfo().IsDir() {
+			if err := os.MkdirAll(target, 0o755); err != nil {
+				return err
+			}
+			continue
+		}
+		if entry.Mode()&os.ModeType != 0 {
+			return fmt.Errorf("archive contains unsupported file type %q", entry.Name)
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+			return err
+		}
+		sourceFile, err := entry.Open()
+		if err != nil {
+			return err
+		}
+		targetFile, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, entry.Mode().Perm())
+		if err != nil {
+			sourceFile.Close()
+			return err
+		}
+		_, copyErr := io.Copy(targetFile, sourceFile)
+		closeTargetErr := targetFile.Close()
+		closeSourceErr := sourceFile.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		if closeTargetErr != nil {
+			return closeTargetErr
+		}
+		if closeSourceErr != nil {
+			return closeSourceErr
+		}
+	}
+	return nil
+}
+
 type runtimeCommand struct {
 	name string
 	args []string
@@ -348,6 +527,9 @@ func verifyCUDA(ctx context.Context, python string) error {
 }
 
 func downloadVerified(ctx context.Context, url, destination, wantSHA string) error {
+	if got, err := fileSHA256(destination); err == nil && got == wantSHA {
+		return nil
+	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -377,7 +559,26 @@ func downloadVerified(ctx context.Context, url, destination, wantSHA string) err
 	if got := fmt.Sprintf("%x", hash.Sum(nil)); got != wantSHA {
 		return fmt.Errorf("runtime asset checksum mismatch: got %s", got)
 	}
+	if _, err := os.Stat(destination); err == nil {
+		backup := destination + ".invalid-" + strconv.FormatInt(time.Now().Unix(), 10)
+		if err := os.Rename(destination, backup); err != nil {
+			return fmt.Errorf("preserve invalid runtime asset: %w", err)
+		}
+	}
 	return os.Rename(partial, destination)
+}
+
+func fileSHA256(path string) (string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", hash.Sum(nil)), nil
 }
 
 func venvPython(venv string) string {

@@ -66,6 +66,36 @@ test("renders the dedicated LLM and agent guide", async () => {
   assert.match(html, /adapter inspect/);
 });
 
+test("renders the complete beginner learning center", async () => {
+  const response = await render("/learn");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+
+  const html = await response.text();
+  assert.match(html, /Tapioca for complete beginners/i);
+  assert.match(html, /Install on a Mac/);
+  assert.match(html, /Install on Windows/);
+  assert.match(html, /Run your first LLM/);
+  assert.match(html, /Clone a voice responsibly/);
+  assert.match(html, /Generate your first image/);
+  assert.match(html, /Generate motion and video/);
+  assert.match(html, /six checks to make before downloading/i);
+  assert.match(html, /adapter inspect/);
+  assert.match(html, /tapioca-desktop-macos-arm64\.dmg/);
+  assert.match(html, /tapioca-desktop-windows-amd64\.exe/);
+});
+
+test("publishes short verified installer endpoints", async () => {
+  const [shellInstaller, powershellInstaller] = await Promise.all([
+    readFile(new URL("../public/install.sh", import.meta.url), "utf8"),
+    readFile(new URL("../public/install.ps1", import.meta.url), "utf8"),
+  ]);
+  assert.match(shellInstaller, /checksum did not match/);
+  assert.match(shellInstaller, /Added by the Tapioca installer/);
+  assert.match(powershellInstaller, /Get-FileHash/);
+  assert.match(powershellInstaller, /SetEnvironmentVariable\("Path"/);
+});
+
 test("serves concise and full machine-readable agent contracts", async () => {
   for (const path of ["/llms.txt", "/llms-full.txt"]) {
     const response = await render(path, "text/plain");

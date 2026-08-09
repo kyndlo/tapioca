@@ -66,7 +66,30 @@ The default `minimax-h3` variant is selected for the host:
 On a 48 GiB Mac, a 3-second 864×480 clip can take roughly 15–20 minutes;
 larger clips can take much longer. A 4070 Ti SUPER 16 GB is supported by the
 CUDA variant. The first run is slower because Tapioca creates the managed
-runtime. Git and Python 3.10+ must be installed.
+runtime. Windows x64 users need only a current NVIDIA driver: Tapioca manages
+Python 3.12, ComfyUI, and CUDA-enabled PyTorch privately. The CUDA developer
+Toolkit is not required. Fresh macOS and Linux installations still require
+Python 3.10+; macOS also requires Git for its pinned custom nodes.
+
+### NVIDIA setup on Windows
+
+Users should not overclock the GPU, change its BIOS, or try to switch a
+GeForce card to TCC mode. For a reliable run:
+
+1. Install a current NVIDIA Studio or Game Ready driver and restart Windows.
+2. Run `nvidia-smi` in PowerShell. It must show the GPU, driver, and available
+   VRAM before starting Tapioca.
+3. Close games, browsers using GPU acceleration, and other generators to free
+   VRAM. Plug laptops into power and select the high-performance NVIDIA GPU for
+   `tapioca.exe` in Windows **Settings > System > Display > Graphics**.
+4. Keep at least 32 GiB of system RAM and the Windows page file enabled.
+
+The MiniMax-H3 profile is tested with 16 GiB VRAM. The runtime warns rather
+than rejecting smaller NVIDIA cards, because reduced resolution and frame
+counts may work, but 12 GiB and smaller configurations are not currently a
+supported performance target. Use LTX Video on 8–12 GiB cards. On systems
+with multiple NVIDIA GPUs, Tapioca automatically selects the card with the
+most VRAM.
 
 MiniMax-H3 frame counts use `17n+5`, such as 5, 73, or 124. Ten or more steps
 are recommended when judging speech. Compatible MiniMax-H3 transformer LoRAs

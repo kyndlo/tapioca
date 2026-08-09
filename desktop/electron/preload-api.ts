@@ -87,6 +87,12 @@ export function createTapiocaApi(transport: PreloadTransport): TapiocaDesktopApi
       const input = ipcSchemas.creatorPickFileInput.parse(raw);
       return ipcSchemas.creatorPickFileResult.parse(await transport.invoke(IPC_CHANNELS.creatorPickFile, input));
     },
+    async creatorSaveRecording(raw: Parameters<TapiocaDesktopApi["creatorSaveRecording"]>[0]) {
+      const input = ipcSchemas.creatorSaveRecordingInput.parse(raw);
+      return ipcSchemas.creatorSaveRecordingResult.parse(
+        await transport.invoke(IPC_CHANNELS.creatorSaveRecording, input),
+      );
+    },
     async creatorGenerate(raw: Parameters<TapiocaDesktopApi["creatorGenerate"]>[0]) {
       const input = ipcSchemas.creatorGenerateInput.parse(raw);
       return ipcSchemas.creatorGenerateResult.parse(await transport.invoke(IPC_CHANNELS.creatorGenerate, input));

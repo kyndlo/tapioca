@@ -45,6 +45,14 @@ export interface CreatorLora {
   weight: number;
 }
 
+export interface CreatorLoraOption {
+  reference: string;
+  name: string;
+  bytes: number;
+  compatible: boolean;
+  reason?: string;
+}
+
 export interface CreatorAdvancedSettings {
   width: number;
   height: number;
@@ -85,8 +93,10 @@ export interface CreatorOutput {
 
 export interface CreatorAdapter {
   models(mode: CreatorMode): Promise<CreatorModel[]>;
+  availableLoras(modelId: string): Promise<CreatorLoraOption[]>;
   outputs(): Promise<CreatorOutput[]>;
   pickFile(kind: LocalFileKind): Promise<LocalFileSelection | undefined>;
+  saveVoiceRecording(bytes: Uint8Array, durationSeconds: number): Promise<LocalFileSelection>;
   generate(
     request: CreatorRequest,
     onEvent: (event: CreatorProgressEvent) => void,

@@ -4,6 +4,8 @@ import {
   moveLora,
   parseHfLoraReference,
   validateCreatorRequest,
+  videoDurationSeconds,
+  videoFramesForDuration,
 } from "./state";
 
 describe("creator state", () => {
@@ -47,5 +49,27 @@ describe("creator state", () => {
         "Width must be 256–2048 and divisible by 8.",
       ]),
     );
+  });
+
+  it("turns friendly video durations into model-valid frame counts", () => {
+    expect(videoFramesForDuration("minimax-h3:fl2va-int8-mac", 3, 24)).toBe(73);
+    expect(videoFramesForDuration("minimax-h3:fl2va-int8-cuda", 5, 24)).toBe(124);
+    expect(videoFramesForDuration("ltx-video:2b-fp16", 3, 24)).toBe(73);
+    expect(videoFramesForDuration("wan:small", 3, 24)).toBe(73);
+    expect(videoDurationSeconds(124, 24)).toBeCloseTo(5.17, 2);
+  });
+
+  it("explains invalid expert video values", () => {
+    const errors = validateCreatorRequest({
+      mode: "video",
+      modelId: "minimax-h3:fl2va-int8-mac",
+      prompt: "A camera move",
+      loras: [],
+      settings: { ...defaultCreatorSettings(), width: 510, frames: 120 },
+    });
+    expect(errors).toEqual(expect.arrayContaining([
+      "Width must be 256–2048 and divisible by 32.",
+      "MiniMax-H3 duration must resolve to a 17n+5 frame count. Use a duration preset.",
+    ]));
   });
 });

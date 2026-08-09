@@ -15,6 +15,7 @@ function apiFixture(overrides: Partial<TapiocaDesktopApi> = {}) {
       platform: "macos",
       arch: "arm64",
       cpuCount: 10,
+      accelerators: ["apple", "cpu"],
       memoryBytes: 32 * 1024 ** 3,
       modelsPath: "/models",
       modelsBytes: 0,
@@ -41,6 +42,7 @@ function apiFixture(overrides: Partial<TapiocaDesktopApi> = {}) {
     }),
     creatorCatalog: vi.fn().mockResolvedValue([]),
     creatorPickFile: vi.fn().mockResolvedValue(undefined),
+    creatorSaveRecording: vi.fn(),
     creatorGenerate: vi.fn(),
     creatorOutputs: vi.fn().mockResolvedValue([]),
     creatorLoraList: vi.fn().mockResolvedValue([]),
@@ -78,6 +80,94 @@ describe("renderer adapters", () => {
       expect.objectContaining({
         ready: false,
         detail: "Unavailable: runtime_adapter_required",
+      }),
+    ]);
+  });
+
+  it("exposes the installed MiniMax-H3 CUDA model on an NVIDIA Windows machine", async () => {
+    const h3 = {
+      name: "minimax-h3:fl2va-int8-cuda",
+      repo: "Comfy-Org/MiniMax-H3",
+      kind: "video",
+      backend: "comfy-h3-cuda",
+      size: "~41 GiB",
+      memory: "32 GiB system RAM; 16 GiB VRAM recommended",
+      platforms: ["windows", "linux"],
+      operation: "video.generate",
+      supports_input_image: true,
+      requires_input_image: false,
+      supports_lora: true,
+      available: true,
+      width: 864,
+      height: 480,
+      steps: 20,
+      frames: 73,
+      fps: 24,
+    };
+    const api = apiFixture({
+      systemSnapshot: vi.fn().mockResolvedValue({
+        platform: "windows",
+        arch: "amd64",
+        cpuCount: 16,
+        accelerators: ["nvidia", "cpu"],
+        memoryBytes: 64 * 1024 ** 3,
+        modelsPath: "C:\\Users\\test\\.tapioca\\models",
+        modelsBytes: 41 * 1024 ** 3,
+        availableDiskBytes: 100 * 1024 ** 3,
+      }),
+      creatorCatalog: vi.fn().mockResolvedValue([h3]),
+      models: vi.fn().mockResolvedValue({
+        catalog: [h3],
+        installed: [{
+          name: h3.name,
+          repo: h3.repo,
+          kind: h3.kind,
+          backend: h3.backend,
+        }],
+      }),
+    });
+    const adapters = createRendererAdapters(api, vi.fn());
+
+    await expect(adapters.creator.models("video")).resolves.toEqual([
+      expect.objectContaining({
+        id: h3.name,
+        ready: true,
+        supportsInputImage: true,
+        supportsLoRA: true,
+      }),
+    ]);
+    await expect(adapters.machine()).resolves.toEqual(
+      expect.objectContaining({ platform: "windows", accelerators: ["nvidia", "cpu"] }),
+    );
+  });
+
+  it("turns installed adapter files into assignable LoRA references", async () => {
+    const api = apiFixture({
+      creatorLoraList: vi.fn().mockResolvedValue([
+        {
+          id: "lora-1",
+          file: "creator/minimax-h3-cinematic/motion.safetensors",
+          bytes: 256 * 1024 ** 2,
+        },
+        {
+          id: "lora-2",
+          file: "creator/flux-style/style.safetensors",
+          bytes: 128 * 1024 ** 2,
+        },
+      ]),
+    });
+    const adapters = createRendererAdapters(api, vi.fn());
+
+    await expect(
+      adapters.creator.availableLoras("minimax-h3:fl2va-int8-cuda"),
+    ).resolves.toEqual([
+      expect.objectContaining({
+        reference: "hf://creator/minimax-h3-cinematic#motion.safetensors",
+        compatible: true,
+      }),
+      expect.objectContaining({
+        reference: "hf://creator/flux-style#style.safetensors",
+        compatible: false,
       }),
     ]);
   });

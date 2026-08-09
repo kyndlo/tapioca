@@ -13,7 +13,7 @@ import {
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import os from "node:os";
-import { lstat, readdir, statfs, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readdir, statfs, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { statSync } from "node:fs";
 import { z } from "zod";
@@ -31,7 +31,7 @@ import {
   resolveSidecarExecutable,
 } from "./control-client";
 import { ControlService } from "./control-service";
-import { isTrustedRendererUrl } from "./security";
+import { isAudioCapturePermission, isTrustedRendererUrl } from "./security";
 import { settleControlBeforeWindow } from "./startup";
 import { MediaRegistry, type MediaKind } from "./media-registry";
 
@@ -61,6 +61,7 @@ const zSystemInfo = z
     goos: z.string().min(1),
     goarch: z.string().min(1),
     cpu_count: z.number().int().positive(),
+    accelerators: z.array(z.enum(["apple", "nvidia", "amd", "intel", "cpu"])),
     protocol_version: z.literal(1),
   })
   .strict();
@@ -118,16 +119,47 @@ function assertTrustedFrame(event: IpcMainInvokeEvent): void {
 
 function registerContentSecurityPolicy(): void {
   session.defaultSession.setPermissionRequestHandler(
-    (_webContents, _permission, callback) => callback(false),
+    (webContents, permission, callback, details) => {
+      const mediaTypes = "mediaTypes" in details ? details.mediaTypes : undefined;
+      callback(
+        trustedWebContents.has(webContents.id) &&
+        isTrustedRendererUrl(webContents.getURL(), {
+          developmentServerUrl: isDevelopment
+            ? process.env.VITE_DEV_SERVER_URL
+            : undefined,
+          packagedRendererUrl,
+        }) &&
+        isAudioCapturePermission(permission, mediaTypes),
+      );
+    },
   );
-  session.defaultSession.setPermissionCheckHandler(() => false);
+  session.defaultSession.setPermissionCheckHandler(
+    (webContents, permission, _origin, details) =>
+      Boolean(
+        webContents &&
+        trustedWebContents.has(webContents.id) &&
+        isTrustedRendererUrl(webContents.getURL(), {
+          developmentServerUrl: isDevelopment
+            ? process.env.VITE_DEV_SERVER_URL
+            : undefined,
+          packagedRendererUrl,
+        }) &&
+        isAudioCapturePermission(
+          permission,
+          details.mediaType ? [details.mediaType] : undefined,
+        ),
+      ),
+  );
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const connectSource = isDevelopment
       ? "connect-src 'self' http://127.0.0.1:5173 ws://127.0.0.1:5173"
       : "connect-src 'self'";
+    const scriptSource = isDevelopment
+      ? "script-src 'self' 'unsafe-inline'"
+      : "script-src 'self'";
     const policy = [
       "default-src 'self'",
-      "script-src 'self'",
+      scriptSource,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: tapioca-media:",
       "font-src 'self'",
@@ -180,6 +212,7 @@ function registerIpcHandlers(): void {
             : "linux",
       arch: parsedSystem.goarch,
       cpuCount: parsedSystem.cpu_count,
+      accelerators: parsedSystem.accelerators,
       memoryBytes: os.totalmem(),
       modelsPath: parsedStorage.models_path,
       modelsBytes: parsedStorage.models_bytes,
@@ -439,6 +472,28 @@ function registerIpcHandlers(): void {
       name: path.basename(selected),
       kind,
       ...(kind !== "lora" ? { previewUrl: mediaRegistry.url(token) } : {}),
+    });
+  });
+  ipcMain.handle(IPC_CHANNELS.creatorSaveRecording, async (event, raw: unknown) => {
+    assertTrustedFrame(event);
+    const input = ipcSchemas.creatorSaveRecordingInput.parse(raw);
+    const storage = zStorageInfo.parse(await controlClient.request("storage.info"));
+    const directory = path.resolve(storage.home, "recordings");
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    const filePath = path.join(
+      directory,
+      `voice-reference-${Date.now()}-${crypto.randomUUID()}.wav`,
+    );
+    await writeFile(filePath, input.bytes, { flag: "wx", mode: 0o600 });
+    const token = mediaRegistry.add(filePath, "audio", {
+      durationSeconds: input.durationSeconds,
+      source: "microphone",
+    });
+    return ipcSchemas.creatorSaveRecordingResult.parse({
+      token,
+      name: path.basename(filePath),
+      kind: "audio",
+      previewUrl: mediaRegistry.url(token),
     });
   });
   ipcMain.handle(IPC_CHANNELS.creatorGenerate, async (event, raw: unknown) => {

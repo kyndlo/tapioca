@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isTrustedRendererUrl } from "./security";
+import { isAudioCapturePermission, isTrustedRendererUrl } from "./security";
 
 describe("renderer trust policy", () => {
   const packaged =
@@ -39,5 +39,18 @@ describe("renderer trust policy", () => {
         packagedRendererUrl: packaged,
       }),
     ).toBe(false);
+  });
+});
+
+describe("media permission policy", () => {
+  it("allows microphone-only capture", () => {
+    expect(isAudioCapturePermission("media", ["audio"])).toBe(true);
+  });
+
+  it("rejects video, mixed media, empty, and unrelated requests", () => {
+    expect(isAudioCapturePermission("media", ["video"])).toBe(false);
+    expect(isAudioCapturePermission("media", ["audio", "video"])).toBe(false);
+    expect(isAudioCapturePermission("media", [])).toBe(false);
+    expect(isAudioCapturePermission("notifications", ["audio"])).toBe(false);
   });
 });

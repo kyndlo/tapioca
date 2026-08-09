@@ -53,6 +53,12 @@ python -c "import platform; print(platform.machine())"
 The ARM64 backend runs on CPU and will be slower. Video generation still
 requires Windows x64 with NVIDIA CUDA.
 
+MiniMax-H3 manages its own Python 3.12 and CUDA-enabled PyTorch on Windows x64;
+do not install the CUDA Toolkit just for Tapioca. Run `nvidia-smi` to verify the
+driver is visible. Tapioca reports the selected GPU, VRAM, and driver before it
+installs or starts the runtime. A missing `nvidia-smi` means the NVIDIA driver
+is absent, broken, or unavailable to the process.
+
 ## Linux cannot use the GPU
 
 Text models use the bundled Vulkan runtime. Confirm the GPU and Vulkan loader

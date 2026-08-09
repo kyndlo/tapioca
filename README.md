@@ -39,7 +39,7 @@ Download the latest installer from
 ## Start here
 
 1. [Download the desktop app](https://github.com/kyndlo/tapioca/releases/latest)
-   or [install the CLI](docs/getting-started/installation.md)
+   or follow the [complete beginner guide](https://tapioca.rootfruit.cc/learn)
 2. [Run your first local model](docs/getting-started/quickstart.md)
 3. [Choose a model for your computer](docs/guides/choosing-models.md)
 4. Explore the task-specific guides below.
@@ -57,6 +57,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 ### Getting started
 
 - [Installation](docs/getting-started/installation.md)
+- [Beginner learning center](https://tapioca.rootfruit.cc/learn)
 - [Quickstart](docs/getting-started/quickstart.md)
 - [Choosing models and understanding memory](docs/guides/choosing-models.md)
 
@@ -105,6 +106,9 @@ audio through a managed ComfyUI runtime. The four-file model bundle is about
 41 GiB; Apple Silicon needs at least 48 GiB unified memory, while the CUDA
 variant is designed for 16 GiB GPUs such as the RTX 4070 Ti SUPER. Compatible
 MiniMax-H3 transformer LoRAs can be stacked with repeated `--adapter` flags.
+On Windows x64, MiniMax-H3 automatically provisions its pinned Python and
+CUDA-enabled media runtime; users need a current NVIDIA driver, not Git, a
+system Python installation, or the CUDA Toolkit.
 
 ## Everyday commands
 

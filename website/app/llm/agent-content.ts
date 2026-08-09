@@ -144,6 +144,12 @@ tapioca video minimax-h3 \\
 The low-memory preset is 640x352, 73 frames, 10 steps, and 24 FPS. MiniMax-H3
 frame counts must have the form \`17n+5\`.
 
+On Windows x64, do not ask the user to install Python, Git, or the CUDA Toolkit
+for MiniMax-H3. Tapioca provisions a pinned Python 3.12 and CUDA runtime. A
+current NVIDIA driver and a working \`nvidia-smi\` command are required. Treat
+16 GiB VRAM and 32 GiB system RAM as the supported target; recommend LTX Video
+for 8–12 GiB cards.
+
 Inspect a LoRA before pulling it. Proceed only if its model card identifies
 MiniMax-H3 as the base architecture:
 

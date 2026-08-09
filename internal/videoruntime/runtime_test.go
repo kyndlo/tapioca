@@ -1,12 +1,14 @@
 package videoruntime
 
 import (
+	"archive/zip"
 	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/carlos/tapioca/internal/adapter"
@@ -128,6 +130,42 @@ func TestWindowsPythonCandidatesAvoidStoreAliasFirst(t *testing.T) {
 	}
 }
 
+func TestParseNVIDIASMI(t *testing.T) {
+	gpu, err := parseNVIDIASMI("0, NVIDIA RTX A2000, 6144, 591.74\n1, NVIDIA GeForce RTX 4070 Ti SUPER, 16376, 591.74\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if gpu.Index != 1 || gpu.Name != "NVIDIA GeForce RTX 4070 Ti SUPER" || gpu.MemoryMiB != 16376 || gpu.Driver != "591.74" {
+		t.Fatalf("GPU = %#v", gpu)
+	}
+}
+
+func TestExtractZipRejectsParentTraversal(t *testing.T) {
+	root := t.TempDir()
+	archive := filepath.Join(root, "unsafe.zip")
+	file, err := os.Create(archive)
+	if err != nil {
+		t.Fatal(err)
+	}
+	writer := zip.NewWriter(file)
+	entry, err := writer.Create("../escape.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := entry.Write([]byte("unsafe")); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := extractZip(archive, filepath.Join(root, "destination")); err == nil {
+		t.Fatal("expected parent traversal to be rejected")
+	}
+}
+
 func TestEngineForKeepsBackendDetailsBehindStableBoundary(t *testing.T) {
 	tests := map[string]string{
 		"mlx-video": "mlx", "diffusers-video": "diffusers",
@@ -222,5 +260,27 @@ func TestH3RuntimeSetupIntegration(t *testing.T) {
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("managed runtime component missing: %s: %v", path, err)
 		}
+	}
+}
+
+func TestManagedWindowsPythonIntegration(t *testing.T) {
+	root := os.Getenv("TAPIOCA_WINDOWS_PYTHON_INTEGRATION_ROOT")
+	if root == "" {
+		t.Skip("set TAPIOCA_WINDOWS_PYTHON_INTEGRATION_ROOT to verify managed Windows Python")
+	}
+	if runtime.GOOS != "windows" || runtime.GOARCH != "amd64" {
+		t.Skip("managed Windows Python integration requires Windows x64")
+	}
+	venv := filepath.Join(root, "venv")
+	if err := installManagedWindowsPython(context.Background(), root, venv); err != nil {
+		t.Fatal(err)
+	}
+	python := venvPython(venv)
+	output, err := exec.Command(python, "-c", "import sys; print(sys.version_info[:2])").CombinedOutput()
+	if err != nil {
+		t.Fatalf("run managed Python: %v: %s", err, output)
+	}
+	if !strings.Contains(string(output), "(3, 12)") {
+		t.Fatalf("managed Python version = %s", output)
 	}
 }

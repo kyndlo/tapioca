@@ -272,6 +272,79 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
 .safetyGrid p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .llmFooter { max-width: none; padding-left: max(28px, calc((100vw - 1144px)/2)); padding-right: max(28px, calc((100vw - 1144px)/2)); }
 
+/* Beginner learning center */
+.learnPage { min-height: 100vh; background: #fbf8f2; }
+.learnNav {
+  height: 76px; max-width: 1200px; margin: auto; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.learnNav > div { display: flex; align-items: center; gap: 26px; font-size: 13px; font-weight: 650; }
+.learnNav > div > a:not(.button):hover { color: var(--purple); }
+.learnHero {
+  max-width: 1200px; min-height: 610px; margin: auto; padding: 74px 28px 105px;
+  display: grid; grid-template-columns: 1.08fr .92fr; align-items: center; gap: 80px;
+}
+.learnHero h1 { margin: 23px 0 30px; font-size: clamp(56px, 6.7vw, 86px); }
+.learnHero > div:first-child > p:not(.kicker) { max-width: 650px; color: var(--muted); font-size: 18px; line-height: 1.72; }
+.learnMap { padding: 25px; display: grid; grid-template-columns: 38px 1fr; gap: 10px 15px; border: 1px solid #e0cfde; border-radius: 19px; background: white; box-shadow: 15px 16px 0 #eadcf0; }
+.learnMap > span { display: grid; place-items: center; width: 38px; height: 52px; border-radius: 10px; background: var(--ink); color: var(--cyan); font: 750 11px var(--font-mono); }
+.learnMap > div { min-height: 52px; padding: 7px 4px 7px 15px; border-left: 2px solid #eddfeb; }
+.learnMap b { display: block; font-size: 17px; }.learnMap small { display: block; margin-top: 4px; color: var(--muted); }
+.learnBody { max-width: 1200px; margin: auto; padding: 0 28px 120px; display: grid; grid-template-columns: 235px minmax(0, 1fr); gap: 68px; align-items: start; }
+.learnContents { position: sticky; top: 25px; padding: 20px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.82); }
+.learnContents > p { margin: 0 0 13px; color: var(--muted); font: 700 10px var(--font-mono); text-transform: uppercase; letter-spacing: 1.5px; }
+.learnContents > a { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee5d9; font-size: 12px; font-weight: 650; }
+.learnContents > a:hover { color: var(--purple); }.learnContents > a span { color: var(--purple); font: 700 9px var(--font-mono); }
+.learnContents > small { display: block; margin-top: 17px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.learnGuides { min-width: 0; }
+.learnSection { padding: 95px 0 105px; border-top: 1px solid var(--line); scroll-margin-top: 15px; }
+.learnSection:first-child { border-top: 0; padding-top: 30px; }
+.lesson { margin: 0 0 16px; color: var(--purple); font: 750 11px var(--font-mono); text-transform: uppercase; letter-spacing: 1.8px; }
+.learnSection > h2 { margin: 0 0 24px; font-size: clamp(44px, 5vw, 68px); line-height: .98; letter-spacing: -3.6px; }
+.learnSection > h3 { margin: 38px 0 15px; font-size: 23px; letter-spacing: -.5px; }
+.learnSection > p:not(.lesson):not(.lessonIntro) { color: var(--muted); line-height: 1.7; }
+.lessonIntro { max-width: 780px; margin: 0 0 38px; color: var(--muted); font-size: 17px; line-height: 1.75; }
+.installChoices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+.installChoices > article { padding: 28px; border: 1px solid var(--line); border-radius: 16px; background: white; }
+.installChoices h3 { margin: 15px 0; font-size: 24px; }.installChoices ol { min-height: 150px; padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.installChoices .button { width: 100%; }.installChoices details { margin-top: 22px; }.installChoices summary { cursor: pointer; color: var(--purple); font-size: 12px; font-weight: 700; }
+.installChoices details p { color: var(--muted); font-size: 11px; line-height: 1.55; }
+.osBadge { display: inline-flex; padding: 7px 10px; border-radius: 20px; color: #176449; background: #e0f7ec; font: 700 9px var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+.osBadge.windows { color: #245d91; background: #e5f1fb; }
+.learnCommand { margin: 17px 0; padding: 17px 19px; overflow-x: auto; white-space: pre-wrap; border: 1px solid #4a3342; border-radius: 10px; background: #20131d; color: #fff4fb; font-size: 11px; line-height: 1.75; }
+.expected { margin-top: 22px; padding: 20px 22px; border-left: 4px solid #1ca873; border-radius: 0 11px 11px 0; background: #e9f8f2; }
+.expected b { color: #146847; font-size: 12px; }.expected p { margin: 6px 0 0; color: #4d7064; font-size: 12px; line-height: 1.55; }
+.beforeDownload { margin-top: 15px; padding: 22px; display: grid; gap: 9px; border: 1px dashed #d8c4d9; border-radius: 12px; background: #f8eff9; font-size: 12px; }
+.beforeDownload b { margin-bottom: 5px; }.beforeDownload span:before { content: "✓"; margin-right: 9px; color: var(--purple); font-weight: 800; }
+.memoryTable { overflow: hidden; border: 1px solid var(--line); border-radius: 14px; }
+.memoryTable > div { display: grid; grid-template-columns: .75fr 1.2fr 1fr; gap: 18px; padding: 18px 20px; border-top: 1px solid var(--line); background: rgba(255,255,255,.65); font-size: 12px; line-height: 1.6; }
+.memoryTable > div:first-child { border: 0; }.memoryTable .memoryHead { color: white; background: var(--ink); font: 700 10px var(--font-mono); }
+.memoryTable span:last-child { color: var(--muted); }.memoryTable code { font-size: 10px; }
+.rule { margin: 25px 0; padding: 22px; display: grid; grid-template-columns: 95px 1fr; gap: 20px; border-radius: 13px; background: var(--cream); }
+.rule span { color: var(--purple); font: 750 10px var(--font-mono); text-transform: uppercase; }.rule p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+.stepsDetailed { display: grid; gap: 10px; }
+.stepsDetailed article { padding: 23px; display: grid; grid-template-columns: 36px 1fr; gap: 17px; border: 1px solid var(--line); border-radius: 13px; background: white; }
+.stepsDetailed article > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--purple); color: white; font: 750 10px var(--font-mono); }
+.stepsDetailed h3 { margin: 4px 0 8px; }.stepsDetailed p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.trouble, .faq details { margin-top: 12px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 11px; background: white; }
+.trouble summary, .faq summary { cursor: pointer; font-weight: 700; }.trouble p, .faq p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.safetyCallout { padding: 23px; display: grid; grid-template-columns: 120px 1fr; gap: 22px; border-radius: 13px; color: white; background: #641c48; }
+.safetyCallout span { color: #ffd0ed; font: 750 10px var(--font-mono); text-transform: uppercase; }.safetyCallout p { margin: 0; color: #f7ddeb; font-size: 13px; line-height: 1.65; }
+.checklist { margin: 18px 0; padding: 0; display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; list-style: none; }
+.checklist li { padding: 14px 15px; border: 1px solid var(--line); border-radius: 9px; background: white; color: var(--muted); font-size: 12px; }.checklist li:before { content: "✓"; margin-right: 9px; color: #18a16e; font-weight: 800; }
+.platformRecipes { display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; }
+.platformRecipes article { min-width: 0; padding: 21px; border: 1px solid var(--line); border-radius: 13px; background: white; }
+.platformRecipes article > span { color: var(--purple); font: 700 9px var(--font-mono); text-transform: uppercase; }.platformRecipes h3 { margin: 12px 0 5px; font-size: 18px; }
+.platformRecipes .learnCommand { padding: 12px; font-size: 9px; }
+.loraFormula { margin: 30px 0; padding: 22px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 13px; border-radius: 14px; color: white; background: var(--ink); }
+.loraFormula b, .loraFormula strong { padding: 9px 12px; border-radius: 7px; background: #43243a; font-size: 12px; }.loraFormula strong { color: var(--ink); background: var(--cyan); }.loraFormula i { color: var(--pink); font-style: normal; }
+.loraChecks { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; list-style: none; counter-reset: lora; }
+.loraChecks li { padding: 18px; border: 1px solid var(--line); border-radius: 10px; background: white; color: var(--muted); font-size: 12px; line-height: 1.6; counter-increment: lora; }.loraChecks li:before { content: counter(lora); display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 8px 8px 0; border-radius: 50%; color: white; background: var(--purple); font: 700 9px var(--font-mono); }.loraChecks b { color: var(--ink); }
+.loraWrong { margin-top: 24px; padding: 22px; border: 1px solid #f0c7c7; border-radius: 12px; background: #fff0f0; }.loraWrong b { color: #8a2c38; }.loraWrong p { margin: 7px 0 0; color: #845962; font-size: 12px; line-height: 1.6; }
+.faq { display: grid; grid-template-columns: repeat(2,1fr); gap: 10px; }.faq details { margin: 0; }
+.finishCard { margin-top: 35px; padding: 28px; display: flex; align-items: center; gap: 25px; border-radius: 16px; background: linear-gradient(135deg, #7f12d5, #d629c8); color: white; }.finishCard img { width: 85px; }.finishCard b { font-size: 24px; }.finishCard p { color: #f2dcf5; font-size: 13px; line-height: 1.6; }.finishCard a { color: var(--cyan); font-weight: 750; font-size: 12px; }
+.learnFooter { max-width: 1200px; }.learnFooter > div { display: flex; gap: 20px; }
+
 @media (max-width: 850px) {
   .navlinks > a:not(.button) { display: none; }
   .hero, .desktopShowcase, .studio, .voices, .linuxLayout, .expertLayout { grid-template-columns: 1fr; }
@@ -283,6 +356,10 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
   .llmHero, .toolSection, .skillsSection, .apiGrid { grid-template-columns: 1fr; }
   .llmSectionHead { display: block; }.llmSectionHead .kicker { margin-bottom: 22px; }.llmSectionHead h2 { margin-bottom: 22px; }
   .agentStrip { justify-content: flex-start; overflow: hidden; }
+  .learnNav > div > a:not(.button) { display: none; }
+  .learnHero { grid-template-columns: 1fr; }
+  .learnBody { grid-template-columns: 1fr; }.learnContents { position: static; display: none; }
+  .platformRecipes { grid-template-columns: 1fr; }
 }
 @media (max-width: 560px) {
   h1 { font-size: 58px; letter-spacing: -4px; }.nav { padding: 0 18px; }.nav .button { font-size: 0; }.nav .button:after { content: "GitHub"; font-size: 12px; }
@@ -299,4 +376,10 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
   .agentSteps li:nth-child(odd) { border-right: 0; }.agentSteps li:nth-last-child(2) { border-bottom: 1px solid var(--line); }
   .clientGrid article:last-child { grid-column: auto; }
   .llmFooter { padding-left: 20px; padding-right: 20px; }
+  .learnNav { padding: 0 18px; }.learnNav .button { font-size: 0; }.learnNav .button:after { content: "GitHub"; font-size: 12px; }
+  .learnHero, .learnBody { padding-left: 20px; padding-right: 20px; }
+  .installChoices, .checklist, .loraChecks, .faq { grid-template-columns: 1fr; }
+  .memoryTable > div { grid-template-columns: 1fr; }.memoryTable .memoryHead { display: none; }
+  .rule, .safetyCallout { grid-template-columns: 1fr; }.finishCard { align-items: flex-start; }.finishCard img { width: 60px; }
+  .learnFooter { padding-left: 20px; padding-right: 20px; }
 }

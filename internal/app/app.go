@@ -23,7 +23,7 @@ import (
 	"github.com/carlos/tapioca/internal/server"
 )
 
-const version = "0.7.0"
+const version = "0.7.1"
 
 func Run(args []string) error {
 	if len(args) == 0 {

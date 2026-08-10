@@ -12,6 +12,8 @@ The app provides:
 - Model discovery, downloads, hardware guidance, and storage management.
 - Local coding-agent launch flows for Codex, Claude Code, OpenCode, OpenClaw,
   and Hermes.
+- Accessible SVG navigation and responsive agent cards that safely contain long
+  executable paths.
 - Persistent job state, cancellation, runtime health, and error recovery.
 
 End users should download a packaged installer from

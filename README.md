@@ -25,6 +25,8 @@ Tapioca Desktop brings the complete local workflow into one interface:
 - Assign installed LoRAs with model-family compatibility guidance.
 - Pull models, inspect hardware requirements, and track local storage.
 - Launch Codex, Claude Code, OpenCode, OpenClaw, and Hermes with a local model.
+- Navigate with a consistent accessible icon system and review long agent paths
+  without layout overflow.
 - Monitor active jobs and keep generated media in a local gallery.
 
 Download the latest installer from

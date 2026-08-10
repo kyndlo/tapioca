@@ -1,4 +1,5 @@
 import type { NavigationItem } from "../app/navigation";
+import { NavigationIcon } from "../app/NavigationIcon";
 
 interface PlaceholderRouteProps {
   route: NavigationItem;
@@ -83,7 +84,7 @@ export function PlaceholderRoute({ route }: PlaceholderRouteProps) {
       ) : (
         <div className="empty-state">
           <div className="empty-state__mark" aria-hidden="true">
-            {route.glyph}
+            <NavigationIcon route={route.id} />
           </div>
           <p className="eyebrow">{route.label} foundation</p>
           <h2>This space is ready for its feature workflow.</h2>

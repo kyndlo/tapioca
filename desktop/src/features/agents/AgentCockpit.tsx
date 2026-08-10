@@ -220,9 +220,11 @@ export function AgentCockpit({ adapter }: AgentCockpitProps) {
                     disabled={busy}
                   >
                     <AgentGlyph id={agent.id} />
-                    <span>
+                    <span className="agent-choice__details">
                       <strong>{agent.name}</strong>
-                      <small>{agent.description}</small>
+                      <small className="agent-choice__description" title={agent.description}>
+                        {agent.description}
+                      </small>
                     </span>
                     <em className={agent.installed ? "is-ready" : ""}>
                       {agent.installed ? "Installed" : "Not installed"}

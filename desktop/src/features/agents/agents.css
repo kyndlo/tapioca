@@ -182,7 +182,10 @@
 .agent-grid > button {
   position: relative;
   display: grid;
+  grid-template-rows: auto minmax(42px, 1fr) auto;
+  min-width: 0;
   min-height: 136px;
+  overflow: hidden;
   justify-items: start;
   gap: var(--space-2);
   padding: var(--space-3);
@@ -221,19 +224,35 @@
   letter-spacing: 0.04em;
 }
 
-.agent-grid > button > span:nth-child(2) {
+.agent-choice__details {
   display: grid;
+  min-width: 0;
+  width: 100%;
+  align-content: start;
   gap: 3px;
 }
 
-.agent-grid strong {
+.agent-choice__details strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
   font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.agent-grid small {
+.agent-choice__description {
+  display: -webkit-box;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
   color: var(--color-text-muted);
   font-size: 9px;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .agent-grid em {

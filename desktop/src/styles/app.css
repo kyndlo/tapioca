@@ -89,12 +89,38 @@
   box-shadow: 0 8px 20px rgba(126, 27, 234, 0.22);
 }
 
-.nav-item__glyph {
+.nav-item__icon {
   display: grid;
-  width: 22px;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
   place-items: center;
-  font-size: 18px;
-  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: currentColor;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.nav-item__icon-svg {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  vector-effect: non-scaling-stroke;
+}
+
+.nav-item:hover .nav-item__icon {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-item--active .nav-item__icon {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.13);
 }
 
 .sidebar__footer {

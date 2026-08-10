@@ -13,6 +13,7 @@ import { AgentCockpit } from "../features/agents";
 import { CreatorScreen } from "../features/create";
 import { createRendererAdapters, type RendererAdapters } from "./adapters";
 import type { TapiocaDesktopApi } from "../shared/ipc";
+import { NavigationIcon } from "./NavigationIcon";
 
 type RuntimeState = "ready" | "starting" | "degraded" | "offline";
 
@@ -112,8 +113,8 @@ export default function App() {
                   href={hrefForRoute(item.id)}
                   aria-current={item.id === activeRouteId ? "page" : undefined}
                 >
-                  <span className="nav-item__glyph" aria-hidden="true">
-                    {item.glyph}
+                  <span className="nav-item__icon" aria-hidden="true">
+                    <NavigationIcon route={item.id} />
                   </span>
                   <span>{item.label}</span>
                 </a>

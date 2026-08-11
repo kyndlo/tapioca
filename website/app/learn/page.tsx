@@ -32,7 +32,7 @@ export default function Learn() {
         <Link className="brand" href="/" aria-label="Tapioca home">
           <img src="/tapioca.png" alt="" /><span>tapioca</span>
         </Link>
-        <div><a href="#install">Install</a><a href="#loras">LoRAs</a><a href="/llm">For agents</a><a className="button small ghost" href={repo}>GitHub ↗</a></div>
+        <div><a href="#install">Install</a><a href="/import">Import & transfer</a><a href="#loras">LoRAs</a><a href="/llm">For agents</a><a className="button small ghost" href={repo}>GitHub ↗</a></div>
       </nav>
 
       <section className="learnHero">
@@ -44,7 +44,7 @@ export default function Learn() {
             means. Start with your computer and the thing you want to make.
             This guide explains every click, command, download, and file.
           </p>
-          <div className="actions"><a className="button primary" href="#install">Start with installation →</a><a className="button ghost" href="#choose">Help me choose a model</a></div>
+          <div className="actions"><a className="button primary" href="#install">Start with installation →</a><a className="button ghost" href="/import">Reuse existing downloads</a></div>
         </div>
         <div className="learnMap" aria-label="Beginner learning path">
           <span>1</span><div><b>Install</b><small>One app, no account</small></div>
@@ -212,6 +212,7 @@ tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
             <h3>Move an adapter library to another computer</h3>
             <p>Copy the complete <code>adapters</code> directory—including each <code>snapshot.json</code>—into the other computer&apos;s Tapioca home. The default is <code>~/.tapioca/adapters</code> on macOS/Linux and <code>%USERPROFILE%\.tapioca\adapters</code> on Windows. Alternatively, import each raw safetensors file again and declare its base model.</p>
             <div className="rule"><span>Keep metadata together</span><p>Do not move only individual managed weight files or rename folders inside the adapter library. The snapshot records provider, checksum, revision, and compatibility information used for safe reuse.</p></div>
+            <p><a className="button primary" href="/import">Open the complete import and computer-transfer guide →</a></p>
           </section>
 
           <section className="learnSection" id="help">
@@ -228,7 +229,7 @@ tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
         </div>
       </div>
 
-      <footer className="learnFooter"><Link className="brand" href="/"><img src="/tapioca.png" alt="" /><span>tapioca</span></Link><p>Beginner guide · Local by default</p><div><a href="/llm">For agents</a><a href={`${repo}/tree/main/docs`}>Full reference</a><a href={`${repo}/issues`}>Get help</a></div></footer>
+      <footer className="learnFooter"><Link className="brand" href="/"><img src="/tapioca.png" alt="" /><span>tapioca</span></Link><p>Beginner guide · Local by default</p><div><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={`${repo}/tree/main/docs`}>Full reference</a><a href={`${repo}/issues`}>Get help</a></div></footer>
     </main>
   );
 }

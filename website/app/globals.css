@@ -286,6 +286,9 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
 }
 .learnHero h1 { margin: 23px 0 30px; font-size: clamp(56px, 6.7vw, 86px); }
 .learnHero > div:first-child > p:not(.kicker) { max-width: 650px; color: var(--muted); font-size: 18px; line-height: 1.72; }
+.heroHelper { margin: 18px 0 0; color: var(--muted); font-size: 13px; }
+.heroHelper a { color: var(--purple); font-weight: 700; }
+.heroHelper a:hover { text-decoration: underline; }
 .learnMap { padding: 25px; display: grid; grid-template-columns: 38px 1fr; gap: 10px 15px; border: 1px solid #e0cfde; border-radius: 19px; background: white; box-shadow: 15px 16px 0 #eadcf0; }
 .learnMap > span { display: grid; place-items: center; width: 38px; height: 52px; border-radius: 10px; background: var(--ink); color: var(--cyan); font: 750 11px var(--font-mono); }
 .learnMap > div { min-height: 52px; padding: 7px 4px 7px 15px; border-left: 2px solid #eddfeb; }

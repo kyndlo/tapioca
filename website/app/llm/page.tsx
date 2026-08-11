@@ -64,6 +64,7 @@ export default function LlmGuide() {
           <a href="#quickstart">Quickstart</a>
           <a href="#api">API</a>
           <a href="#media">Media</a>
+          <a href="/import">Import & transfer</a>
           <a href="#skills">Agent skills</a>
           <a href="/llms.txt">llms.txt</a>
           <a className="button small ghost" href={repo}>GitHub ↗</a>
@@ -175,6 +176,12 @@ export default function LlmGuide() {
             references first, inspect or pull from Hugging Face, Civitai, or
             ModelScope, and import existing files into a managed local reference.
           </p>
+          <p>
+            For computer-to-computer migration, preserve complete adapter
+            snapshots and rebuild copied base-model registration with
+            <code> tapioca pull MODEL</code>. The <a href="/import">import and transfer guide</a>
+            gives agents and humans the exact safe workflow.
+          </p>
         </div>
         <div className="apiGrid">
           <div className="endpointList">
@@ -252,7 +259,7 @@ export default function LlmGuide() {
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
         <a className="brand" href="/"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Built for humans. Documented for agents.</p>
-        <div><a href="/llms.txt">llms.txt</a><a href="/llms-full.txt">Full text</a><a href={repo}>GitHub</a></div>
+        <div><a href="/import">Import & transfer</a><a href="/llms.txt">llms.txt</a><a href="/llms-full.txt">Full text</a><a href={repo}>GitHub</a></div>
       </footer>
     </main>
   );

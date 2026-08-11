@@ -23,6 +23,7 @@ Reference material:
 
 - [Commands](reference/commands.md)
 - [Storage](reference/storage.md)
+- [Import existing LoRAs and transfer model files](guides/import-and-transfer.md)
 - [Troubleshooting](reference/troubleshooting.md)
 - [Building](reference/building.md)
 

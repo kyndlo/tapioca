@@ -61,6 +61,8 @@ Agent contract: ${contractVersion}
 - LoRA library: run \`tapioca adapter list\` and reuse installed adapters before requesting a download.
 - LoRA providers: \`hf://\`, \`civitai://MODEL_ID/VERSION_ID\`, \`ms://\`, and verified \`local://\` imports.
 - LoRA stacks: inspect adapters first, then use ordered repeated \`--adapter\` flags.
+- Existing LoRA files: use \`tapioca adapter import FILE --base MODEL --name NAME\`; never pass a local path to \`--file\`.
+- Transfers: copy complete adapter folders including \`snapshot.json\`; after copying a compatible base-model folder, run \`tapioca pull MODEL\` without \`--force\` to verify files and rebuild registration.
 - Coding agents: \`tapioca launch codex|claude|opencode|openclaw|hermes MODEL\`.
 - Model discovery: \`tapioca catalog\`.
 
@@ -116,6 +118,28 @@ Treat \`tapioca catalog\` as authoritative for model IDs, tasks, platforms,
 download sizes, memory guidance, runtime backends, and GPU requirements.
 Prefer installed models and coder/tool-oriented entries for repository work.
 Do not infer tool support from the ability to chat.
+
+## Reuse existing downloads
+
+Before downloading a LoRA, run \`tapioca adapter list\`. If the user already
+has a raw safetensors LoRA, import it instead of downloading another copy:
+
+\`tapioca adapter import FILE --base MODEL --name NAME\`
+
+The command validates and copies the file, leaves the original unchanged, and
+returns a canonical \`local://\` reference. \`--file\` only selects a file
+inside a provider repository; it does not accept a local filesystem path.
+
+To migrate all managed LoRAs, copy the complete \`TAPIOCA_HOME/adapters\`
+directory, including every \`snapshot.json\`. To migrate a catalog base model,
+copy its complete directory into the destination \`TAPIOCA_HOME/models\`, then
+run \`tapioca pull MODEL\` without \`--force\`. Tapioca reuses present files,
+downloads only missing required files, and rebuilds the registry using paths
+valid on the destination. Do not copy \`registry.json\` by itself because it
+contains absolute paths. Transfer only model variants compatible with the
+destination platform and backend.
+
+Human-readable guide: https://tapioca.rootfruit.cc/import
 
 ## Media
 

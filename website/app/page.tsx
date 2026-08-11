@@ -55,6 +55,7 @@ export default function Home() {
         <div className="navlinks">
           <a href="#desktop">Desktop app</a>
           <a href="/learn">Beginner guide</a>
+          <a href="/import">Import & transfer</a>
           <a href="#voices">Voices</a>
           <a href="#commands">Commands</a>
           <a href="#experts">For experts</a>
@@ -76,6 +77,7 @@ export default function Home() {
             <a className="button primary" href="/learn">Start the beginner guide →</a>
             <a className="button ghost" href={`${repo}/releases/latest`}>Download Tapioca</a>
           </div>
+          <p className="heroHelper">Already have large weights? <a href="/import">Import LoRAs or transfer models without starting over →</a></p>
           <div className="trust">
             <span>✓ Open source</span><span>✓ Local-first</span><span>✓ No account required</span>
           </div>
@@ -164,7 +166,7 @@ export default function Home() {
             <p>If the model is missing, Tapioca pulls it automatically. Type <code>/bye</code> when you&apos;re done.</p>
           </article>
         </div>
-        <p className="helper">Want every step explained? <a href="/learn">Open the complete beginner learning center →</a></p>
+        <p className="helper">Want every step explained? <a href="/learn">Open the complete beginner learning center →</a> Already downloaded weights? <a href="/import">Import and transfer them →</a></p>
       </section>
 
       <section className="section platformSection">
@@ -322,7 +324,7 @@ export default function Home() {
       <footer>
         <a className="brand" href="#top"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Local AI should feel like yours. Built in the open.</p>
-        <div><a href="/learn">For beginners</a><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
+        <div><a href="/learn">For beginners</a><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
       </footer>
     </main>
   );

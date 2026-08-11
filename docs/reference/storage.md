@@ -50,5 +50,16 @@ environment settings if desired.
 Release archives do not contain model weights. Leave enough free space for
 the download, runtime dependencies, temporary partial downloads, and outputs.
 
-The detailed LoRA storage layout is documented in
+To reuse existing downloads or move weights between computers, follow
+[Import and transfer](../guides/import-and-transfer.md). It explains how to:
+
+- import a raw `.safetensors` LoRA with `tapioca adapter import`;
+- copy the complete managed adapter library with its metadata; and
+- copy a catalog model directory and run `tapioca pull MODEL` to verify missing
+  files and rebuild registration for the destination computer.
+
+Do not copy `registry.json` by itself between computers. It stores absolute
+paths from the machine that created it.
+
+The detailed LoRA composition and storage layout is documented in
 [LoRA adapters](../concepts/lora-adapters.md).

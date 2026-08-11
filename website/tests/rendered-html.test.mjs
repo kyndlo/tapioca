@@ -27,6 +27,7 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /Windows ARM64/);
   assert.match(html, /OpenAI-compatible API/);
   assert.match(html, /tapioca run qwen3:8b-q4_k_m/);
+  assert.match(html, /Import LoRAs or transfer models/i);
   assert.match(html, /property="og:image"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
@@ -91,6 +92,22 @@ test("renders the complete beginner learning center", async () => {
   assert.match(html, /tapioca-desktop-windows-amd64\.exe/);
 });
 
+test("renders a prominent import and transfer guide", async () => {
+  const response = await render("/import");
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+
+  const html = await response.text();
+  assert.match(html, /Import one LoRA file/i);
+  assert.match(html, /Import from computer/i);
+  assert.match(html, /tapioca adapter import/i);
+  assert.match(html, /Move your complete LoRA library/i);
+  assert.match(html, /Transfer an installed base model/i);
+  assert.match(html, /tapioca pull minimax-h3/i);
+  assert.match(html, /Do not copy registry\.json alone/i);
+  assert.match(html, /TAPIOCA_HOME/i);
+});
+
 test("publishes short verified installer endpoints", async () => {
   const [shellInstaller, powershellInstaller] = await Promise.all([
     readFile(new URL("../public/install.sh", import.meta.url), "utf8"),
@@ -116,5 +133,7 @@ test("serves concise and full machine-readable agent contracts", async () => {
     assert.match(body, /LoRA/i);
     assert.match(body, /adapter list/);
     assert.match(body, /civitai:\/\/MODEL_ID\/VERSION_ID/);
+    assert.match(body, /adapter import FILE --base MODEL/);
+    assert.match(body, /copy.*snapshot\.json/is);
   }
 });

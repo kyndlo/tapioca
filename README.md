@@ -85,6 +85,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 
 - [Command reference](docs/reference/commands.md)
 - [Files, models, and disk storage](docs/reference/storage.md)
+- [Import existing LoRAs and transfer model files](docs/guides/import-and-transfer.md)
 - [Troubleshooting](docs/reference/troubleshooting.md)
 - [Build from source](docs/reference/building.md)
 

@@ -727,9 +727,10 @@ function createWindow(): BrowserWindow {
   });
 
   window.setMenuBarVisibility(false);
-  trustedWebContents.add(window.webContents.id);
+  const webContentsId = window.webContents.id;
+  trustedWebContents.add(webContentsId);
   window.webContents.once("destroyed", () => {
-    trustedWebContents.delete(window.webContents.id);
+    trustedWebContents.delete(webContentsId);
   });
   window.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   window.webContents.on("will-navigate", (event, navigationUrl) => {
@@ -755,8 +756,9 @@ app.whenReady().then(async () => {
   registerIpcHandlers();
   controlClient.onEvent((event) => {
     for (const window of BrowserWindow.getAllWindows()) {
-      if (trustedWebContents.has(window.webContents.id)) {
-        window.webContents.send(IPC_CHANNELS.jobEvent, event);
+      const webContents = window.webContents;
+      if (!webContents.isDestroyed() && trustedWebContents.has(webContents.id)) {
+        webContents.send(IPC_CHANNELS.jobEvent, event);
       }
     }
   });

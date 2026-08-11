@@ -48,7 +48,8 @@ func video(args []string) error {
 	frames := fs.Int("frames", profile.Frames, "number of frames (4n+1)")
 	steps := fs.Int("steps", profile.Steps, "denoising steps")
 	fps := fs.Int("fps", profile.FPS, "output frames per second")
-	seed := fs.Uint64("seed", 0, "random seed")
+	seed := fs.Uint64("seed", 0, "generation seed (default 0)")
+	randomSeed := fs.Bool("random-seed", false, "generate and print a random seed")
 	var adapterValues stringList
 	adapterValues = append(adapterValues, recipeAdapters...)
 	adapterFile := ""
@@ -62,6 +63,10 @@ func video(args []string) error {
 	}
 	changed := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { changed[f.Name] = true })
+	effectiveSeed, err := resolveMediaSeed(*seed, changed["seed"], *randomSeed)
+	if err != nil {
+		return err
+	}
 	defaults, err := videoPreset(profile, *preset)
 	if err != nil {
 		return err
@@ -102,6 +107,9 @@ func video(args []string) error {
 	}
 	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
+	}
+	if *randomSeed {
+		fmt.Fprintf(os.Stderr, "using random seed %d\n", effectiveSeed)
 	}
 	var explicitScale *float64
 	if adapterScale.set {
@@ -153,7 +161,7 @@ func video(args []string) error {
 	err = videoruntime.Run(ctx, filepath.Join(home, "runtime"), videoruntime.Request{
 		ModelPath: model.Path, Prompt: effectivePrompt, NegativePrompt: *negative,
 		InputImage: imagePath, Output: target, Width: *width, Height: *height,
-		Frames: *frames, Steps: *steps, FPS: *fps, Seed: *seed, Backend: model.Backend,
+		Frames: *frames, Steps: *steps, FPS: *fps, Seed: effectiveSeed, Backend: model.Backend,
 		Adapters: adapters,
 	})
 	if err != nil {

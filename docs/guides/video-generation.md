@@ -129,6 +129,9 @@ offload; 32 GiB RAM is recommended. Stable Video Diffusion is approximately
 
 ## Rules and flags
 
+- The default seed is `0`. Use `--random-seed` to generate and print a seed,
+  then reuse that value with `--seed NUMBER` when reproducibility is needed.
+  The two flags cannot be combined.
 - Dimensions must be divisible by 32.
 - Most frame counts have the form `4n+1`, such as 17, 41, or 81.
 - LTX-Video frame counts have the form `8n+1`.

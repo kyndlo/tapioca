@@ -144,12 +144,26 @@ func TestVideoValidationBeforeDownload(t *testing.T) {
 			[]string{"stable-video-diffusion:xt-fp16", "--prompt", "test"},
 			"requires --image",
 		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--seed", "42", "--random-seed"},
+			"cannot be used together",
+		},
 	}
 	for _, test := range tests {
 		err := video(test.args)
 		if err == nil || !strings.Contains(err.Error(), test.want) {
 			t.Errorf("video(%q) error = %v, want %q", test.args, err, test.want)
 		}
+	}
+}
+
+func TestImageSeedValidationBeforeDownload(t *testing.T) {
+	err := image([]string{
+		"sd-turbo:onnx-directml", "--prompt", "test",
+		"--seed", "42", "--random-seed",
+	})
+	if err == nil || !strings.Contains(err.Error(), "cannot be used together") {
+		t.Fatalf("image seed conflict error = %v", err)
 	}
 }
 

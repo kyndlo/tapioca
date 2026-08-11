@@ -40,7 +40,7 @@ const platforms = [
 const expertPoints = [
   ["OpenAI-compatible API", "Use /v1/chat/completions with tools, streaming, and familiar clients."],
   ["Backend-aware catalog", "A model variant declares its runtime, memory guidance, GPU needs, and platform."],
-  ["Composable models", "Save reusable recipes that combine a base model, LoRAs, adapters, and presets."],
+  ["Reusable LoRA library", "Pull from Hugging Face, Civitai, or ModelScope—or import local safetensors once and reuse them everywhere."],
   ["Local by design", "Models and generated media stay on your machine under ~/.tapioca."],
 ];
 

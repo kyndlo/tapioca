@@ -3,6 +3,7 @@ package control
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"io"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/carlos/tapioca/internal/adapter"
 	"github.com/carlos/tapioca/internal/config"
 	"github.com/carlos/tapioca/internal/imageruntime"
 	"github.com/carlos/tapioca/internal/speechruntime"
@@ -317,8 +319,9 @@ func TestLoRAListDiscoversOnlySafetensors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listLoRAs error = %v", err)
 	}
-	items := result.([]map[string]any)
-	if len(items) != 1 || !strings.HasSuffix(items[0]["file"].(string), "motion.safetensors") {
+	items := result.([]adapter.Installed)
+	if len(items) != 1 || !strings.HasSuffix(items[0].File, "motion.safetensors") ||
+		items[0].Reference != "hf://owner/repo#motion.safetensors" {
 		t.Fatalf("LoRA list = %#v", items)
 	}
 }
@@ -331,9 +334,48 @@ func TestLoRAListReturnsEmptyArrayWhenNoAdaptersAreInstalled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listLoRAs error = %v", err)
 	}
-	items := result.([]map[string]any)
+	items := result.([]adapter.Installed)
 	if items == nil || len(items) != 0 {
 		t.Fatalf("LoRA list = %#v, want non-nil empty slice", items)
+	}
+}
+
+func TestLoRAImportCreatesManagedReference(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("TAPIOCA_HOME", home)
+	header := []byte(`{"__metadata__":{"format":"pt"}}`)
+	payload := make([]byte, 8+len(header)+1)
+	binary.LittleEndian.PutUint64(payload[:8], uint64(len(header)))
+	copy(payload[8:], header)
+	source := filepath.Join(t.TempDir(), "motion.safetensors")
+	if err := os.WriteFile(source, payload, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	params, err := json.Marshal(map[string]any{
+		"path": source, "base": "minimax-h3", "name": "motion",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, protocolErr := NewHandler(Dependencies{}).Handle(context.Background(), Request{
+		ID: "import-lora", Method: "lora.import", Params: params,
+	})
+	if protocolErr != nil {
+		t.Fatalf("lora.import error = %v", protocolErr)
+	}
+	local := result.(adapter.Local)
+	if local.Reference != "local://motion#motion.safetensors" || len(local.Bases) != 1 {
+		t.Fatalf("lora.import result = %#v", local)
+	}
+	if _, err := os.Stat(local.Path); err != nil {
+		t.Fatalf("managed LoRA missing: %v", err)
+	}
+	pulled, pullErr := NewHandler(Dependencies{}).Handle(context.Background(), Request{
+		ID: "pull-lora", Method: "lora.pull",
+		Params: []byte(`{"reference":"local://motion"}`),
+	})
+	if pullErr != nil || pulled.(adapter.Local).Reference != local.Reference {
+		t.Fatalf("lora.pull result=%#v error=%v", pulled, pullErr)
 	}
 }
 

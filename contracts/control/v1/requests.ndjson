@@ -21,3 +21,5 @@
 {"version":1,"type":"request","id":"req-voice","method":"voice.clone","params":{"model":"chatterbox:nano","text":"Hello","voice_sample":"/Users/example/voice.wav"},"job_id":"job-voice"}
 {"version":1,"type":"request","id":"req-loras","method":"lora.list"}
 {"version":1,"type":"request","id":"req-lora-inspect","method":"lora.inspect","params":{"reference":"hf://creator/cinematic-motion@0.8"}}
+{"version":1,"type":"request","id":"req-lora-pull","method":"lora.pull","params":{"reference":"civitai://123/456#motion.safetensors"}}
+{"version":1,"type":"request","id":"req-lora-import","method":"lora.import","params":{"path":"/Users/example/cinematic-motion.safetensors","base":"minimax-h3","name":"cinematic-motion"}}

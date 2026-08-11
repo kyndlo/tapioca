@@ -88,6 +88,23 @@ tapioca video minimax-h3 \
   --output adapted.mp4
 ```
 
+Before any provider call, run `tapioca adapter list`. When a compatible item is
+present, reuse the returned canonical reference instead of pulling it again.
+Changing only the `@SCALE` suffix does not require another copy. Use
+`adapter import --base` for files already present on disk; `--file` selects a
+remote repository member and is not a local path flag.
+
+Provider references are interchangeable at the CLI boundary:
+
+```bash
+tapioca adapter inspect civitai://MODEL_ID/VERSION_ID
+tapioca adapter inspect ms://OWNER/REPOSITORY
+tapioca adapter import ./adapter.safetensors --base minimax-h3 --name my-adapter
+```
+
+Use the `reference` returned by `adapter list` or the import response. Do not
+invent a `local://` path or pass an arbitrary filesystem path to generation.
+
 Repeat `--adapter` to create an ordered stack. Tapioca applies MiniMax-H3 LoRAs
 to the diffusion transformer in command order. Do not assume a Flux, Wan,
 Qwen, LTX, or Stable Diffusion LoRA is compatible.

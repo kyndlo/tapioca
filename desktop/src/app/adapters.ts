@@ -437,16 +437,12 @@ export function createRendererAdapters(
     },
     async availableLoras(modelId) {
       const baseFamily = loraFamily(modelId);
-      return (await api.creatorLoraList()).flatMap((row) => {
-        const segments = row.file.split("/").filter(Boolean);
-        if (segments.length < 3) return [];
-        const [owner, repository, ...fileParts] = segments;
-        const reference = `hf://${owner}/${repository}#${fileParts.join("/")}`;
-        const adapterFamily = loraFamily(row.file);
+      return (await api.creatorLoraList()).map((row) => {
+        const adapterFamily = row.bases?.map(loraFamily).find(Boolean) ?? loraFamily(`${row.reference} ${row.file}`);
         const compatible = !baseFamily || !adapterFamily || baseFamily === adapterFamily;
-        return [{
-          reference,
-          name: fileParts.at(-1) ?? row.file,
+        return {
+          reference: row.reference,
+          name: row.file.split("/").at(-1) ?? row.file,
           bytes: row.bytes,
           compatible,
           ...(!compatible
@@ -454,7 +450,7 @@ export function createRendererAdapters(
             : adapterFamily
               ? { reason: `Matches the ${adapterFamily} model family.` }
               : { reason: "Tapioca will validate compatibility before generation." }),
-        }];
+        };
       });
     },
     async models(mode) {
@@ -531,9 +527,12 @@ export function createRendererAdapters(
       void (async () => {
         try {
         for (const lora of request.loras) {
-          if (lora.source.type === "huggingface") {
+          if (lora.source.type === "reference") {
             await api.creatorLoraInspect({ reference: lora.source.reference });
           }
+        }
+        if (request.loras.length) {
+          onEvent({ type: "queued", message: "Verifying and installing LoRA adapters…" });
         }
         const output = await api.creatorGenerate({
           jobId,
@@ -544,8 +543,8 @@ export function createRendererAdapters(
           inputImageToken: request.inputImage?.token,
           voiceReferenceToken: request.voiceReference?.token,
           loras: request.loras.map((lora) =>
-            lora.source.type === "huggingface"
-              ? { type: "huggingface" as const, reference: lora.source.reference, weight: lora.weight }
+            lora.source.type === "reference"
+              ? { type: "reference" as const, reference: lora.source.reference, weight: lora.weight }
               : { type: "local" as const, token: lora.source.file.token, weight: lora.weight },
           ),
           settings: request.settings,

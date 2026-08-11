@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/carlos/tapioca/internal/adapter"
@@ -19,36 +18,53 @@ func adapterCommand(args []string) error {
 		if err != nil {
 			return err
 		}
-		root := filepath.Join(home, "adapters", "huggingface")
-		var found bool
-		err = filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
-			if errors.Is(walkErr, os.ErrNotExist) {
-				return nil
-			}
-			if walkErr != nil {
-				return walkErr
-			}
-			if entry.IsDir() || !strings.EqualFold(filepath.Ext(path), ".safetensors") {
-				return nil
-			}
-			if !found {
-				fmt.Println("ADAPTER\tPATH")
-				found = true
-			}
-			relative, _ := filepath.Rel(root, path)
-			fmt.Printf("%s\t%s\n", filepath.ToSlash(relative), path)
-			return nil
-		})
+		installed, err := adapter.List(home)
 		if err != nil {
 			return err
 		}
-		if !found {
+		if len(installed) == 0 {
 			fmt.Println("No adapters installed.")
+			return nil
+		}
+		fmt.Println("ADAPTER\tPROVIDER\tPATH")
+		for _, item := range installed {
+			fmt.Printf("%s\t%s\t%s\n", item.Reference, item.Provider, item.Path)
 		}
 		return nil
 	}
+	if len(args) >= 1 && args[0] == "import" {
+		if len(args) < 2 {
+			return errors.New(
+				"usage: tapioca adapter import PATH --base MODEL [--name NAME] [--force]",
+			)
+		}
+		source := args[1]
+		fs := flag.NewFlagSet("adapter import", flag.ContinueOnError)
+		name := fs.String("name", "", "managed local adapter name")
+		base := fs.String("base", "", "compatible Tapioca base model or family")
+		force := fs.Bool("force", false, "replace a different adapter with the same explicit name")
+		if err := fs.Parse(args[2:]); err != nil {
+			return err
+		}
+		if fs.NArg() != 0 || strings.TrimSpace(*base) == "" {
+			return errors.New(
+				"usage: tapioca adapter import PATH --base MODEL [--name NAME] [--force]",
+			)
+		}
+		home, err := config.Home()
+		if err != nil {
+			return err
+		}
+		local, err := adapter.Import(home, source, *name, *base, *force)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("imported %s\n", local.Reference)
+		fmt.Printf("saved %s\n", local.Path)
+		return nil
+	}
 	if len(args) < 2 {
-		return errors.New("usage: tapioca adapter (inspect|pull|list) [REFERENCE] [flags]")
+		return errors.New("usage: tapioca adapter (inspect|pull|import|list) [REFERENCE] [flags]")
 	}
 	action, value := args[0], args[1]
 	ref, err := adapter.Parse(value)
@@ -58,12 +74,13 @@ func adapterCommand(args []string) error {
 	switch action {
 	case "inspect":
 		if len(args) != 2 {
-			return errors.New("usage: tapioca adapter inspect hf://OWNER/REPOSITORY")
+			return errors.New("usage: tapioca adapter inspect REFERENCE")
 		}
-		metadata, err := adapter.Inspect(http.DefaultClient, ref.Repo)
+		metadata, err := adapter.Inspect(http.DefaultClient, ref)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("PROVIDER\t%s\n", metadata.Provider)
 		fmt.Printf("REPOSITORY\t%s\n", metadata.Repo)
 		if metadata.Revision != "" {
 			fmt.Printf("REVISION\t%s\n", metadata.Revision)
@@ -73,6 +90,9 @@ func adapterCommand(args []string) error {
 		}
 		if metadata.License != "" {
 			fmt.Printf("LICENSE\t%s\n", metadata.License)
+		}
+		if metadata.Type != "" {
+			fmt.Printf("TYPE\t%s\n", metadata.Type)
 		}
 		for _, base := range metadata.Bases {
 			fmt.Printf("BASE MODEL\t%s\n", base)
@@ -104,14 +124,14 @@ func adapterCommand(args []string) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("pulling %s#%s\n", local.Repo, local.File)
+		fmt.Printf("pulling %s\n", local.Reference)
 		if err := adapter.Pull(http.DefaultClient, local, *force); err != nil {
 			return err
 		}
 		fmt.Printf("saved %s\n", local.Path)
 		return nil
 	default:
-		return fmt.Errorf("unknown adapter command %q; use inspect or pull", action)
+		return fmt.Errorf("unknown adapter command %q; use inspect, pull, import, or list", action)
 	}
 }
 

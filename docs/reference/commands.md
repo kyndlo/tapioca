@@ -113,11 +113,14 @@ tapioca voice remove NAME
 
 ## `adapter inspect`
 
-List a Hugging Face adapter repository's task, license, declared base models,
-revision, and `.safetensors` files:
+List a provider adapter's task, license, declared base models, revision, and
+`.safetensors` files. References may use `hf://`, `civitai://`, `ms://`, or
+`local://`:
 
 ```bash
 tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca adapter inspect civitai://MODEL_ID/VERSION_ID
+tapioca adapter inspect ms://OWNER/REPOSITORY
 ```
 
 ## `adapter pull`
@@ -126,17 +129,38 @@ Download an adapter:
 
 ```bash
 tapioca adapter pull hf://OWNER/REPOSITORY --file WEIGHTS.safetensors
+tapioca adapter pull civitai://MODEL_ID/VERSION_ID --file WEIGHTS.safetensors
+tapioca adapter pull ms://OWNER/REPOSITORY --file WEIGHTS.safetensors
 ```
 
 The `#FILE` compact form also works.
 
+## `adapter import`
+
+Copy an existing local LoRA into Tapioca's verified, managed adapter store:
+
+```bash
+tapioca adapter import ~/Downloads/style.safetensors \
+  --base minimax-h3 \
+  --name cinematic-style
+```
+
+`--base` is required because a `.safetensors` extension alone cannot establish
+compatibility. Tapioca rejects symlinks and malformed safetensors files. Use
+`--force` only to replace an imported adapter with the same name.
+
 ## `adapter list`
 
-Show downloaded adapters and their exact local paths:
+Show downloaded/imported adapters, their canonical reusable references,
+providers, and exact local paths:
 
 ```bash
 tapioca adapter list
 ```
+
+Pass the reference from the first column to `--adapter`. Tapioca reuses the
+managed file without another download. Changing `@SCALE` changes strength but
+does not duplicate the weights.
 
 ## `create`
 

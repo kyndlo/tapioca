@@ -34,7 +34,7 @@ describe("CreatorScreen", () => {
     expect(markup).not.toContain("/Users/");
   });
 
-  it("locks a route to its explicit operation and does not offer local LoRA files", () => {
+  it("locks a route to its explicit operation and offers managed local LoRA import", () => {
     const markup = renderToStaticMarkup(
       createElement(CreatorScreen, {
         adapter: mockAdapter(),
@@ -48,6 +48,6 @@ describe("CreatorScreen", () => {
     expect(markup).toContain("Resolution");
     expect(markup).toContain("Expert overrides");
     expect(markup).not.toContain("Speech / TTS");
-    expect(markup).not.toContain("Choose local");
+    expect(markup).toContain("Import from computer");
   });
 });

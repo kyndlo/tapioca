@@ -62,7 +62,9 @@ the registry is updated.
 | `speech.generate` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
 | `voice.clone` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
 | `lora.list` | none | installed `.safetensors` metadata |
-| `lora.inspect` | `reference` | Hugging Face LoRA metadata |
+| `lora.inspect` | `reference` | provider-neutral LoRA metadata |
+| `lora.pull` | `reference`; optional `file`, `force` | installed provider LoRA record |
+| `lora.import` | `path`, `base`; optional `name`, `force` | managed `local://` LoRA record |
 
 Supported agent descriptor names are `codex`, `claude-code`, `opencode`,
 `openclaw`, and `hermes`. Descriptors contain explicit executable, arguments,
@@ -101,5 +103,6 @@ Stable feature error codes include `invalid_params`, `model_not_found`,
 `unsupported_agent`. Creator errors add `incompatible_model`,
 `image_generation_failed`, `video_generation_failed`, `output_exists`,
 `output_missing`, `lora_not_found`, `lora_not_installed`,
-`incompatible_lora`, `lora_discovery_failed`, `lora_inspection_failed`, and
+`incompatible_lora`, `lora_discovery_failed`, `lora_inspection_failed`,
+`lora_pull_failed`, `lora_import_failed`, and
 `runtime_adapter_required`. Cancellation always returns `job_cancelled`.

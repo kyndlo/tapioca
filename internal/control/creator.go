@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
@@ -166,6 +165,29 @@ func (h *Handler) handleCreator(
 			return nil, err, true
 		}
 		result, err := inspectLoRA(ctx, params.Reference)
+		return result, err, true
+	case "lora.pull":
+		var params struct {
+			Reference string `json:"reference"`
+			File      string `json:"file,omitempty"`
+			Force     bool   `json:"force,omitempty"`
+		}
+		if err := decodeParams(request.Params, &params); err != nil {
+			return nil, err, true
+		}
+		result, err := pullLoRA(params.Reference, params.File, params.Force)
+		return result, err, true
+	case "lora.import":
+		var params struct {
+			Path  string `json:"path"`
+			Name  string `json:"name,omitempty"`
+			Base  string `json:"base"`
+			Force bool   `json:"force,omitempty"`
+		}
+		if err := decodeParams(request.Params, &params); err != nil {
+			return nil, err, true
+		}
+		result, err := importLoRA(params.Path, params.Name, params.Base, params.Force)
 		return result, err, true
 	default:
 		return nil, nil, false
@@ -669,34 +691,10 @@ func listLoRAs() (any, *ProtocolError) {
 	if err != nil {
 		return nil, operationError(context.Background(), "storage_failed", err)
 	}
-	root := filepath.Join(home, "adapters", "huggingface")
-	results := make([]map[string]any, 0)
-	err = filepath.WalkDir(root, func(path string, entry os.DirEntry, walkError error) error {
-		if errors.Is(walkError, os.ErrNotExist) {
-			return nil
-		}
-		if walkError != nil {
-			return walkError
-		}
-		if entry.IsDir() || strings.ToLower(filepath.Ext(path)) != ".safetensors" {
-			return nil
-		}
-		info, err := entry.Info()
-		if err != nil {
-			return err
-		}
-		relative, _ := filepath.Rel(root, path)
-		results = append(results, map[string]any{
-			"file": filepath.ToSlash(relative), "path": path, "bytes": info.Size(),
-		})
-		return nil
-	})
+	results, err := adapter.List(home)
 	if err != nil {
 		return nil, operationError(context.Background(), "lora_discovery_failed", err)
 	}
-	sort.Slice(results, func(i, j int) bool {
-		return results[i]["file"].(string) < results[j]["file"].(string)
-	})
 	return results, nil
 }
 
@@ -706,11 +704,42 @@ func inspectLoRA(ctx context.Context, value string) (any, *ProtocolError) {
 		return nil, invalidParams("invalid LoRA reference", err.Error())
 	}
 	client := &http.Client{Timeout: 30 * time.Second}
-	metadata, err := adapter.Inspect(client, reference.Repo)
+	metadata, err := adapter.Inspect(client, reference)
 	if err != nil {
 		return nil, operationError(ctx, "lora_inspection_failed", err)
 	}
 	return metadata, nil
+}
+
+func importLoRA(path, name, base string, force bool) (any, *ProtocolError) {
+	home, err := config.Home()
+	if err != nil {
+		return nil, operationError(context.Background(), "storage_failed", err)
+	}
+	local, err := adapter.Import(home, path, name, base, force)
+	if err != nil {
+		return nil, operationError(context.Background(), "lora_import_failed", err)
+	}
+	return local, nil
+}
+
+func pullLoRA(value, file string, force bool) (any, *ProtocolError) {
+	reference, err := adapter.Parse(value)
+	if err != nil {
+		return nil, invalidParams("invalid LoRA reference", err.Error())
+	}
+	home, err := config.Home()
+	if err != nil {
+		return nil, operationError(context.Background(), "storage_failed", err)
+	}
+	local, err := adapter.Resolve(http.DefaultClient, home, reference, file, nil)
+	if err != nil {
+		return nil, operationError(context.Background(), "lora_pull_failed", err)
+	}
+	if err := adapter.Pull(http.DefaultClient, local, force); err != nil {
+		return nil, operationError(context.Background(), "lora_pull_failed", err)
+	}
+	return local, nil
 }
 
 type creatorLogWriter struct {

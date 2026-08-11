@@ -10,7 +10,7 @@ The current layout contains:
 ```text
 .tapioca/
 ├── models/       downloaded model weights and snapshots
-├── adapters/     Hugging Face LoRA weights and source metadata
+├── adapters/     provider and imported LoRA weights with source metadata
 ├── recipes/      saved base-model and adapter combinations
 ├── voices/       reusable voice samples, transcripts, and metadata
 ├── runtime/      generated Python/MLX runtime environments

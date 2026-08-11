@@ -204,6 +204,8 @@ func capabilities() map[string]any {
 			"voice.clone",
 			"lora.list",
 			"lora.inspect",
+			"lora.pull",
+			"lora.import",
 			"job.cancel",
 		},
 		"events": []string{

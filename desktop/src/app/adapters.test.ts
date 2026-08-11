@@ -146,13 +146,19 @@ describe("renderer adapters", () => {
       creatorLoraList: vi.fn().mockResolvedValue([
         {
           id: "lora-1",
-          file: "creator/minimax-h3-cinematic/motion.safetensors",
+          reference: "civitai://2830065/3193337#motion.safetensors",
+          provider: "civitai",
+          file: "motion.safetensors",
           bytes: 256 * 1024 ** 2,
+          bases: ["minimax-h3"],
         },
         {
           id: "lora-2",
-          file: "creator/flux-style/style.safetensors",
+          reference: "local://flux-style#style.safetensors",
+          provider: "local",
+          file: "style.safetensors",
           bytes: 128 * 1024 ** 2,
+          bases: ["flux"],
         },
       ]),
     });
@@ -162,11 +168,11 @@ describe("renderer adapters", () => {
       adapters.creator.availableLoras("minimax-h3:fl2va-int8-cuda"),
     ).resolves.toEqual([
       expect.objectContaining({
-        reference: "hf://creator/minimax-h3-cinematic#motion.safetensors",
+        reference: "civitai://2830065/3193337#motion.safetensors",
         compatible: true,
       }),
       expect.objectContaining({
-        reference: "hf://creator/flux-style#style.safetensors",
+        reference: "local://flux-style#style.safetensors",
         compatible: false,
       }),
     ]);

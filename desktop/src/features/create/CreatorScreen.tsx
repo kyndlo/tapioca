@@ -3,7 +3,7 @@ import {
   defaultCreatorSettings,
   modeLabel,
   moveLora,
-  parseHfLoraReference,
+  parseLoraReference,
   validateCreatorRequest,
   videoDurationSeconds,
   videoFramesForDuration,
@@ -46,7 +46,7 @@ export function CreatorScreen({
   const [loraOptions, setLoraOptions] = useState<CreatorLoraOption[]>([]);
   const [selectedLoraReference, setSelectedLoraReference] = useState("");
   const [loadingLoras, setLoadingLoras] = useState(false);
-  const [hfReference, setHfReference] = useState("");
+  const [loraReference, setLoraReference] = useState("");
   const [loraError, setLoraError] = useState<string>();
   const [settings, setSettings] = useState(defaultCreatorSettings);
   const [outputs, setOutputs] = useState<CreatorOutput[]>([]);
@@ -163,8 +163,8 @@ export function CreatorScreen({
     }
   };
 
-  const addHfLora = () => {
-    const parsed = parseHfLoraReference(hfReference);
+  const addReferenceLora = () => {
+    const parsed = parseLoraReference(loraReference);
     if ("error" in parsed) {
       setLoraError(parsed.error);
       return;
@@ -173,11 +173,11 @@ export function CreatorScreen({
       ...current,
       {
         id: crypto.randomUUID(),
-        source: { type: "huggingface", reference: parsed.reference },
+        source: { type: "reference", reference: parsed.reference },
         weight: parsed.weight,
       },
     ]);
-    setHfReference("");
+    setLoraReference("");
     setLoraError(undefined);
   };
 
@@ -188,16 +188,31 @@ export function CreatorScreen({
       setLoraError(option.reason ?? "This LoRA does not match the selected model family.");
       return;
     }
-    if (loras.some((lora) => lora.source.type === "huggingface" && lora.source.reference === option.reference)) {
+    if (loras.some((lora) => lora.source.type === "reference" && lora.source.reference === option.reference)) {
       setLoraError("That LoRA is already assigned.");
       return;
     }
     setLoras((current) => [...current, {
       id: crypto.randomUUID(),
-      source: { type: "huggingface", reference: option.reference },
+      source: { type: "reference", reference: option.reference },
       weight: 0.8,
     }]);
     setLoraError(undefined);
+  };
+
+  const addLocalLora = async () => {
+    setLoraError(undefined);
+    try {
+      const file = await adapter.pickFile("lora");
+      if (!file) return;
+      setLoras((current) => [...current, {
+        id: crypto.randomUUID(),
+        source: { type: "local", file },
+        weight: 0.8,
+      }]);
+    } catch (cause) {
+      setLoraError(cause instanceof Error ? cause.message : String(cause));
+    }
   };
 
   const request = (): CreatorRequest => ({
@@ -372,14 +387,15 @@ export function CreatorScreen({
           {(mode === "image" || mode === "video") && selectedModel?.supportsLoRA !== false && (
             <LoraEditor
               loras={loras}
-              reference={hfReference}
+              reference={loraReference}
               error={loraError}
               options={loraOptions}
               selectedReference={selectedLoraReference}
               loadingOptions={loadingLoras}
               disabled={generating}
-              onReference={setHfReference}
-              onAddReference={addHfLora}
+              onReference={setLoraReference}
+              onAddReference={addReferenceLora}
+              onAddLocal={() => void addLocalLora()}
               onSelectedReference={setSelectedLoraReference}
               onAddInstalled={addInstalledLora}
               onRemove={(id) => setLoras((current) => current.filter((lora) => lora.id !== id))}
@@ -440,6 +456,7 @@ function LoraEditor(props: {
   disabled: boolean;
   onSelectedReference(value: string): void;
   onAddInstalled(): void;
+  onAddLocal(): void;
   onReference(value: string): void;
   onAddReference(): void;
   onRemove(id: string): void;
@@ -449,7 +466,7 @@ function LoraEditor(props: {
   return (
     <section className="creator-card">
       <div className="creator-card__heading"><h2>LoRA styles</h2><span>Optional · up to 8</span></div>
-      <p className="creator-help">Assign adapters already installed in Tapioca. Compatibility hints prevent the most common base-model mismatch.</p>
+      <p className="creator-help">Assign an installed adapter, import a safetensors file from this computer, or use a supported provider reference.</p>
       <div className="creator-lora-library">
         <label>
           <span>Installed LoRA</span>
@@ -471,12 +488,13 @@ function LoraEditor(props: {
       </div>
       {props.selectedReference ? <p className="creator-lora-hint">{props.options.find((option) => option.reference === props.selectedReference)?.reason}</p> : null}
       {!props.options.length && !props.loadingOptions ? (
-        <p className="creator-lora-empty">Install one first with <code>tapioca adapter pull hf://OWNER/REPOSITORY --file adapter.safetensors</code></p>
+        <p className="creator-lora-empty">Install from Hugging Face, Civitai, or ModelScope—or import a local safetensors file below.</p>
       ) : null}
+      <button type="button" className="creator-lora-local" onClick={props.onAddLocal} disabled={props.disabled}>Import from computer</button>
       <details className="creator-lora-manual">
-        <summary>Assign by Hugging Face reference</summary>
+        <summary>Assign by provider reference</summary>
         <div className="creator-lora-add">
-          <input value={props.reference} onChange={(event) => props.onReference(event.target.value)} placeholder="hf://creator/repository@0.8" disabled={props.disabled} aria-label="Hugging Face LoRA reference" />
+          <input value={props.reference} onChange={(event) => props.onReference(event.target.value)} placeholder="hf://… · civitai://… · ms://…" disabled={props.disabled} aria-label="LoRA provider reference" />
           <button type="button" onClick={props.onAddReference} disabled={props.disabled || !props.reference.trim()}>Add reference</button>
         </div>
       </details>
@@ -486,7 +504,7 @@ function LoraEditor(props: {
           {props.loras.map((lora, index) => (
             <li key={lora.id}>
               <span>{index + 1}</span>
-              <div><strong>{lora.source.type === "huggingface" ? lora.source.reference : lora.source.file.name}</strong><small>Applied in this order</small></div>
+              <div><strong>{lora.source.type === "reference" ? lora.source.reference : lora.source.file.name}</strong><small>Applied in this order</small></div>
               <label>
                 Strength
                 <input type="range" min={0} max={2} step={0.05} value={lora.weight} onChange={(event) => props.onWeight(lora.id, Number(event.target.value))} disabled={props.disabled} />

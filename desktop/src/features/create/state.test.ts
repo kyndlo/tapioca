@@ -2,30 +2,51 @@ import { describe, expect, it } from "vitest";
 import {
   defaultCreatorSettings,
   moveLora,
-  parseHfLoraReference,
+  parseLoraReference,
   validateCreatorRequest,
   videoDurationSeconds,
   videoFramesForDuration,
 } from "./state";
 
 describe("creator state", () => {
-  it("parses beginner-friendly Hugging Face LoRA references", () => {
-    expect(parseHfLoraReference("hf://creator/cinematic-motion@0.8")).toEqual({
+  it("parses provider-neutral LoRA references", () => {
+    expect(parseLoraReference("hf://creator/cinematic-motion@0.8")).toEqual({
       reference: "hf://creator/cinematic-motion",
       weight: 0.8,
     });
-    expect(parseHfLoraReference("hf://creator/repo#adapter.safetensors")).toEqual({
+    expect(parseLoraReference("hf://creator/repo#adapter.safetensors")).toEqual({
       reference: "hf://creator/repo#adapter.safetensors",
       weight: 1,
     });
-    expect(parseHfLoraReference("https://example.com/model")).toHaveProperty("error");
-    expect(parseHfLoraReference("hf://creator/repo@3")).toHaveProperty("error");
+    expect(parseLoraReference("civitai://2830065/3193337#motion.safetensors@0.7")).toEqual({
+      reference: "civitai://2830065/3193337#motion.safetensors",
+      weight: 0.7,
+    });
+    expect(parseLoraReference("ms://creator/repo#adapter.safetensors")).toEqual({
+      reference: "ms://creator/repo#adapter.safetensors",
+      weight: 1,
+    });
+    expect(parseLoraReference("local://cinematic#motion.safetensors")).toEqual({
+      reference: "local://cinematic#motion.safetensors",
+      weight: 1,
+    });
+    expect(parseLoraReference("https://civitai.red/models/2830065/example?modelVersionId=3193337")).toEqual({
+      reference: "civitai://2830065/3193337",
+      weight: 1,
+    });
+    expect(parseLoraReference("civitai://2830065/3193337#Style (v2), final.safetensors")).toEqual({
+      reference: "civitai://2830065/3193337#Style (v2), final.safetensors",
+      weight: 1,
+    });
+    expect(parseLoraReference("ms://owner/repo#../escape.safetensors")).toHaveProperty("error");
+    expect(parseLoraReference("https://example.com/model")).toHaveProperty("error");
+    expect(parseLoraReference("hf://creator/repo@3")).toHaveProperty("error");
   });
 
   it("reorders a LoRA stack without mutating it", () => {
     const stack = [
-      { id: "a", weight: 1, source: { type: "huggingface" as const, reference: "hf://a/repo" } },
-      { id: "b", weight: 0.5, source: { type: "huggingface" as const, reference: "hf://b/repo" } },
+      { id: "a", weight: 1, source: { type: "reference" as const, reference: "hf://a/repo" } },
+      { id: "b", weight: 0.5, source: { type: "reference" as const, reference: "hf://b/repo" } },
     ];
     expect(moveLora(stack, "b", -1).map(({ id }) => id)).toEqual(["b", "a"]);
     expect(stack.map(({ id }) => id)).toEqual(["a", "b"]);

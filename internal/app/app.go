@@ -80,7 +80,7 @@ Usage:
   tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
   tapioca tts MODEL --text TEXT [--voice NAME | --voice-sample FILE] [--output speech.wav]
   tapioca voice (create|list|inspect|remove) [NAME]
-  tapioca adapter (inspect|pull|list) [hf://OWNER/REPOSITORY]
+  tapioca adapter (inspect|pull|import|list) [REFERENCE]
   tapioca create NAME --base MODEL [--adapter REFERENCE]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
   tapioca catalog
@@ -96,6 +96,9 @@ Examples:
   tapioca voice create narrator --model chatterbox:nano --audio voice.wav
   tapioca tts chatterbox:nano --voice narrator --text "Hello from Tapioca"
   tapioca adapter inspect hf://Alissonerdx/BFS-Best-Face-Swap
+  tapioca adapter inspect civitai://MODEL_ID/VERSION_ID
+  tapioca adapter inspect ms://OWNER/REPOSITORY
+  tapioca adapter import cinematic.safetensors --base minimax-h3
   tapioca launch codex glm-4.7-flash:q8_0
   tapioca launch openclaw glm-4.7-flash:q8_0
   tapioca launch hermes glm-4.7-flash:q8_0`)

@@ -37,25 +37,60 @@ export function videoFrameShape(modelId: string): { offset: number; stride: numb
   return { offset: 1, stride: 4 };
 }
 
-export function parseHfLoraReference(value: string):
+export function parseLoraReference(value: string):
   | { reference: string; weight: number }
   | { error: string } {
   const input = value.trim();
-  if (!input.startsWith("hf://")) {
-    return { error: "Start a Hugging Face reference with hf://" };
+  if (/^https:\/\/(?:www\.)?civitai\.(?:com|red)\/models\//i.test(input)) {
+    try {
+      const parsed = new URL(input);
+      const modelId = parsed.pathname.split("/").filter(Boolean)[1];
+      const versionId = parsed.searchParams.get("modelVersionId");
+      if (/^\d+$/.test(modelId ?? "") && /^\d+$/.test(versionId ?? "")) {
+        return { reference: `civitai://${modelId}/${versionId}`, weight: 1 };
+      }
+    } catch {
+      // The provider-specific validation error below is more useful to users.
+    }
+    return { error: "Civitai links must include a modelVersionId" };
   }
-  const body = input.slice(5);
+  const match = input.match(/^(hf|ms|modelscope|civitai|local):\/\/(.+)$/);
+  if (!match) {
+    return { error: "Start with hf://, civitai://, ms://, or local://" };
+  }
+  const provider = match[1];
+  const body = match[2];
   const at = body.lastIndexOf("@");
   const referenceBody = at > 0 ? body.slice(0, at) : body;
   const weightText = at > 0 ? body.slice(at + 1) : "1";
-  if (!/^[\w.-]+\/[\w.-]+(?:#[\w./-]+\.safetensors)?$/.test(referenceBody)) {
-    return { error: "Use hf://creator/repository or hf://creator/repository#file.safetensors" };
+  const parts = referenceBody.split("#");
+  if (parts.length > 2 || (parts[1] && !isSafeLoraFile(parts[1]))) {
+    return { error: "The optional file must be a safe relative .safetensors path" };
+  }
+  const repositoryReference = /^[\w.-]+\/[\w.-]+$/;
+  const civitaiReference = /^\d+\/\d+$/;
+  const localReference = /^[\w.-]+$/;
+  const repository = parts[0];
+  const valid = provider === "civitai"
+    ? civitaiReference.test(repository)
+    : provider === "local"
+      ? localReference.test(repository)
+      : repositoryReference.test(repository);
+  if (!valid) {
+    return { error: "Use a provider reference with an optional #file.safetensors suffix" };
   }
   const weight = Number(weightText);
   if (!Number.isFinite(weight) || weight < 0 || weight > 2) {
     return { error: "LoRA weight must be between 0 and 2" };
   }
-  return { reference: `hf://${referenceBody}`, weight };
+  return { reference: `${provider}://${referenceBody}`, weight };
+}
+
+function isSafeLoraFile(value: string): boolean {
+  const segments = value.replaceAll("\\", "/").split("/");
+  return !value.startsWith("/") && !value.includes("\\") && !/[\0\r\n]/.test(value) &&
+    segments.every((segment) => segment !== "" && segment !== "." && segment !== "..") &&
+    value.toLowerCase().endsWith(".safetensors");
 }
 
 export function moveLora(

@@ -260,8 +260,8 @@ export const creatorSaveRecordingInputSchema = z
   .strict();
 const creatorLoraSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("huggingface"),
-    reference: z.string().regex(/^hf:\/\/[^/\s]+\/[^@\s]+(?:@-?\d+(?:\.\d+)?)?$/),
+    type: z.literal("reference"),
+    reference: z.string().min(4).max(2048).regex(/^(?:hf|ms|modelscope|civitai|local):\/\//),
     weight: z.number().min(-4).max(4),
   }).strict(),
   z.object({
@@ -302,12 +302,15 @@ export const creatorOutputSchema = z.object({
 }).strict();
 export const creatorOutputInputSchema = z.object({ outputId: z.string().uuid() }).strict();
 export const creatorLoraInspectInputSchema = z.object({
-  reference: z.string().regex(/^hf:\/\/[^/\s]+\/[^@\s]+(?:@-?\d+(?:\.\d+)?)?$/),
+  reference: z.string().min(4).max(2048).regex(/^(?:hf|ms|modelscope|civitai|local):\/\//),
 }).strict();
 export const creatorLoraListSchema = z.array(z.object({
   id: z.string().min(1),
+  reference: z.string().min(4),
+  provider: z.enum(["huggingface", "civitai", "modelscope", "local"]),
   file: z.string().min(1),
   bytes: z.number().int().nonnegative(),
+  bases: z.array(z.string()).optional(),
 }).strict());
 
 export const IPC_CHANNELS = {

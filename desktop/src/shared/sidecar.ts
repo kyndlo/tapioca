@@ -28,6 +28,8 @@ export const controlMethodSchema = z.enum([
   "voice.clone",
   "lora.list",
   "lora.inspect",
+  "lora.pull",
+  "lora.import",
   "job.cancel",
 ]);
 

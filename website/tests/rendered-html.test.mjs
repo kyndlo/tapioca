@@ -64,6 +64,8 @@ test("renders the dedicated LLM and agent guide", async () => {
   assert.match(html, /Bundle-aware media/i);
   assert.match(html, /tapioca video minimax-h3/);
   assert.match(html, /adapter inspect/);
+  assert.match(html, /adapter list/);
+  assert.match(html, /Civitai, ModelScope/i);
 });
 
 test("renders the complete beginner learning center", async () => {
@@ -80,6 +82,10 @@ test("renders the complete beginner learning center", async () => {
   assert.match(html, /Generate your first image/);
   assert.match(html, /Generate motion and video/);
   assert.match(html, /six checks to make before downloading/i);
+  assert.match(html, /Reuse downloaded LoRAs/i);
+  assert.match(html, /Import from computer/i);
+  assert.match(html, /civitai:\/\/MODEL_ID\/VERSION_ID/i);
+  assert.match(html, /MODELSCOPE_API_TOKEN/);
   assert.match(html, /adapter inspect/);
   assert.match(html, /tapioca-desktop-macos-arm64\.dmg/);
   assert.match(html, /tapioca-desktop-windows-amd64\.exe/);
@@ -108,5 +114,7 @@ test("serves concise and full machine-readable agent contracts", async () => {
     assert.match(body, /Treat model tool calls as untrusted proposals/);
     assert.match(body, /minimax-h3/);
     assert.match(body, /LoRA/i);
+    assert.match(body, /adapter list/);
+    assert.match(body, /civitai:\/\/MODEL_ID\/VERSION_ID/);
   }
 });

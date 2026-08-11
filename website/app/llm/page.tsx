@@ -40,10 +40,13 @@ const toolExample = `{
 }`;
 
 const videoExample = `tapioca pull minimax-h3
+tapioca adapter list
 tapioca adapter inspect hf://OWNER/REPOSITORY
+tapioca adapter inspect civitai://MODEL_ID/VERSION_ID
+tapioca adapter import ./adapter.safetensors --base minimax-h3 --name local-adapter
 tapioca video minimax-h3 \\
   --prompt "A cinematic tracking shot" \\
-  --adapter 'hf://OWNER/REPOSITORY#adapter.safetensors@0.8' \\
+  --adapter 'local://local-adapter#adapter.safetensors@0.8' \\
   --preset low-memory \\
   --output adapted.mp4`;
 
@@ -167,13 +170,19 @@ export default function LlmGuide() {
             the correct MPS or CUDA bundle, while Tapioca privately owns the
             engine graph, adapter ordering, and output path.
           </p>
+          <p>
+            LoRA automation uses the provider-neutral library: list installed
+            references first, inspect or pull from Hugging Face, Civitai, or
+            ModelScope, and import existing files into a managed local reference.
+          </p>
         </div>
         <div className="apiGrid">
           <div className="endpointList">
             <article><span>1</span><code>tapioca catalog</code><p>Confirm platform, memory, and the exact model ID.</p></article>
-            <article><span>2</span><code>adapter inspect</code><p>Require MiniMax-H3 as the declared base before pulling a LoRA.</p></article>
-            <article><span>3</span><code>ordered --adapter</code><p>Apply transformer LoRAs in command order; never infer compatibility by extension.</p></article>
-            <article><span>4</span><code>verify output</code><p>Wait for exit, preserve the returned path, and inspect video plus audio streams.</p></article>
+            <article><span>2</span><code>adapter list</code><p>Reuse its canonical reference when the required LoRA is already installed.</p></article>
+            <article><span>3</span><code>inspect / pull / import</code><p>Acquire from Hugging Face, Civitai, ModelScope, or a verified local file.</p></article>
+            <article><span>4</span><code>ordered --adapter</code><p>Apply transformer LoRAs in command order; never infer compatibility by extension.</p></article>
+            <article><span>5</span><code>verify output</code><p>Wait for exit, preserve the returned path, and inspect video plus audio streams.</p></article>
           </div>
           <pre className="agentCode"><code>{videoExample}</code></pre>
         </div>

@@ -22,7 +22,8 @@ Tapioca Desktop brings the complete local workflow into one interface:
 - Record voice-cloning references with a live microphone level meter.
 - Choose guided image resolutions, video duration, orientation, quality, and
   workload presets while retaining exact expert controls.
-- Assign installed LoRAs with model-family compatibility guidance.
+- Pull LoRAs from Hugging Face, Civitai, or ModelScope, import local
+  `.safetensors` files, and assign them with model-family compatibility guidance.
 - Pull models, inspect hardware requirements, and track local storage.
 - Launch Codex, Claude Code, OpenCode, OpenClaw, and Hermes with a local model.
 - Navigate with a consistent accessible icon system and review long agent paths
@@ -129,7 +130,7 @@ tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
 tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
 tapioca tts MODEL --text TEXT [--voice NAME] [--output speech.wav]
 tapioca voice (create|list|inspect|remove) [NAME]
-tapioca adapter (inspect|pull|list) [hf://OWNER/REPOSITORY]
+tapioca adapter (inspect|pull|import|list) [REFERENCE]
 tapioca create NAME --base MODEL [--adapter REFERENCE]
 tapioca launch CLIENT MODEL [-- CLIENT_ARGS...]
 ```

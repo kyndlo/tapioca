@@ -13,6 +13,7 @@ const contents = [
   ["images", "Generate images"],
   ["video", "Generate video"],
   ["loras", "Choose LoRAs"],
+  ["reuse-loras", "Reuse LoRAs"],
   ["help", "Fix common problems"],
 ];
 
@@ -161,17 +162,60 @@ export default function Learn() {
             </ol>
             <h3>Inspect before pulling</h3>
             <Command>tapioca adapter inspect hf://OWNER/REPOSITORY</Command>
-            <p>Replace <code>OWNER/REPOSITORY</code> with the two parts after <code>huggingface.co/</code>. Do not type the example literally.</p>
+            <Command>tapioca adapter inspect civitai://MODEL_ID/VERSION_ID</Command>
+            <Command>tapioca adapter inspect ms://OWNER/REPOSITORY</Command>
+            <p>Use <code>hf://</code> for Hugging Face, numeric model/version IDs for Civitai, and <code>ms://</code> for ModelScope. You can also paste a complete Civitai URL containing <code>modelVersionId</code>.</p>
             <h3>Select a specific file</h3>
             <Command>{`tapioca adapter pull hf://OWNER/REPOSITORY \\\n  --file exact-lora-file.safetensors`}</Command>
+            <h3>Already downloaded it?</h3>
+            <Command>tapioca adapter import ~/Downloads/my-lora.safetensors --base minimax-h3 --name my-lora</Command>
+            <p>Import verifies and copies the file into Tapioca. In the desktop app, use <b>Import from computer</b>; Tapioca creates the same managed <code>local://</code> reference for you.</p>
             <h3>Apply it gently</h3>
             <Command>{`tapioca video minimax-h3 \\\n  --adapter 'hf://OWNER/REPOSITORY#exact-lora-file.safetensors@0.8' \\\n  --prompt "A cinematic tracking shot" \\\n  --preset low-memory --output adapted.mp4`}</Command>
             <p>The <code>@0.8</code> is strength. Start around 0.7–0.9. If the output becomes distorted, lower it. Test one LoRA before stacking multiple adapters.</p>
+            <h3>Supported sources and safeguards</h3>
+            <ul className="loraChecks">
+              <li><b>Hugging Face:</b> Use <code>hf://OWNER/REPOSITORY</code>. Private repositories can use <code>HF_TOKEN</code>.</li>
+              <li><b>Civitai:</b> Use <code>civitai://MODEL_ID/VERSION_ID</code> or paste the complete version URL. Tapioca rejects checkpoint models when a LoRA is required.</li>
+              <li><b>ModelScope:</b> Use <code>ms://OWNER/REPOSITORY</code>. <code>modelscope://</code> is also accepted.</li>
+              <li><b>Local files:</b> Import regular <code>.safetensors</code> files. Tapioca verifies the file, records its hash and base family, and rejects unsafe paths.</li>
+            </ul>
+            <Command>{`tapioca adapter pull civitai://MODEL_ID/VERSION_ID#adapter.safetensors
+tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
+            <p>Private sources use environment tokens: <code>HF_TOKEN</code>, <code>CIVITAI_TOKEN</code>, or <code>MODELSCOPE_API_TOKEN</code>. Tapioca never stores these tokens in adapter references or snapshot files.</p>
+            <div className="rule"><span>Verified downloads</span><p>Tapioca downloads into a temporary file, checks the provider checksum when available, validates the safetensors header, and only then moves the file into the managed library.</p></div>
             <div className="loraWrong"><b>File extension does not prove compatibility</b><p>Two files can both end in <code>.safetensors</code> while containing completely different tensor shapes. “It downloads” does not mean “it works with this base model.”</p></div>
           </section>
 
+          <section className="learnSection" id="reuse-loras">
+            <p className="lesson">Lesson 08</p><h2>Reuse downloaded LoRAs</h2>
+            <p className="lessonIntro">A LoRA only needs to be downloaded or imported once. Tapioca keeps it in its managed adapter library and reuses the local copy whenever you select the same reference.</p>
+            <h3>1. See what is already installed</h3>
+            <Command>tapioca adapter list</Command>
+            <Expected>The list shows a reusable reference, its provider, and the exact managed path. Copy the reference from the first column; do not reconstruct it from the filesystem path.</Expected>
+            <h3>2. Use the reference again</h3>
+            <Command>{`tapioca video minimax-h3 \
+  --adapter 'local://my-lora#my-lora.safetensors@0.8' \
+  --prompt "A cinematic tracking shot" \
+  --preset low-memory --output reused.mp4`}</Command>
+            <p>The same rule applies to an installed <code>hf://</code>, <code>civitai://</code>, or <code>ms://</code> reference. Tapioca detects the cached file and does not download it again. Changing only <code>@0.8</code> changes strength; it does not create another copy.</p>
+            <h3>Reuse it in the desktop app</h3>
+            <ol className="loraChecks">
+              <li><b>Open Images or Video:</b> Choose a base model that supports LoRAs.</li>
+              <li><b>Find LoRA styles:</b> The Installed LoRA menu includes files pulled from providers and files imported from your computer.</li>
+              <li><b>Assign LoRA:</b> Choose it, click <b>Assign LoRA</b>, and adjust Strength. You can reorder up to eight adapters.</li>
+              <li><b>Generate:</b> Tapioca reuses the managed file. Provider references that are not installed yet are verified and installed automatically.</li>
+            </ol>
+            <h3>If the file was downloaded outside Tapioca</h3>
+            <Command>tapioca adapter import ~/Downloads/style.safetensors --base minimax-h3 --name style</Command>
+            <p>Use <code>adapter import</code>, not <code>--file</code>, for an existing computer file. The <code>--file</code> option selects a file inside a provider repository. Import copies the weights into the managed library without changing the original.</p>
+            <h3>Move an adapter library to another computer</h3>
+            <p>Copy the complete <code>adapters</code> directory—including each <code>snapshot.json</code>—into the other computer&apos;s Tapioca home. The default is <code>~/.tapioca/adapters</code> on macOS/Linux and <code>%USERPROFILE%\.tapioca\adapters</code> on Windows. Alternatively, import each raw safetensors file again and declare its base model.</p>
+            <div className="rule"><span>Keep metadata together</span><p>Do not move only individual managed weight files or rename folders inside the adapter library. The snapshot records provider, checksum, revision, and compatibility information used for safe reuse.</p></div>
+          </section>
+
           <section className="learnSection" id="help">
-            <p className="lesson">Lesson 08</p><h2>Fix common beginner problems</h2>
+            <p className="lesson">Lesson 09</p><h2>Fix common beginner problems</h2>
             <div className="faq">
               <details><summary>Nothing seems to happen</summary><p>Look for download or runtime preparation progress. First runs can take minutes. Keep the app open and confirm free disk space.</p></details>
               <details><summary>The model is not listed</summary><p>Update Tapioca, then run <code>tapioca catalog</code>. Catalogs are compiled into each release, so an old binary cannot see newly added entries.</p></details>

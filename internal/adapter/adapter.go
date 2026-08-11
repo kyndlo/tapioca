@@ -1,11 +1,14 @@
 package adapter
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -14,55 +17,79 @@ import (
 
 const defaultScale = 1.0
 
+type Provider string
+
+const (
+	ProviderHuggingFace Provider = "huggingface"
+	ProviderCivitai     Provider = "civitai"
+	ProviderModelScope  Provider = "modelscope"
+	ProviderLocal       Provider = "local"
+)
+
 type Reference struct {
-	Raw   string
-	Repo  string
-	File  string
-	Scale float64
+	Raw      string
+	Provider Provider
+	Repo     string
+	File     string
+	Scale    float64
 }
 
 type File struct {
-	Name string
-	Size int64
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	SHA256      string `json:"sha256,omitempty"`
+	DownloadURL string `json:"download_url,omitempty"`
 }
 
 type Metadata struct {
-	Repo     string
-	Revision string
-	Pipeline string
-	License  string
-	Bases    []string
-	Files    []File
+	Provider Provider `json:"provider"`
+	Repo     string   `json:"repo"`
+	Revision string   `json:"revision,omitempty"`
+	Pipeline string   `json:"pipeline,omitempty"`
+	Type     string   `json:"type,omitempty"`
+	License  string   `json:"license,omitempty"`
+	Bases    []string `json:"bases,omitempty"`
+	Files    []File   `json:"files"`
 }
 
 type Local struct {
-	Reference string  `json:"reference"`
-	Repo      string  `json:"repo"`
-	File      string  `json:"file"`
-	Path      string  `json:"path"`
-	Scale     float64 `json:"scale"`
-}
-
-type hubModel struct {
-	SHA         string `json:"sha"`
-	PipelineTag string `json:"pipeline_tag"`
-	CardData    struct {
-		BaseModel json.RawMessage `json:"base_model"`
-		License   string          `json:"license"`
-	} `json:"cardData"`
-	Siblings []struct {
-		Filename string `json:"rfilename"`
-		Size     int64  `json:"size"`
-	} `json:"siblings"`
+	Reference   string   `json:"reference"`
+	Provider    Provider `json:"provider"`
+	Repo        string   `json:"repo"`
+	File        string   `json:"file"`
+	Path        string   `json:"path"`
+	Scale       float64  `json:"scale"`
+	SHA256      string   `json:"sha256,omitempty"`
+	DownloadURL string   `json:"download_url,omitempty"`
+	Revision    string   `json:"revision,omitempty"`
+	Bases       []string `json:"bases,omitempty"`
 }
 
 func Parse(value string) (Reference, error) {
-	const prefix = "hf://"
-	if !strings.HasPrefix(value, prefix) {
-		return Reference{}, fmt.Errorf("adapter %q must start with hf://", value)
-	}
 	raw := value
-	value = strings.TrimPrefix(value, prefix)
+	if parsed, ok := parseCivitaiWebURL(value); ok {
+		return parsed, nil
+	}
+	provider, body, ok := strings.Cut(value, "://")
+	if !ok {
+		return Reference{}, fmt.Errorf(
+			"adapter %q must start with hf://, civitai://, ms://, modelscope://, or local://", value,
+		)
+	}
+	var kind Provider
+	switch strings.ToLower(provider) {
+	case "hf":
+		kind = ProviderHuggingFace
+	case "civitai":
+		kind = ProviderCivitai
+	case "ms", "modelscope":
+		kind = ProviderModelScope
+	case "local":
+		kind = ProviderLocal
+	default:
+		return Reference{}, fmt.Errorf("unsupported adapter provider %q", provider)
+	}
+	value = body
 	scale := defaultScale
 	if at := strings.LastIndex(value, "@"); at >= 0 {
 		parsed, err := strconv.ParseFloat(value[at+1:], 64)
@@ -76,70 +103,34 @@ func Parse(value string) (Reference, error) {
 		value = value[:at]
 	}
 	repo, file, _ := strings.Cut(value, "#")
-	if strings.Count(repo, "/") != 1 {
-		return Reference{}, fmt.Errorf(
-			"invalid Hugging Face adapter repository %q; expected hf://OWNER/REPOSITORY", repo,
-		)
+	if err := validateRepo(kind, repo); err != nil {
+		return Reference{}, err
 	}
-	for _, part := range strings.Split(repo, "/") {
-		if part == "" || part == "." || part == ".." {
-			return Reference{}, fmt.Errorf("invalid Hugging Face adapter repository %q", repo)
-		}
+	cleanFile, err := cleanRelativeFile(file)
+	if err != nil {
+		return Reference{}, err
 	}
-	if file != "" {
-		clean := filepath.ToSlash(filepath.Clean(file))
-		if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") ||
-			filepath.IsAbs(file) {
-			return Reference{}, fmt.Errorf("invalid adapter file %q", file)
-		}
-		file = clean
-	}
-	return Reference{Raw: raw, Repo: repo, File: file, Scale: scale}, nil
+	return Reference{
+		Raw: raw, Provider: kind, Repo: repo, File: cleanFile, Scale: scale,
+	}, nil
 }
 
-func Inspect(client *http.Client, repo string) (Metadata, error) {
+func Inspect(client *http.Client, ref Reference) (Metadata, error) {
 	if client == nil {
 		client = http.DefaultClient
 	}
-	req, err := http.NewRequest(http.MethodGet,
-		"https://huggingface.co/api/models/"+repo+"?blobs=true", nil)
-	if err != nil {
-		return Metadata{}, err
+	switch ref.Provider {
+	case ProviderHuggingFace:
+		return inspectHuggingFace(client, ref)
+	case ProviderCivitai:
+		return inspectCivitai(client, ref)
+	case ProviderModelScope:
+		return inspectModelScope(client, ref)
+	case ProviderLocal:
+		return inspectLocal(ref)
+	default:
+		return Metadata{}, fmt.Errorf("unsupported adapter provider %q", ref.Provider)
 	}
-	addHuggingFaceAuth(req)
-	resp, err := client.Do(req)
-	if err != nil {
-		return Metadata{}, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode >= 300 {
-		return Metadata{}, fmt.Errorf("Hugging Face metadata request failed: %s", resp.Status)
-	}
-	var hub hubModel
-	if err := json.NewDecoder(resp.Body).Decode(&hub); err != nil {
-		return Metadata{}, err
-	}
-	metadata := Metadata{
-		Repo: repo, Revision: hub.SHA, Pipeline: hub.PipelineTag,
-		License: hub.CardData.License,
-	}
-	if len(hub.CardData.BaseModel) > 0 && string(hub.CardData.BaseModel) != "null" {
-		if err := json.Unmarshal(hub.CardData.BaseModel, &metadata.Bases); err != nil {
-			var base string
-			if stringErr := json.Unmarshal(hub.CardData.BaseModel, &base); stringErr == nil {
-				metadata.Bases = []string{base}
-			}
-		}
-	}
-	for _, sibling := range hub.Siblings {
-		if strings.EqualFold(filepath.Ext(sibling.Filename), ".safetensors") {
-			metadata.Files = append(metadata.Files, File{
-				Name: sibling.Filename,
-				Size: sibling.Size,
-			})
-		}
-	}
-	return metadata, nil
 }
 
 func Resolve(client *http.Client, home string, ref Reference, explicitFile string, explicitScale *float64) (Local, error) {
@@ -160,12 +151,16 @@ func Resolve(client *http.Client, home string, ref Reference, explicitFile strin
 			return Local{}, err
 		}
 		if _, err := os.Stat(local.Path); err == nil {
-			return local, nil
+			return hydrateLocal(home, ref, local), nil
 		}
-	} else if cached := cachedAdapterFiles(home, ref.Repo); len(cached) == 1 {
-		return localReference(home, ref, cached[0], scale)
+	} else if cached := cachedAdapterFiles(home, ref); len(cached) == 1 {
+		local, err := localReference(home, ref, cached[0], scale)
+		if err != nil {
+			return Local{}, err
+		}
+		return hydrateLocal(home, ref, local), nil
 	}
-	metadata, err := Inspect(client, ref.Repo)
+	metadata, err := Inspect(client, ref)
 	if err != nil {
 		return Local{}, err
 	}
@@ -191,12 +186,29 @@ func Resolve(client *http.Client, home string, ref Reference, explicitFile strin
 	if !found {
 		return Local{}, fmt.Errorf("adapter file %q was not found in %s", file, ref.Repo)
 	}
-	return localReference(home, ref, file, scale)
+	local, err := localReference(home, ref, file, scale)
+	if err != nil {
+		return Local{}, err
+	}
+	local.Revision = metadata.Revision
+	local.Bases = metadata.Bases
+	for _, candidate := range metadata.Files {
+		if candidate.Name == file {
+			local.SHA256 = candidate.SHA256
+			local.DownloadURL = candidate.DownloadURL
+			break
+		}
+	}
+	if ref.Provider == ProviderCivitai && !isAdapterType(metadata.Type) {
+		return Local{}, fmt.Errorf(
+			"Civitai model %s is type %q, not a LoRA adapter", ref.Repo, metadata.Type,
+		)
+	}
+	return local, nil
 }
 
-func cachedAdapterFiles(home, repo string) []string {
-	owner, name, _ := strings.Cut(repo, "/")
-	root := filepath.Join(home, "adapters", "huggingface", owner, name)
+func cachedAdapterFiles(home string, ref Reference) []string {
+	root := adapterRoot(home, ref)
 	var files []string
 	_ = filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil || entry.IsDir() {
@@ -213,15 +225,14 @@ func cachedAdapterFiles(home, repo string) []string {
 }
 
 func localReference(home string, ref Reference, file string, scale float64) (Local, error) {
-	clean := filepath.ToSlash(filepath.Clean(file))
-	if clean == "." || clean == ".." || strings.HasPrefix(clean, "../") ||
-		filepath.IsAbs(file) {
-		return Local{}, fmt.Errorf("invalid adapter file %q", file)
+	clean, err := cleanRelativeFile(file)
+	if err != nil {
+		return Local{}, err
 	}
-	owner, name, _ := strings.Cut(ref.Repo, "/")
-	path := filepath.Join(home, "adapters", "huggingface", owner, name, filepath.FromSlash(clean))
+	path := filepath.Join(adapterRoot(home, ref), filepath.FromSlash(clean))
 	return Local{
-		Reference: ref.Raw,
+		Reference: canonicalReference(ref, clean, scale),
+		Provider:  ref.Provider,
 		Repo:      ref.Repo,
 		File:      clean,
 		Path:      path,
@@ -230,6 +241,12 @@ func localReference(home string, ref Reference, file string, scale float64) (Loc
 }
 
 func Pull(client *http.Client, local Local, force bool) error {
+	if local.Provider == ProviderLocal {
+		if _, err := os.Stat(local.Path); err != nil {
+			return fmt.Errorf("local adapter is not installed: %w", err)
+		}
+		return nil
+	}
 	if !force {
 		if _, err := os.Stat(local.Path); err == nil {
 			return nil
@@ -242,12 +259,24 @@ func Pull(client *http.Client, local Local, force bool) error {
 		return err
 	}
 	partial := local.Path + ".partial"
-	req, err := http.NewRequest(http.MethodGet,
-		"https://huggingface.co/"+local.Repo+"/resolve/main/"+local.File, nil)
+	_ = os.Remove(partial)
+	defer os.Remove(partial)
+	downloadURL, err := adapterDownloadURL(local)
 	if err != nil {
 		return err
 	}
-	addHuggingFaceAuth(req)
+	req, err := http.NewRequest(http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return err
+	}
+	switch local.Provider {
+	case ProviderHuggingFace:
+		addHuggingFaceAuth(req)
+	case ProviderCivitai:
+		addBearerAuth(req, "CIVITAI_TOKEN")
+	case ProviderModelScope:
+		addModelScopeAuth(req)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
@@ -260,7 +289,8 @@ func Pull(client *http.Client, local Local, force bool) error {
 	if err != nil {
 		return err
 	}
-	_, copyErr := io.Copy(out, resp.Body)
+	hasher := sha256.New()
+	written, copyErr := io.Copy(io.MultiWriter(out, hasher), resp.Body)
 	closeErr := out.Close()
 	if copyErr != nil {
 		return copyErr
@@ -268,13 +298,36 @@ func Pull(client *http.Client, local Local, force bool) error {
 	if closeErr != nil {
 		return closeErr
 	}
-	if err := os.Rename(partial, local.Path); err != nil {
+	actualHash := fmt.Sprintf("%x", hasher.Sum(nil))
+	if local.SHA256 != "" && !strings.EqualFold(local.SHA256, actualHash) {
+		return fmt.Errorf(
+			"adapter checksum mismatch: expected %s, received %s", local.SHA256, actualHash,
+		)
+	}
+	if resp.ContentLength >= 0 && written != resp.ContentLength {
+		return fmt.Errorf(
+			"adapter download was incomplete: expected %d bytes, received %d",
+			resp.ContentLength, written,
+		)
+	}
+	if err := validateSafeTensors(partial); err != nil {
+		return fmt.Errorf("downloaded adapter is not a valid safetensors file: %w", err)
+	}
+	if err := replaceManagedFile(partial, local.Path, force); err != nil {
 		return err
 	}
-	metadata := map[string]any{
-		"repo":      local.Repo,
-		"file":      local.File,
-		"reference": local.Reference,
+	metadata := struct {
+		Provider  Provider `json:"provider"`
+		Repo      string   `json:"repo"`
+		File      string   `json:"file"`
+		Reference string   `json:"reference"`
+		Revision  string   `json:"revision,omitempty"`
+		SHA256    string   `json:"sha256"`
+		Bases     []string `json:"bases,omitempty"`
+	}{
+		Provider: local.Provider, Repo: local.Repo, File: local.File,
+		Reference: local.Reference, Revision: local.Revision,
+		SHA256: actualHash, Bases: local.Bases,
 	}
 	data, err := json.MarshalIndent(metadata, "", "  ")
 	if err != nil {
@@ -286,6 +339,76 @@ func Pull(client *http.Client, local Local, force bool) error {
 	}
 	return os.WriteFile(filepath.Join(repositoryRoot, "snapshot.json"),
 		append(data, '\n'), 0o644)
+}
+
+func adapterDownloadURL(local Local) (string, error) {
+	switch local.Provider {
+	case ProviderHuggingFace:
+		revision := local.Revision
+		if revision == "" {
+			revision = "main"
+		}
+		return "https://huggingface.co/" + local.Repo + "/resolve/" +
+			url.PathEscape(revision) + "/" + strings.ReplaceAll(local.File, "#", "%23"), nil
+	case ProviderCivitai:
+		if local.DownloadURL == "" {
+			_, versionID, err := civitaiIDs(local.Repo)
+			if err != nil {
+				return "", err
+			}
+			endpoint, err := providerEndpoint("CIVITAI_ENDPOINT", "https://civitai.com")
+			if err != nil {
+				return "", err
+			}
+			return fmt.Sprintf("%s/api/download/models/%d", endpoint, versionID), nil
+		}
+		return validateCivitaiDownloadURL(local.DownloadURL)
+	case ProviderModelScope:
+		endpoint, err := providerEndpoint("MODELSCOPE_ENDPOINT", "https://modelscope.cn")
+		if err != nil {
+			return "", err
+		}
+		revision := local.Revision
+		if revision == "" {
+			revision = "master"
+		}
+		values := url.Values{"Revision": {revision}, "FilePath": {local.File}}
+		return endpoint + "/api/v1/models/" + local.Repo + "/repo?" + values.Encode(), nil
+	default:
+		return "", fmt.Errorf("provider %q does not support downloads", local.Provider)
+	}
+}
+
+func validateSafeTensors(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Size() < 10 {
+		return errors.New("file is too small")
+	}
+	var prefix [8]byte
+	if _, err := io.ReadFull(file, prefix[:]); err != nil {
+		return err
+	}
+	headerSize := binary.LittleEndian.Uint64(prefix[:])
+	if headerSize < 2 || headerSize > 100*1024*1024 || headerSize > uint64(info.Size()-8) {
+		return fmt.Errorf("invalid header size %d", headerSize)
+	}
+	header := make([]byte, int(headerSize))
+	if _, err := io.ReadFull(file, header); err != nil {
+		return err
+	}
+	var decoded map[string]json.RawMessage
+	if err := json.Unmarshal(header, &decoded); err != nil {
+		return fmt.Errorf("invalid JSON header: %w", err)
+	}
+	return nil
 }
 
 func addHuggingFaceAuth(req *http.Request) {
@@ -307,6 +430,15 @@ func ValidateCompatibility(baseName, backend string, local Local) error {
 			"adapter file %s appears to target %s but base model %s appears to be %s",
 			local.File, fileFamily, baseName, baseFamily,
 		)
+	}
+	for _, declared := range local.Bases {
+		declaredFamily := modelFamily(strings.ToLower(declared))
+		if declaredFamily != "" && baseFamily != "" && declaredFamily != baseFamily {
+			return fmt.Errorf(
+				"adapter %s declares base model %s but selected model %s appears to be %s",
+				local.Reference, declared, baseName, baseFamily,
+			)
+		}
 	}
 	if backend == "mlx" {
 		return fmt.Errorf("backend %s cannot load LoRA adapters", backend)

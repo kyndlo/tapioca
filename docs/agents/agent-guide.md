@@ -74,9 +74,10 @@ Current agent contract: `v1`.
   exact output path returned by Tapioca.
 - Add `--verbose` only for diagnosis. Normal commands intentionally suppress
   noisy backend logs.
-- For LoRAs, inspect the repository before pulling and require the declared
-  base architecture to match the selected model. A `.safetensors` extension
-  alone does not establish compatibility.
+- For LoRAs, inspect the Hugging Face, Civitai, or ModelScope reference before
+  pulling and require the declared base architecture to match the selected
+  model. Import existing files with `adapter import --base`; a `.safetensors`
+  extension alone does not establish compatibility.
 - Do not expose ComfyUI workflow IDs or directories to users. MiniMax-H3 uses
   a replaceable managed video engine behind Tapioca's stable CLI contract.
 

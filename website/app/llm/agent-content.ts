@@ -58,6 +58,8 @@ Agent contract: ${contractVersion}
 - Claude compatibility: Anthropic Messages API.
 - Media: \`tapioca image\`, \`tapioca video\`, and \`tapioca tts\`.
 - Bundle-aware video: resolve \`minimax-h3\` through the catalog; never assemble its weights manually.
+- LoRA library: run \`tapioca adapter list\` and reuse installed adapters before requesting a download.
+- LoRA providers: \`hf://\`, \`civitai://MODEL_ID/VERSION_ID\`, \`ms://\`, and verified \`local://\` imports.
 - LoRA stacks: inspect adapters first, then use ordered repeated \`--adapter\` flags.
 - Coding agents: \`tapioca launch codex|claude|opencode|openclaw|hermes MODEL\`.
 - Model discovery: \`tapioca catalog\`.
@@ -150,8 +152,20 @@ current NVIDIA driver and a working \`nvidia-smi\` command are required. Treat
 16 GiB VRAM and 32 GiB system RAM as the supported target; recommend LTX Video
 for 8–12 GiB cards.
 
-Inspect a LoRA before pulling it. Proceed only if its model card identifies
-MiniMax-H3 as the base architecture:
+Before downloading anything, inspect the managed library:
+
+\`\`\`bash
+tapioca adapter list
+\`\`\`
+
+Each row returns a canonical \`hf://\`, \`civitai://\`, \`ms://\`, or
+\`local://\` reference. If the required adapter is present, use that exact
+reference again. Tapioca resolves the cached safetensors file without another
+download. A different \`@SCALE\` changes application strength without
+duplicating weights.
+
+If no compatible adapter is installed, inspect it before pulling. Proceed only
+if its model card identifies MiniMax-H3 as the base architecture:
 
 \`\`\`bash
 tapioca adapter inspect hf://OWNER/REPOSITORY
@@ -161,6 +175,22 @@ tapioca video minimax-h3 \\
   --adapter 'hf://OWNER/REPOSITORY#adapter.safetensors@0.8' \\
   --output adapted.mp4
 \`\`\`
+
+Tapioca also accepts \`civitai://MODEL_ID/VERSION_ID\` and
+\`ms://OWNER/REPOSITORY\`. For an existing local file, call
+\`tapioca adapter import FILE --base minimax-h3 --name NAME\`, then use the
+\`local://\` reference returned by Tapioca. Never treat an arbitrary local path
+as a trusted generation adapter.
+
+Provider references may be installed with \`tapioca adapter pull REFERENCE\`.
+Full Civitai URLs are accepted when they contain \`modelVersionId\`.
+\`--file\` selects a file inside a provider repository; it is not a local path
+argument. For local files, always use \`adapter import\`.
+
+The desktop app exposes the same workflow through **LoRA styles**: installed
+references appear in the dropdown, **Import from computer** creates a managed
+local reference, and an uninstalled provider reference is verified and pulled
+before generation. Do not bypass the managed library.
 
 Repeat \`--adapter\` for an ordered transformer LoRA stack. A safetensors file
 is not compatible merely because its extension matches. Wait for the process

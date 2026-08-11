@@ -29,8 +29,8 @@ export interface LocalFileSelection {
   previewUrl?: string;
 }
 
-export interface HfLoraSource {
-  type: "huggingface";
+export interface ReferenceLoraSource {
+  type: "reference";
   reference: string;
 }
 
@@ -41,7 +41,7 @@ export interface LocalLoraSource {
 
 export interface CreatorLora {
   id: string;
-  source: HfLoraSource | LocalLoraSource;
+  source: ReferenceLoraSource | LocalLoraSource;
   weight: number;
 }
 

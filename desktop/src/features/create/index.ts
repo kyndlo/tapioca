@@ -3,7 +3,7 @@ export {
   defaultCreatorSettings,
   modeLabel,
   moveLora,
-  parseHfLoraReference,
+  parseLoraReference,
   validateCreatorRequest,
 } from "./state";
 export type * from "./types";

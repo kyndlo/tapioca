@@ -517,13 +517,25 @@ function registerIpcHandlers(): void {
       }
     }
     const isSpeech = input.mode === "speech" || input.mode === "voice-clone";
-    const loras = input.loras.map((lora) => {
+    const loras: Array<{ reference: string; scale: number }> = [];
+    for (const lora of input.loras) {
       if (lora.type === "local") {
-        mediaRegistry.get(lora.token, "lora");
-        throw new Error("Local LoRA generation requires a protocol-safe installed adapter reference");
+        const selected = mediaRegistry.get(lora.token, "lora");
+        const imported = z.object({
+          reference: z.string().min(4),
+        }).passthrough().parse(await controlClient.request("lora.import", {
+          path: selected.path,
+          base: input.model,
+        }));
+        loras.push({ reference: imported.reference, scale: lora.weight });
+        continue;
       }
-      return { reference: lora.reference.replace(/@-?\d+(?:\.\d+)?$/, ""), scale: lora.weight };
-    });
+      const reference = lora.reference.replace(/@-?\d+(?:\.\d+)?$/, "");
+      const installed = z.object({
+        reference: z.string().min(4),
+      }).passthrough().parse(await controlClient.request("lora.pull", { reference }));
+      loras.push({ reference: installed.reference, scale: lora.weight });
+    }
     const common = {
       model: input.model,
       prompt: input.prompt,
@@ -651,12 +663,22 @@ function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.creatorLoraList, async (event) => {
     assertTrustedFrame(event);
     const rows = z.array(z.object({
+      reference: z.string().min(4),
+      provider: z.enum(["huggingface", "civitai", "modelscope", "local"]),
       file: z.string().min(1),
       path: z.string().min(1),
       bytes: z.number().int().nonnegative(),
-    }).strict()).parse(await controlClient.request("lora.list"));
+      bases: z.array(z.string()).optional(),
+    }).passthrough()).parse(await controlClient.request("lora.list"));
     return ipcSchemas.creatorLoraListResult.parse(
-      rows.map((row) => ({ id: crypto.randomUUID(), file: row.file, bytes: row.bytes })),
+      rows.map((row) => ({
+        id: crypto.randomUUID(),
+        reference: row.reference,
+        provider: row.provider,
+        file: row.file,
+        bytes: row.bytes,
+        ...(row.bases ? { bases: row.bases } : {}),
+      })),
     );
   });
   ipcMain.handle(IPC_CHANNELS.creatorLoraInspect, async (event, raw: unknown) => {

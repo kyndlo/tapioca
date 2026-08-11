@@ -203,6 +203,23 @@ The adapter layout is:
 └── runtime/                          Managed video, MLX, MFLUX, or Diffusers environments
 ```
 
+Video LoRAs can alternatively be managed next to a compatible base model and
+selected with `--lora`:
+
+```text
+.tapioca/
+└── models/
+    └── RESOLVED-MODEL/
+        └── loras/
+            └── cinematic.safetensors
+```
+
+`--lora cinematic.safetensors` uses the default strength `1.0`;
+`--lora cinematic.safetensors@0.8` or the single-file form
+`--lora cinematic.safetensors --lora-scale 0.8` selects another strength.
+Use `--adapter` for Hugging Face-managed files and `--lora` for these
+model-local files.
+
 Setting `TAPIOCA_HOME` moves all of these directories together:
 
 ```bash

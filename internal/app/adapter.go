@@ -176,3 +176,33 @@ func resolveAdapters(
 	}
 	return locals, nil
 }
+
+func resolveModelLoRAs(
+	values []string,
+	explicitScale *float64,
+	modelPath, baseName, backend string,
+) ([]adapter.Local, error) {
+	if len(values) == 0 {
+		if explicitScale != nil {
+			return nil, errors.New("--lora-scale requires --lora")
+		}
+		return nil, nil
+	}
+	if len(values) > 1 && explicitScale != nil {
+		return nil, errors.New(
+			"--lora-scale can only be used with one --lora; use @SCALE with repeated --lora flags",
+		)
+	}
+	locals := make([]adapter.Local, 0, len(values))
+	for _, value := range values {
+		local, err := adapter.ResolveModelLoRA(modelPath, value, explicitScale)
+		if err != nil {
+			return nil, err
+		}
+		if err := adapter.ValidateCompatibility(baseName, backend, local); err != nil {
+			return nil, err
+		}
+		locals = append(locals, local)
+	}
+	return locals, nil
+}

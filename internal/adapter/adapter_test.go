@@ -46,6 +46,58 @@ func TestParseRejectsUnsafeOrInvalidReferences(t *testing.T) {
 	}
 }
 
+func TestResolveModelLoRA(t *testing.T) {
+	modelPath := t.TempDir()
+	loraPath := filepath.Join(modelPath, "loras", "styles", "cinematic.safetensors")
+	if err := os.MkdirAll(filepath.Dir(loraPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(loraPath, []byte("weights"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	local, err := ResolveModelLoRA(modelPath, "styles/cinematic.safetensors@0.8", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if local.Path != loraPath || local.File != "styles/cinematic.safetensors" || local.Scale != 0.8 {
+		t.Fatalf("ResolveModelLoRA() = %#v", local)
+	}
+	defaulted, err := ResolveModelLoRA(modelPath, "styles/cinematic.safetensors", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if defaulted.Scale != 1 {
+		t.Fatalf("default scale = %v, want 1", defaulted.Scale)
+	}
+	explicitScale := 0.6
+	explicit, err := ResolveModelLoRA(modelPath, "styles/cinematic.safetensors", &explicitScale)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if explicit.Scale != 0.6 {
+		t.Fatalf("explicit scale = %v, want 0.6", explicit.Scale)
+	}
+}
+
+func TestResolveModelLoRARejectsInvalidFiles(t *testing.T) {
+	modelPath := t.TempDir()
+	for _, value := range []string{
+		"../outside.safetensors",
+		"missing.safetensors",
+		"weights.gguf",
+		"weights.safetensors@strong",
+	} {
+		if _, err := ResolveModelLoRA(modelPath, value, nil); err == nil {
+			t.Errorf("ResolveModelLoRA(%q) unexpectedly succeeded", value)
+		}
+	}
+	explicitScale := 0.5
+	if _, err := ResolveModelLoRA(modelPath, "weights.safetensors@0.8", &explicitScale); err == nil {
+		t.Error("ResolveModelLoRA unexpectedly accepted two scales")
+	}
+}
+
 func TestValidateCompatibility(t *testing.T) {
 	item := Local{File: "cinematic_wan22.safetensors"}
 	if err := ValidateCompatibility("wan2.2-video:5b-q8-mlx", "mlx-video", item); err != nil {

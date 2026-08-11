@@ -28,6 +28,17 @@ Model directories use the resolved name and variant. For example:
 Snapshot-based models contain the Hugging Face repository files. GGUF models
 usually contain one `.gguf` weight file.
 
+Video models with LoRA support can also load manually managed `.safetensors`
+files from a model-local directory:
+
+```text
+TAPIOCA_HOME/models/RESOLVED-MODEL/loras/
+```
+
+Select these files with `tapioca video MODEL --lora FILE[@SCALE]`. The scale
+defaults to `1.0`. Managed Hugging Face downloads continue to live under
+`TAPIOCA_HOME/adapters` and use `--adapter`.
+
 ## Use another disk
 
 Set `TAPIOCA_HOME` before running Tapioca:

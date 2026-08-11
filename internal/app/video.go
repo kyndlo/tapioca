@@ -54,6 +54,10 @@ func video(args []string) error {
 	adapterFile := ""
 	var adapterScale optionalFloat
 	addAdapterFlags(fs, &adapterValues, &adapterFile, &adapterScale)
+	var loraValues stringList
+	fs.Var(&loraValues, "lora", "local LoRA in the model's loras directory; repeatable, optional @SCALE")
+	var loraScale optionalFloat
+	fs.Var(&loraScale, "lora-scale", "strength for a single local LoRA (default 1.0)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -100,8 +104,16 @@ func video(args []string) error {
 	if profile.Name == "stable-video-diffusion:xt-fp16" && *inputImage == "" {
 		return errors.New("stable-video-diffusion requires --image")
 	}
-	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
+	if profile.Name == "stable-video-diffusion:xt-fp16" && (len(adapterValues) > 0 || len(loraValues) > 0) {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
+	}
+	if loraScale.set && len(loraValues) == 0 {
+		return errors.New("--lora-scale requires --lora")
+	}
+	if loraScale.set && len(loraValues) > 1 {
+		return errors.New(
+			"--lora-scale can only be used with one --lora; use @SCALE with repeated --lora flags",
+		)
 	}
 	var explicitScale *float64
 	if adapterScale.set {
@@ -117,6 +129,17 @@ func video(args []string) error {
 	if err != nil {
 		return err
 	}
+	var explicitLoRAScale *float64
+	if loraScale.set {
+		explicitLoRAScale = &loraScale.value
+	}
+	localLoRAs, err := resolveModelLoRAs(
+		loraValues, explicitLoRAScale, model.Path, profile.Name, profile.Backend,
+	)
+	if err != nil {
+		return err
+	}
+	adapters = append(adapters, localLoRAs...)
 	target := *output
 	if target == "" {
 		target = fmt.Sprintf("tapioca-%d.mp4", time.Now().Unix())

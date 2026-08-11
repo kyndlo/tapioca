@@ -107,6 +107,29 @@ LoRAs are architecture-specific. Use adapters whose model card identifies
 MiniMax-H3 as the base model. Tapioca validates obvious family mismatches and
 the runtime validates tensor compatibility before sampling.
 
+For manually managed local files, create a `loras` directory inside the
+resolved model directory and pass the filename with `--lora`:
+
+```powershell
+# Windows CUDA model
+New-Item -ItemType Directory -Force `
+  "$env:TAPIOCA_HOME\models\minimax-h3-fl2va-int8-cuda\loras"
+
+tapioca video minimax-h3 `
+  --prompt "A cinematic tracking shot" `
+  --lora "cinematic.safetensors@0.8" `
+  --preset low-memory `
+  --output "minimax-local-lora.mp4"
+```
+
+The optional `@SCALE` suffix follows the same convention as `--adapter` and
+defaults to `1.0`. For a single file, `--lora-scale 0.8` is equivalent to the
+suffix. Repeat `--lora` to stack files and put the individual scale on each
+filename. Local paths are restricted to that model's `loras` directory;
+`--adapter` remains the option for managed Hugging Face references. This local
+layout also works for compatible MLX-video and Diffusers-video models; Stable
+Video Diffusion remains unsupported because its pipeline cannot load LoRAs.
+
 ## Windows x64 with NVIDIA CUDA
 
 ```powershell

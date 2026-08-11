@@ -97,6 +97,71 @@ func Parse(value string) (Reference, error) {
 	return Reference{Raw: raw, Repo: repo, File: file, Scale: scale}, nil
 }
 
+// ResolveModelLoRA resolves a local LoRA stored beneath MODEL/loras. Values
+// use the same optional @SCALE suffix as Hugging Face adapter references.
+func ResolveModelLoRA(modelPath, value string, explicitScale *float64) (Local, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return Local{}, errors.New("LoRA filename cannot be empty")
+	}
+	scale := defaultScale
+	if at := strings.LastIndex(value, "@"); at >= 0 {
+		if explicitScale != nil {
+			return Local{}, errors.New("LoRA scale was specified both in the filename and --lora-scale")
+		}
+		parsed, err := strconv.ParseFloat(value[at+1:], 64)
+		if err != nil {
+			return Local{}, fmt.Errorf("invalid LoRA scale %q", value[at+1:])
+		}
+		if parsed < 0 {
+			return Local{}, errors.New("LoRA scale must be zero or greater")
+		}
+		scale = parsed
+		value = value[:at]
+	}
+	if explicitScale != nil {
+		if *explicitScale < 0 {
+			return Local{}, errors.New("LoRA scale must be zero or greater")
+		}
+		scale = *explicitScale
+	}
+	clean := filepath.Clean(value)
+	if clean == "." || clean == ".." || filepath.IsAbs(value) {
+		return Local{}, fmt.Errorf("invalid local LoRA file %q", value)
+	}
+	root, err := filepath.Abs(filepath.Join(modelPath, "loras"))
+	if err != nil {
+		return Local{}, err
+	}
+	path, err := filepath.Abs(filepath.Join(root, clean))
+	if err != nil {
+		return Local{}, err
+	}
+	relative, err := filepath.Rel(root, path)
+	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+		return Local{}, fmt.Errorf("local LoRA %q must be inside %s", value, root)
+	}
+	if !strings.EqualFold(filepath.Ext(path), ".safetensors") {
+		return Local{}, fmt.Errorf("local LoRA %q must be a .safetensors file", value)
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return Local{}, fmt.Errorf("local LoRA %q was not found in %s", value, root)
+		}
+		return Local{}, err
+	}
+	if !info.Mode().IsRegular() || info.Mode()&os.ModeSymlink != 0 {
+		return Local{}, fmt.Errorf("local LoRA %q is not a regular file", value)
+	}
+	return Local{
+		Reference: "model-lora://" + filepath.ToSlash(relative),
+		File:      filepath.ToSlash(relative),
+		Path:      path,
+		Scale:     scale,
+	}, nil
+}
+
 func Inspect(client *http.Client, repo string) (Metadata, error) {
 	if client == nil {
 		client = http.DefaultClient

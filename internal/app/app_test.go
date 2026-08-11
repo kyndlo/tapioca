@@ -123,6 +123,14 @@ func TestVideoValidationBeforeDownload(t *testing.T) {
 			[]string{"stable-video-diffusion:xt-fp16", "--prompt", "test"},
 			"requires --image",
 		},
+		{
+			[]string{"stable-video-diffusion:xt-fp16", "--prompt", "test", "--image", "start.png", "--lora", "motion.safetensors"},
+			"does not support LoRA",
+		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--lora-scale", "0.8"},
+			"requires --lora",
+		},
 	}
 	for _, test := range tests {
 		err := video(test.args)

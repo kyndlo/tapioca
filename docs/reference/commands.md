@@ -75,7 +75,7 @@ tapioca video MODEL --prompt TEXT [flags]
 
 Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 `--enhance-prompt`, `--width`, `--height`, `--frames`, `--steps`, `--fps`,
-and `--seed`.
+`--seed`, repeated `--lora`, and `--lora-scale`.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
 `--adapter-scale` when the selected backend supports LoRAs. MiniMax-H3 uses a
@@ -87,6 +87,24 @@ tapioca video minimax-h3 --prompt 'A musician says: "Ready."' \
   --adapter 'hf://creator/minimax-h3-style@0.7' \
   --preset low-memory --output musician.mp4
 ```
+
+Video backends with LoRA support also accept local files from the resolved
+model directory with repeated `--lora FILE[@SCALE]`. The scale defaults to
+`1.0` when omitted. For a single LoRA, `--lora-scale SCALE` is an equivalent
+explicit form. For example, if the resolved model is
+`minimax-h3-fl2va-int8-cuda`, place the file at
+`TAPIOCA_HOME/models/minimax-h3-fl2va-int8-cuda/loras/cinematic.safetensors`
+and run:
+
+```bash
+tapioca video minimax-h3 --prompt "A cinematic tracking shot" \
+  --lora cinematic.safetensors@0.8 \
+  --preset low-memory --output cinematic.mp4
+```
+
+The same layout works for compatible MLX-video and Diffusers-video models:
+`TAPIOCA_HOME/models/RESOLVED-MODEL/loras`. Stable Video Diffusion does not
+support LoRA loading in Tapioca.
 
 ## `tts`
 

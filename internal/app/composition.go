@@ -83,7 +83,7 @@ func (value *optionalFloat) Set(raw string) error {
 		return err
 	}
 	if parsed < 0 {
-		return errors.New("adapter scale must be zero or greater")
+		return errors.New("scale must be zero or greater")
 	}
 	value.value = parsed
 	value.set = true

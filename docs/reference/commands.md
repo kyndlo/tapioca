@@ -108,7 +108,19 @@ tapioca video MODEL --prompt TEXT [flags]
 
 Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 `--enhance-prompt`, `--width`, `--height`, `--frames`, `--steps`, `--fps`,
-and `--seed`.
+`--seconds`, and `--seed`.
+
+`--seconds` requests an approximate duration and selects the closest valid
+frame count for the model and FPS. It cannot be combined with `--frames`.
+MiniMax-H3 follows `17n+5`, LTX Video follows `8n+1`, and other video models
+follow `4n+1`. For example:
+
+```bash
+tapioca video minimax-h3 --prompt "A cinematic tracking shot" \
+  --seconds 5 --output five-seconds.mp4
+```
+
+At 24 FPS this selects 124 MiniMax-H3 frames, approximately 5.17 seconds.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
 `--adapter-scale` when the selected backend supports LoRAs. MiniMax-H3 uses a

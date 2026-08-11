@@ -92,8 +92,14 @@ with multiple NVIDIA GPUs, Tapioca automatically selects the card with the
 most VRAM.
 
 MiniMax-H3 frame counts use `17n+5`, such as 5, 73, or 124. Ten or more steps
-are recommended when judging speech. Compatible MiniMax-H3 transformer LoRAs
-can be stacked in command order:
+are recommended when judging speech.
+
+Use `--seconds` to request an approximate duration without calculating a valid
+frame count manually. For example, `--seconds 5` selects 124 frames at 24 FPS,
+which produces approximately 5.17 seconds. Tapioca prints the selected frame
+count before generation. Do not combine `--seconds` with `--frames`.
+
+Compatible MiniMax-H3 transformer LoRAs can be stacked in command order:
 
 ```bash
 tapioca video minimax-h3 \

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -46,6 +47,7 @@ func video(args []string) error {
 	width := fs.Int("width", profile.Width, "video width (divisible by 32)")
 	height := fs.Int("height", profile.Height, "video height (divisible by 32)")
 	frames := fs.Int("frames", profile.Frames, "number of frames (4n+1)")
+	seconds := fs.Float64("seconds", 0, "approximate video duration in seconds")
 	steps := fs.Int("steps", profile.Steps, "denoising steps")
 	fps := fs.Int("fps", profile.FPS, "output frames per second")
 	seed := fs.Uint64("seed", 0, "random seed")
@@ -78,6 +80,16 @@ func video(args []string) error {
 	if !changed["steps"] {
 		*steps = defaults.steps
 	}
+	if changed["seconds"] && changed["frames"] {
+		return errors.New("--seconds and --frames cannot be used together")
+	}
+	if changed["seconds"] {
+		framesForDuration, err := videoFramesForSeconds(profile, *seconds, *fps)
+		if err != nil {
+			return err
+		}
+		*frames = framesForDuration
+	}
 	if *width <= 0 || *height <= 0 || *width%32 != 0 || *height%32 != 0 {
 		return errors.New("width and height must be positive and divisible by 32")
 	}
@@ -102,6 +114,10 @@ func video(args []string) error {
 	}
 	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
+	}
+	if changed["seconds"] {
+		fmt.Fprintf(os.Stderr, "requested %.2fs; using %d frames at %d fps (%.2fs)\n",
+			*seconds, *frames, *fps, float64(*frames)/float64(*fps))
 	}
 	var explicitScale *float64
 	if adapterScale.set {
@@ -161,6 +177,31 @@ func video(args []string) error {
 	}
 	fmt.Println(target)
 	return nil
+}
+
+func videoFramesForSeconds(model catalog.Resolved, seconds float64, fps int) (int, error) {
+	if seconds <= 0 || math.IsNaN(seconds) || math.IsInf(seconds, 0) {
+		return 0, errors.New("seconds must be a positive finite number")
+	}
+	if fps <= 0 {
+		return 0, errors.New("fps must be positive")
+	}
+	step, offset := 4, 1
+	if model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda" {
+		step, offset = 17, 5
+	} else if model.Name == "ltx-video:2b-fp16" {
+		step, offset = 8, 1
+	}
+	target := seconds * float64(fps)
+	maxInt := int(^uint(0) >> 1)
+	if math.IsInf(target, 0) || target > float64(maxInt-step-offset) {
+		return 0, errors.New("seconds value is too large")
+	}
+	n := int(math.Round((target - float64(offset)) / float64(step)))
+	if n < 0 {
+		n = 0
+	}
+	return n*step + offset, nil
 }
 
 type videoDefaults struct {

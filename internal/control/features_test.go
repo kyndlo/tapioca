@@ -15,6 +15,7 @@ import (
 
 	"github.com/carlos/tapioca/internal/app"
 	"github.com/carlos/tapioca/internal/config"
+	"github.com/carlos/tapioca/internal/modellicense"
 	modelserver "github.com/carlos/tapioca/internal/server"
 )
 
@@ -107,6 +108,45 @@ func TestModelPullUsesTypedDependencyAndProgressEvents(t *testing.T) {
 		t.Fatalf("output has no progress event:\n%s", output.String())
 	}
 	assertJobEventSequences(t, output.String())
+}
+
+func TestGatedModelPullRequiresAndRecordsExplicitAcceptance(t *testing.T) {
+	t.Setenv("TAPIOCA_HOME", t.TempDir())
+	pulls := 0
+	handler := NewHandler(Dependencies{
+		Pull: func(
+			_ context.Context,
+			name string,
+			_ bool,
+			_ app.PullReporter,
+		) (config.Model, error) {
+			pulls++
+			return config.Model{Name: name, Path: "/models/krea"}, nil
+		},
+	})
+	without, protocolErr := handler.Handle(context.Background(), Request{
+		Version: ProtocolVersion, Type: "request", ID: "one", Method: "model.pull",
+		Params: json.RawMessage(`{"name":"krea-2-turbo:bf16-cuda"}`), JobID: "pull-one",
+	})
+	if protocolErr != nil || without == nil || pulls != 1 {
+		t.Fatalf("mocked pull without acceptance = %#v, %v, pulls %d", without, protocolErr, pulls)
+	}
+	// The dependency is mocked, so the central application gate is bypassed.
+	// This request verifies that the control layer persists acceptance only when
+	// the explicit protocol field is supplied.
+	_, protocolErr = handler.Handle(context.Background(), Request{
+		Version: ProtocolVersion, Type: "request", ID: "two", Method: "model.pull",
+		Params: json.RawMessage(`{"name":"krea-2-turbo:bf16-cuda","accept_license":true}`), JobID: "pull-two",
+	})
+	if protocolErr != nil || pulls != 2 {
+		t.Fatalf("accepted pull error = %v, pulls %d", protocolErr, pulls)
+	}
+	if err := modellicense.Require(
+		"krea-2-turbo:bf16-cuda", "Krea 2 Community License",
+		"https://huggingface.co/krea/Krea-2-Turbo",
+	); err != nil {
+		t.Fatalf("license was not recorded: %v", err)
+	}
 }
 
 func TestMutatingPullJobsAreSerialized(t *testing.T) {

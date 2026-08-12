@@ -194,7 +194,7 @@ describe("renderer adapters", () => {
     });
   });
 
-  it("correlates model progress by job id and returns refreshed installed state", async () => {
+	it("correlates model progress by job id and returns refreshed installed state", async () => {
     let eventListener:
       | Parameters<TapiocaDesktopApi["onJobEvent"]>[0]
       | undefined;
@@ -264,8 +264,51 @@ describe("renderer adapters", () => {
       receivedBytes: 3,
       totalBytes: 6,
     });
-    expect(installed.installed).toBe(true);
-  });
+		expect(installed.installed).toBe(true);
+	});
+
+	it("forwards an explicit gated-model license acknowledgement", async () => {
+		const modelPull = vi.fn().mockResolvedValue({
+			name: "krea-2-turbo:bf16-mps",
+			repo: "krea/Krea-2-Turbo",
+			kind: "image",
+			backend: "diffusers-mps",
+		});
+		const catalog = {
+			name: "krea-2-turbo:bf16-mps",
+			kind: "image",
+			backend: "diffusers-mps",
+			repo: "krea/Krea-2-Turbo",
+			size: "34 GiB",
+			memory: "64 GiB min; 96 GiB recommended",
+			platforms: ["macos"],
+			gated: true,
+			license: "Krea 2 Community License",
+			license_url: "https://huggingface.co/krea/Krea-2-Turbo",
+		};
+		const api = apiFixture({
+			modelPull,
+			models: vi.fn().mockResolvedValue({
+				catalog: [catalog],
+				installed: [{
+					name: catalog.name, repo: catalog.repo, kind: catalog.kind,
+					backend: catalog.backend,
+				}],
+			}),
+		});
+		const adapters = createRendererAdapters(api, vi.fn());
+		await adapters.models.pullModel(catalog.name, {
+			signal: new AbortController().signal,
+			acceptLicense: true,
+			accessToken: "hf_one_time",
+			onProgress: vi.fn(),
+		});
+		expect(modelPull).toHaveBeenCalledWith(expect.objectContaining({
+			name: catalog.name,
+			acceptLicense: true,
+			accessToken: "hf_one_time",
+		}));
+	});
 
   it("correlates chat job events and exposes one backend completion", async () => {
     let listener: Parameters<TapiocaDesktopApi["onJobEvent"]>[0] | undefined;

@@ -20,10 +20,11 @@ import (
 
 	"github.com/carlos/tapioca/internal/catalog"
 	"github.com/carlos/tapioca/internal/config"
+	"github.com/carlos/tapioca/internal/modellicense"
 	"github.com/carlos/tapioca/internal/server"
 )
 
-const version = "0.7.2"
+const version = "0.8.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -72,7 +73,7 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, `Tapioca runs local language, speech, image, and video models.
 
 Usage:
-  tapioca pull MODEL[:QUANT]
+  tapioca pull MODEL[:QUANT] [--accept-license]
   tapioca serve MODEL [--port 11435] [--context 65536]
   tapioca run MODEL
   tapioca image MODEL --prompt TEXT [--output image.png]
@@ -111,6 +112,7 @@ func pull(args []string) error {
 	ref := args[0]
 	fs := flag.NewFlagSet("pull", flag.ContinueOnError)
 	force := fs.Bool("force", false, "download again")
+	acceptLicense := fs.Bool("accept-license", false, "accept the model license after reviewing it")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -120,6 +122,14 @@ func pull(args []string) error {
 	resolved, err := catalog.Resolve(ref)
 	if err != nil {
 		return err
+	}
+	if *acceptLicense {
+		if !resolved.Gated {
+			return fmt.Errorf("%s does not require explicit license acceptance", resolved.Name)
+		}
+		if err := AcceptModelLicense(resolved.Name); err != nil {
+			return err
+		}
 	}
 	_, err = pullResolved(resolved, *force)
 	return err
@@ -165,6 +175,11 @@ func pullResolvedWithContext(
 	home, err := config.Home()
 	if err != nil {
 		return config.Model{}, err
+	}
+	if resolved.Gated {
+		if err := modellicense.Require(resolved.Name, resolved.License, resolved.LicenseURL); err != nil {
+			return config.Model{}, err
+		}
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
 	if resolved.Kind == "image" || resolved.Kind == "video" || resolved.Kind == "speech" {
@@ -252,10 +267,7 @@ func downloadWithContext(
 	}
 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if strings.EqualFold(req.URL.Host, "huggingface.co") {
-		token := os.Getenv("HF_TOKEN")
-		if token == "" {
-			token = os.Getenv("HUGGING_FACE_HUB_TOKEN")
-		}
+		token := huggingFaceToken(ctx)
 		if token != "" {
 			req.Header.Set("Authorization", "Bearer "+token)
 		}

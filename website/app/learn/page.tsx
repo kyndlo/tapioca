@@ -130,8 +130,12 @@ export default function Learn() {
               <article><span>Mac · 16 GiB+</span><h3>FLUX.2 Klein</h3><Command>{`tapioca image flux2-klein:4b-q4-mlx \\\n  --prompt "A red fox in snow" \\\n  --output fox.png`}</Command></article>
               <article><span>Windows · NVIDIA 6 GiB+</span><h3>SD Turbo CUDA</h3><Command>{`tapioca image sd-turbo:fp16 \\\n  --prompt "A red fox in snow" \\\n  --output fox.png`}</Command></article>
               <article><span>Windows · AMD or Intel</span><h3>SD Turbo DirectML</h3><Command>{`tapioca image sd-turbo:onnx-directml \\\n  --prompt "A red fox in snow" \\\n  --output fox.png`}</Command></article>
-            </div>
-            <h3>Write a useful prompt</h3><p>Describe <b>subject + setting + lighting + visual style + composition</b>. Example: “A red fox in a snowy pine forest, golden-hour light, detailed wildlife photograph, eye-level portrait.”</p>
+			  <article><span>96 GiB Mac or NVIDIA 16 GiB+</span><h3>Krea 2 Turbo</h3><Command>{`export HF_TOKEN=hf_your_read_token
+tapioca pull krea-2-turbo --accept-license
+tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.png`}</Command></article>
+			</div>
+			<div className="rule"><span>Gated model</span><p>Krea 2 Turbo requires you to accept its terms on Hugging Face first. Review the Krea 2 Community License, then paste a read token into Tapioca Desktop for that pull, or set <code>HF_TOKEN</code> and use <code>--accept-license</code> in the CLI. Tapioca never accepts terms for you and does not save the token. Review outputs before sharing them.</p></div>
+			<h3>Write a useful prompt</h3><p>Describe <b>subject + setting + lighting + visual style + composition</b>. Example: “A red fox in a snowy pine forest, golden-hour light, detailed wildlife photograph, eye-level portrait.”</p>
             <Expected>The first run downloads several gigabytes and prepares a private runtime. A progress bar may pause while files load into memory. Later images reuse both downloads.</Expected>
           </section>
 
@@ -220,7 +224,8 @@ tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
             <div className="faq">
               <details><summary>Nothing seems to happen</summary><p>Look for download or runtime preparation progress. First runs can take minutes. Keep the app open and confirm free disk space.</p></details>
               <details><summary>The model is not listed</summary><p>Update Tapioca, then run <code>tapioca catalog</code>. Catalogs are compiled into each release, so an old binary cannot see newly added entries.</p></details>
-              <details><summary>Windows is not using NVIDIA</summary><p>Install a current NVIDIA driver, run <code>nvidia-smi</code>, close GPU-heavy apps, and assign Tapioca to the high-performance GPU in Windows Graphics settings.</p></details>
+			  <details><summary>A gated Hugging Face model says access denied</summary><p>Open its Hugging Face page while signed in, accept the provider terms, create a read token, set <code>HF_TOKEN</code>, and pull once with <code>--accept-license</code>. The token must be present in the same terminal that launches Tapioca.</p></details>
+			  <details><summary>Windows is not using NVIDIA</summary><p>Install a current NVIDIA driver, run <code>nvidia-smi</code>, close GPU-heavy apps, and assign Tapioca to the high-performance GPU in Windows Graphics settings.</p></details>
               <details><summary>The computer runs out of memory</summary><p>Choose a smaller model, use a lower quantization, select low-memory, and reduce video resolution or frames.</p></details>
               <details><summary>The LoRA fails or distorts everything</summary><p>Recheck the exact base architecture and weight file. Then test the base model alone and retry one LoRA at a lower strength.</p></details>
             </div>

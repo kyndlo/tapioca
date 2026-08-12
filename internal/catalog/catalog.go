@@ -8,25 +8,28 @@ import (
 )
 
 type Model struct {
-	Name      string
-	Repo      string
-	Files     map[string]string
-	Template  string
-	Kind      string
-	Backends  map[string]string
-	Repos     map[string]string
-	Default   string
-	Width     int
-	Height    int
-	Steps     int
-	Frames    int
-	FPS       int
-	Sizes     map[string]string
-	Memory    map[string]string
-	GPUs      map[string]string
-	Languages map[string]string
-	Features  map[string]string
-	Artifacts map[string][]Artifact
+	Name       string
+	Repo       string
+	Files      map[string]string
+	Template   string
+	Kind       string
+	Backends   map[string]string
+	Repos      map[string]string
+	Default    string
+	Width      int
+	Height     int
+	Steps      int
+	Frames     int
+	FPS        int
+	Sizes      map[string]string
+	Memory     map[string]string
+	GPUs       map[string]string
+	Languages  map[string]string
+	Features   map[string]string
+	Artifacts  map[string][]Artifact
+	Gated      bool
+	License    string
+	LicenseURL string
 }
 
 // Artifact is one explicitly selected file in a multi-repository model bundle.
@@ -349,6 +352,42 @@ var models = map[string]Model{
 		Memory: map[string]string{"fp16": "24 GiB min; 32 GiB recommended"},
 		GPUs:   map[string]string{"fp16": "NVIDIA CUDA, 8 GiB+ VRAM"},
 	},
+	"krea-2-turbo": {
+		Name:       "krea-2-turbo",
+		Repo:       "krea/Krea-2-Turbo",
+		Kind:       "image",
+		Default:    "bf16-cuda",
+		Width:      1024,
+		Height:     1024,
+		Steps:      8,
+		Gated:      true,
+		License:    "Krea 2 Community License",
+		LicenseURL: "https://huggingface.co/krea/Krea-2-Turbo",
+		Files: map[string]string{
+			"bf16-cuda": "",
+			"bf16-mps":  "",
+		},
+		Backends: map[string]string{
+			"bf16-cuda": "diffusers",
+			"bf16-mps":  "diffusers-mps",
+		},
+		Sizes: map[string]string{
+			"bf16-cuda": "~34 GiB",
+			"bf16-mps":  "~34 GiB",
+		},
+		Memory: map[string]string{
+			"bf16-cuda": "32 GiB min; 48 GiB recommended",
+			"bf16-mps":  "64 GiB min; 96 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"bf16-cuda": "NVIDIA CUDA, 16 GiB VRAM min with CPU offload; 24 GiB recommended",
+			"bf16-mps":  "Apple Silicon GPU (experimental MPS)",
+		},
+		Features: map[string]string{
+			"bf16-cuda": "8-step text-to-image, 1K–2K output, LoRA stacks, gated license",
+			"bf16-mps":  "8-step text-to-image, 1K–2K output, LoRA stacks, gated license, experimental",
+		},
+	},
 	"wan2.2-video": {
 		Name:    "wan2.2-video",
 		Repo:    "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
@@ -473,24 +512,27 @@ var models = map[string]Model{
 }
 
 type Resolved struct {
-	Name      string
-	Repo      string
-	Filename  string
-	URL       string
-	Kind      string
-	Backend   string
-	Width     int
-	Height    int
-	Steps     int
-	Frames    int
-	FPS       int
-	Size      string
-	Platform  string
-	Memory    string
-	GPU       string
-	Languages string
-	Features  string
-	Artifacts []Artifact
+	Name       string
+	Repo       string
+	Filename   string
+	URL        string
+	Kind       string
+	Backend    string
+	Width      int
+	Height     int
+	Steps      int
+	Frames     int
+	FPS        int
+	Size       string
+	Platform   string
+	Memory     string
+	GPU        string
+	Languages  string
+	Features   string
+	Artifacts  []Artifact
+	Gated      bool
+	License    string
+	LicenseURL string
 }
 
 func Resolve(ref string) (Resolved, error) {
@@ -534,6 +576,13 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 			tag = "fl2va-int8-cuda"
 		}
 	}
+	if m.Name == "krea-2-turbo" && !strings.Contains(ref, ":") {
+		if goos == "darwin" && goarch == "arm64" {
+			tag = "bf16-mps"
+		} else {
+			tag = "bf16-cuda"
+		}
+	}
 	filename, ok := m.Files[strings.ToLower(tag)]
 	if !ok {
 		return Resolved{}, fmt.Errorf("unknown variant %q for %s", tag, name)
@@ -556,6 +605,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		platform = "macOS Apple Silicon"
 	case "diffusers", "diffusers-video":
 		platform = "Windows/Linux NVIDIA"
+	case "diffusers-mps":
+		platform = "macOS Apple Silicon"
 	case "comfy-h3-mps":
 		platform = "macOS Apple Silicon"
 	case "comfy-h3-cuda":
@@ -589,6 +640,7 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		Languages: m.Languages[strings.ToLower(tag)],
 		Features:  m.Features[strings.ToLower(tag)],
 		Artifacts: append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
+		Gated:     m.Gated, License: m.License, LicenseURL: m.LicenseURL,
 	}, nil
 }
 

@@ -240,7 +240,11 @@ function registerIpcHandlers(): void {
       publicInstalledModel(
         installedModelSchema.parse(await controlClient.request(
         "model.pull",
-        { name: input.name },
+		{
+			name: input.name,
+			accept_license: input.acceptLicense,
+			hf_token: input.accessToken,
+		},
         input.jobId,
         null,
         )),

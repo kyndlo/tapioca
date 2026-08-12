@@ -1,6 +1,7 @@
 package imageruntime
 
 import (
+	"path/filepath"
 	"slices"
 	"testing"
 
@@ -40,6 +41,12 @@ func TestDiffusersArgumentsIncludeRepeatedInputsAndAdapters(t *testing.T) {
 	})
 	if count(args, "--image") != 2 || count(args, "--adapter") != 1 {
 		t.Fatalf("unexpected repeated arguments: %v", args)
+	}
+	if len(args) < 2 || args[0] != "-P" || filepath.Base(args[1]) != "image_diffusion.py" {
+		t.Fatalf("Diffusers script is not isolated from site imports: %v", args)
+	}
+	if filepath.Base(args[1]) == "diffusers.py" {
+		t.Fatalf("runtime script shadows the diffusers package: %v", args)
 	}
 }
 

@@ -10,6 +10,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/carlos/tapioca/internal/pythonruntime"
 )
 
 //go:embed speech.py requirements-chatterbox.txt requirements-qwen.txt requirements-mlx.txt
@@ -88,7 +90,7 @@ func runPython(
 	}
 	ready := filepath.Join(venv, ".tapioca-ready")
 	if _, err := os.Stat(ready); err != nil {
-		system, prefix, err := systemPython()
+		system, prefix, err := pythonruntime.Find("speech generation")
 		if err != nil {
 			return err
 		}
@@ -140,16 +142,4 @@ func pythonArguments(root string, request Request) []string {
 		args = append(args, "--language", request.Language)
 	}
 	return args
-}
-
-func systemPython() (string, []string, error) {
-	for _, candidate := range []struct {
-		name   string
-		prefix []string
-	}{{"python3", nil}, {"python", nil}, {"py", []string{"-3"}}} {
-		if path, err := exec.LookPath(candidate.name); err == nil {
-			return path, candidate.prefix, nil
-		}
-	}
-	return "", nil, errors.New("Python 3.10 or newer is required for speech generation")
 }

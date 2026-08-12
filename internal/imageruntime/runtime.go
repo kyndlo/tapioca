@@ -11,9 +11,10 @@ import (
 	"runtime"
 
 	"github.com/carlos/tapioca/internal/adapter"
+	"github.com/carlos/tapioca/internal/pythonruntime"
 )
 
-//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift diffusers.py onnx_diffusion.py requirements.txt requirements-mflux.txt requirements-onnx.txt
+//go:embed Package.swift Package.resolved Sources/tapioca-image-runtime/main.swift image_diffusion.py onnx_diffusion.py requirements.txt requirements-mflux.txt requirements-onnx.txt
 var source embed.FS
 
 type Request struct {
@@ -41,7 +42,7 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 	switch request.Backend {
 	case "mlx":
 		return runMLX(ctx, cacheDir, request)
-	case "diffusers":
+	case "diffusers", "diffusers-mps":
 		return runDiffusers(ctx, cacheDir, request)
 	case "mflux":
 		return runMFlux(ctx, cacheDir, request)
@@ -80,7 +81,7 @@ func runONNX(ctx context.Context, cacheDir string, request Request) error {
 	python := filepath.Join(venv, "Scripts", "python.exe")
 	ready := filepath.Join(venv, ".tapioca-ready")
 	if _, err := os.Stat(ready); err != nil {
-		system, prefix, err := systemPython()
+		system, prefix, err := pythonruntime.Find("ONNX image generation")
 		if err != nil {
 			return err
 		}
@@ -160,7 +161,7 @@ func runMFlux(ctx context.Context, cacheDir string, request Request) error {
 	python := filepath.Join(venv, "bin", "python")
 	ready := filepath.Join(venv, ".tapioca-ready")
 	if _, err := os.Stat(ready); err != nil {
-		system, prefix, err := systemPython()
+		system, prefix, err := pythonruntime.Find("MFLUX image generation")
 		if err != nil {
 			return err
 		}
@@ -362,17 +363,21 @@ func requireMetalToolchain(ctx context.Context) error {
 }
 
 func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
-	if runtime.GOOS == "darwin" {
-		return errors.New("the Diffusers backend in this release targets NVIDIA CUDA; use qwen-image-flash:int8 on Apple Silicon")
+	if request.Backend == "diffusers-mps" &&
+		(runtime.GOOS != "darwin" || runtime.GOARCH != "arm64") {
+		return errors.New("the MPS Diffusers backend requires macOS on Apple Silicon")
 	}
-	if runtime.GOOS == "windows" && runtime.GOARCH != "amd64" {
+	if request.Backend == "diffusers" && runtime.GOOS == "darwin" {
+		return errors.New("this Diffusers profile targets NVIDIA CUDA; select a model variant with MPS support")
+	}
+	if request.Backend == "diffusers" && runtime.GOOS == "windows" && runtime.GOARCH != "amd64" {
 		return errors.New("the CUDA image backend currently requires Windows x64")
 	}
-	if runtime.GOOS != "windows" && runtime.GOOS != "linux" {
+	if request.Backend == "diffusers" && runtime.GOOS != "windows" && runtime.GOOS != "linux" {
 		return errors.New("the CUDA image backend requires Windows or Linux")
 	}
-	root := filepath.Join(cacheDir, "diffusers-runtime", "0.1.0")
-	for _, name := range []string{"diffusers.py", "requirements.txt"} {
+	root := filepath.Join(cacheDir, "diffusers-runtime", "0.2.0")
+	for _, name := range []string{"image_diffusion.py", "requirements.txt"} {
 		data, err := source.ReadFile(name)
 		if err != nil {
 			return err
@@ -392,11 +397,15 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 	}
 	ready := filepath.Join(venv, ".tapioca-ready")
 	if _, err := os.Stat(ready); err != nil {
-		name, prefix, err := systemPython()
+		name, prefix, err := pythonruntime.Find("Diffusers image generation")
 		if err != nil {
 			return err
 		}
-		fmt.Fprintln(runtimeStderr(ctx), "creating the CUDA image runtime (first run only)...")
+		acceleration := "CUDA"
+		if request.Backend == "diffusers-mps" {
+			acceleration = "Apple MPS"
+		}
+		fmt.Fprintf(runtimeStderr(ctx), "creating the %s image runtime (first run only)...\n", acceleration)
 		venvArgs := append(prefix, "-m", "venv", venv)
 		cmd := exec.CommandContext(ctx, name, venvArgs...)
 		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
@@ -408,18 +417,19 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
-		cmd = exec.CommandContext(
-			ctx, python, "-m", "pip", "install",
-			"torch>=2.7", "--index-url", "https://download.pytorch.org/whl/cu128",
-		)
+		torchArgs := []string{"-m", "pip", "install", "torch>=2.7"}
+		if request.Backend == "diffusers" {
+			torchArgs = append(torchArgs, "--index-url", "https://download.pytorch.org/whl/cu128")
+		}
+		cmd = exec.CommandContext(ctx, python, torchArgs...)
 		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("install CUDA-enabled PyTorch: %w", err)
+			return fmt.Errorf("install %s PyTorch runtime: %w", acceleration, err)
 		}
 		cmd = exec.CommandContext(ctx, python, "-m", "pip", "install", "-r", filepath.Join(root, "requirements.txt"))
 		cmd.Stdout, cmd.Stderr = runtimeStderr(ctx), runtimeStderr(ctx)
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("install CUDA image dependencies: %w", err)
+			return fmt.Errorf("install %s image dependencies: %w", acceleration, err)
 		}
 		if err := os.WriteFile(ready, []byte("ready\n"), 0o644); err != nil {
 			return err
@@ -436,11 +446,11 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 
 func diffusersArguments(root string, request Request) []string {
 	args := []string{
-		filepath.Join(root, "diffusers.py"),
+		"-P", filepath.Join(root, "image_diffusion.py"),
 		"--model", request.ModelPath, "--prompt", request.Prompt,
 		"--output", request.Output, "--width", fmt.Sprint(request.Width),
 		"--height", fmt.Sprint(request.Height), "--steps", fmt.Sprint(request.Steps),
-		"--seed", fmt.Sprint(request.Seed),
+		"--seed", fmt.Sprint(request.Seed), "--backend", request.Backend,
 	}
 	if request.NegativePrompt != "" {
 		args = append(args, "--negative-prompt", request.NegativePrompt)
@@ -452,21 +462,4 @@ func diffusersArguments(root string, request Request) []string {
 		args = append(args, "--adapter", item.Path, "--adapter-scale", fmt.Sprint(item.Scale))
 	}
 	return args
-}
-
-func systemPython() (string, []string, error) {
-	candidates := []struct {
-		name   string
-		prefix []string
-	}{
-		{"python3", nil},
-		{"python", nil},
-		{"py", []string{"-3"}},
-	}
-	for _, candidate := range candidates {
-		if path, err := exec.LookPath(candidate.name); err == nil {
-			return path, candidate.prefix, nil
-		}
-	}
-	return "", nil, errors.New("Python 3.10 or newer is required for this image backend")
 }

@@ -21,7 +21,10 @@ export interface ModelRecord {
   requirements: ModelRequirements;
   installed: boolean;
   installedBytes?: number;
-  updatedAt?: string;
+	updatedAt?: string;
+	gated?: boolean;
+	license?: string;
+	licenseUrl?: string;
 }
 
 export interface MachineProfile {
@@ -37,7 +40,9 @@ export interface PullProgress {
 }
 
 export interface PullOptions {
-  signal: AbortSignal;
+	signal: AbortSignal;
+	acceptLicense?: boolean;
+	accessToken?: string;
   onProgress(progress: PullProgress): void;
 }
 

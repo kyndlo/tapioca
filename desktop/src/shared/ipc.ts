@@ -74,7 +74,12 @@ const jobInputBase = {
   jobId: z.string().min(1).max(128),
 };
 export const modelPullInputSchema = z
-  .object({ ...jobInputBase, name: z.string().min(1).max(256) })
+	.object({
+		...jobInputBase,
+		name: z.string().min(1).max(256),
+		acceptLicense: z.boolean().optional(),
+		accessToken: z.string().min(1).max(1024).optional(),
+	})
   .strict();
 export const cancelJobInputSchema = z
   .object({ jobId: z.string().min(1).max(128) })

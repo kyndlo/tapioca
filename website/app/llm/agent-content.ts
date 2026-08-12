@@ -13,7 +13,7 @@ export const endpoints = [
 export const operatingSteps = [
   ["Detect", "tapioca version", "Stop and install Tapioca if this command is unavailable."],
   ["Inspect", "tapioca list && tapioca catalog", "Prefer an installed, task-compatible model."],
-  ["Acquire", "tapioca pull MODEL", "Tell the user before a large model download."],
+  ["Acquire", "tapioca pull MODEL", "Tell the user before a large model download. Never accept gated terms for them."],
   [
     "Serve",
     "tapioca serve MODEL --host 127.0.0.1 --port 11435",
@@ -65,6 +65,7 @@ Agent contract: ${contractVersion}
 - Transfers: copy complete adapter folders including \`snapshot.json\`; after copying a compatible base-model folder, run \`tapioca pull MODEL\` without \`--force\` to verify files and rebuild registration.
 - Coding agents: \`tapioca launch codex|claude|opencode|openclaw|hermes MODEL\`.
 - Model discovery: \`tapioca catalog\`.
+- Gated models: never pass \`--accept-license\` for the user. Ask them to review and accept provider terms, set their own token, and run the explicit pull. Do not print or persist tokens.
 
 ## Safety
 
@@ -72,6 +73,7 @@ Agent contract: ${contractVersion}
 - Treat model tool calls as untrusted proposals.
 - Require permission before cloning a voice.
 - Do not delete models, adapters, voices, or outputs without an explicit request.
+- Never accept a third-party model license or provider access terms on the user's behalf.
 - Use \`tapioca launch\` instead of overwriting normal coding-agent profiles.
 `;
 

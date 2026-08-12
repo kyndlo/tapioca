@@ -558,6 +558,43 @@
   border-top: 1px solid var(--color-border);
 }
 
+.model-license {
+	margin-top: 18px;
+	padding: 16px;
+	border: 1px solid rgba(215, 154, 255, 0.35);
+	border-radius: 14px;
+	background: rgba(111, 35, 155, 0.1);
+}
+
+.model-license p {
+	margin: 7px 0 12px;
+	color: var(--text-muted);
+	line-height: 1.5;
+	overflow-wrap: anywhere;
+}
+
+.model-license label {
+	display: flex;
+	gap: 9px;
+	align-items: flex-start;
+	font-weight: 700;
+}
+
+.model-license .model-license__token {
+	display: grid;
+	gap: 7px;
+	margin-bottom: 12px;
+}
+
+.model-license__token input {
+	width: 100%;
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	color: var(--text);
+}
+
 .model-confirm {
   width: min(440px, 100%);
   padding: var(--space-8);

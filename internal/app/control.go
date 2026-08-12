@@ -7,6 +7,7 @@ import (
 
 	"github.com/carlos/tapioca/internal/catalog"
 	"github.com/carlos/tapioca/internal/config"
+	"github.com/carlos/tapioca/internal/modellicense"
 )
 
 type PullProgress struct {
@@ -22,6 +23,24 @@ type PullProgress struct {
 
 type PullReporter func(PullProgress)
 
+type huggingFaceTokenContextKey struct{}
+
+// WithHuggingFaceToken attaches an ephemeral provider token to one operation.
+// The token is never persisted by Tapioca.
+func WithHuggingFaceToken(ctx context.Context, token string) context.Context {
+	return context.WithValue(ctx, huggingFaceTokenContextKey{}, token)
+}
+
+func huggingFaceToken(ctx context.Context) string {
+	if token, ok := ctx.Value(huggingFaceTokenContextKey{}).(string); ok && token != "" {
+		return token
+	}
+	if token := os.Getenv("HF_TOKEN"); token != "" {
+		return token
+	}
+	return os.Getenv("HUGGING_FACE_HUB_TOKEN")
+}
+
 func PullModel(
 	ctx context.Context,
 	ref string,
@@ -33,6 +52,20 @@ func PullModel(
 		return config.Model{}, err
 	}
 	return pullResolvedWithContext(ctx, resolved, force, report)
+}
+
+// AcceptModelLicense records that the user reviewed and accepted the terms for
+// a gated catalog model. The provider may still require a separate account-side
+// acceptance and an access token.
+func AcceptModelLicense(ref string) error {
+	resolved, err := catalog.Resolve(ref)
+	if err != nil {
+		return err
+	}
+	if !resolved.Gated {
+		return fmt.Errorf("%s does not require explicit license acceptance", resolved.Name)
+	}
+	return modellicense.Accept(resolved.Name, resolved.License, resolved.LicenseURL)
 }
 
 func reportPull(report PullReporter, progress PullProgress) {

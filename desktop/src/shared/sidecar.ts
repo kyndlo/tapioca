@@ -168,6 +168,9 @@ export const catalogModelSchema = z
     steps: z.number().int().positive().optional(),
     frames: z.number().int().positive().optional(),
     fps: z.number().int().positive().optional(),
+		gated: z.boolean().optional(),
+		license: z.string().optional(),
+		license_url: z.string().url().optional(),
   })
   .passthrough();
 

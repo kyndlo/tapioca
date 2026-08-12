@@ -16,6 +16,7 @@ import type { TapiocaDesktopApi } from "../shared/ipc";
 import { NavigationIcon } from "./NavigationIcon";
 
 type RuntimeState = "ready" | "starting" | "degraded" | "offline";
+type SoftwareUpdate = Awaited<ReturnType<TapiocaDesktopApi["softwareUpdateCheck"]>>;
 
 function useActiveRoute(): RouteId {
   const [route, setRoute] = useState(() => routeFromHash(window.location.hash));
@@ -88,6 +89,37 @@ export default function App() {
       }),
     [],
   );
+  const [softwareUpdate, setSoftwareUpdate] = useState<SoftwareUpdate>();
+  const [updateError, setUpdateError] = useState<string>();
+  const [installingUpdate, setInstallingUpdate] = useState(false);
+  const [catalogRevision, setCatalogRevision] = useState(0);
+
+  const checkForUpdates = async () => {
+    setUpdateError(undefined);
+    try {
+      setSoftwareUpdate(await window.tapioca.softwareUpdateCheck());
+    } catch (cause) {
+      setUpdateError(cause instanceof Error ? cause.message : String(cause));
+    }
+  };
+  const installUpdate = async () => {
+    setInstallingUpdate(true);
+    setUpdateError(undefined);
+    try {
+      const result = await window.tapioca.softwareUpdateInstall();
+      if (!result.started) setUpdateError(result.message);
+    } catch (cause) {
+      setUpdateError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setInstallingUpdate(false);
+    }
+  };
+  useEffect(() => {
+    void window.tapioca.catalogRefresh()
+      .then(() => setCatalogRevision((value) => value + 1))
+      .catch(() => undefined);
+    void checkForUpdates();
+  }, []);
 
   return (
     <div className="app-shell">
@@ -152,10 +184,24 @@ export default function App() {
         </header>
 
         <main>
+          {softwareUpdate?.available && (
+            <aside className="software-update-banner" aria-label="Software update available">
+              <span><strong>Tapioca {softwareUpdate.latestVersion} is available.</strong> Your models and outputs stay in place.</span>
+              <button type="button" onClick={() => void installUpdate()} disabled={installingUpdate}>
+                {installingUpdate ? "Downloading…" : "Update now"}
+              </button>
+            </aside>
+          )}
           <ActiveFeature
+            key={`${activeRouteId}:${catalogRevision}`}
             adapters={adapters}
             route={activeRouteId}
             placeholder={activeRoute}
+            softwareUpdate={softwareUpdate}
+            updateError={updateError}
+            installingUpdate={installingUpdate}
+            onCheckForUpdates={checkForUpdates}
+            onInstallUpdate={installUpdate}
           />
         </main>
 
@@ -185,10 +231,20 @@ function ActiveFeature({
   adapters,
   route,
   placeholder,
+  softwareUpdate,
+  updateError,
+  installingUpdate,
+  onCheckForUpdates,
+  onInstallUpdate,
 }: {
   adapters: RendererAdapters;
   route: RouteId;
   placeholder: (typeof navigationItems)[number];
+  softwareUpdate?: SoftwareUpdate;
+  updateError?: string;
+  installingUpdate: boolean;
+  onCheckForUpdates(): Promise<void>;
+  onInstallUpdate(): Promise<void>;
 }) {
   if (route === "home") {
     return (
@@ -205,7 +261,7 @@ function ActiveFeature({
   if (route === "video") return <CreatorScreen adapter={adapters.creator} initialMode="video" modes={["video"]} />;
   if (route === "voice") return <CreatorScreen adapter={adapters.creator} initialMode="speech" modes={["speech", "voice-clone"]} />;
   if (route === "api") return <ApiRoute />;
-  if (route === "settings") return <SettingsRoute />;
+  if (route === "settings") return <SettingsRoute update={softwareUpdate} updateError={updateError} installing={installingUpdate} onCheck={onCheckForUpdates} onInstall={onInstallUpdate} />;
   return <PlaceholderRoute route={placeholder} />;
 }
 
@@ -224,9 +280,16 @@ function ApiRoute() {
   );
 }
 
-function SettingsRoute() {
+function SettingsRoute({ update, updateError, installing, onCheck, onInstall }: {
+  update?: SoftwareUpdate;
+  updateError?: string;
+  installing: boolean;
+  onCheck(): Promise<void>;
+  onInstall(): Promise<void>;
+}) {
   const [snapshot, setSnapshot] = useState<Awaited<ReturnType<TapiocaDesktopApi["systemSnapshot"]>>>();
   const [error, setError] = useState<string>();
+  const [catalogStatus, setCatalogStatus] = useState<string>();
   useEffect(() => {
     let active = true;
     window.tapioca.systemSnapshot()
@@ -237,6 +300,30 @@ function SettingsRoute() {
   return (
     <section className="route-info" aria-labelledby="settings-title">
       <h1 id="settings-title">Runtime settings</h1>
+      <div className="settings-update-card">
+        <div>
+          <strong>Software updates</strong>
+          <p>{update ? (update.available ? `Tapioca ${update.latestVersion} is ready to install.` : `Tapioca ${update.currentVersion} is current.`) : "Checking GitHub Releases…"}</p>
+          {updateError && <p className="settings-update-card__error" role="alert">{updateError}</p>}
+        </div>
+        {update?.available ? (
+          <button className="primary-button" type="button" onClick={() => void onInstall()} disabled={installing}>{installing ? "Downloading…" : "Update now"}</button>
+        ) : (
+          <button className="quiet-button" type="button" onClick={() => void onCheck()}>Check again</button>
+        )}
+      </div>
+      <div className="settings-update-card">
+        <div>
+          <strong>Model catalog</strong>
+          <p>{catalogStatus ?? "Refresh model recipes independently of the installed app."}</p>
+        </div>
+        <button className="quiet-button" type="button" onClick={() => {
+          setCatalogStatus("Checking for catalog updates…");
+          void window.tapioca.catalogRefresh()
+            .then((result) => setCatalogStatus(`${result.models} verified model recipes are ready.`))
+            .catch((cause: unknown) => setCatalogStatus(cause instanceof Error ? cause.message : String(cause)));
+        }}>Refresh catalog</button>
+      </div>
       {error && <p role="alert">{error}</p>}
       {!snapshot ? <p>Loading runtime facts…</p> : (
         <dl>
@@ -257,8 +344,7 @@ function ModelHubRoute({ adapters }: { adapters: RendererAdapters }) {
   const [error, setError] = useState<string>();
   useEffect(() => {
     let active = true;
-    adapters
-      .machine()
+    adapters.machine()
       .then((profile) => active && setMachine(profile))
       .catch((cause: unknown) => {
         if (active) setError(cause instanceof Error ? cause.message : String(cause));

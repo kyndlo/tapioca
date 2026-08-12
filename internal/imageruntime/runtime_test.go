@@ -33,11 +33,13 @@ func TestMFluxArgumentsIncludeEditingAndAdapters(t *testing.T) {
 }
 
 func TestDiffusersArgumentsIncludeRepeatedInputsAndAdapters(t *testing.T) {
+	guidance := 3.5
 	args := diffusersArguments("/runtime", Request{
 		ModelPath: "/models/qwen", Prompt: "edit", Output: "/out.png",
 		Width: 1024, Height: 1024, Steps: 20,
-		InputImages: []string{"/one.png", "/two.png"},
-		Adapters:    []adapter.Local{{Path: "/a.safetensors", Scale: 1}},
+		InputImages:   []string{"/one.png", "/two.png"},
+		Adapters:      []adapter.Local{{Path: "/a.safetensors", Scale: 1}},
+		GuidanceScale: &guidance,
 	})
 	if count(args, "--image") != 2 || count(args, "--adapter") != 1 {
 		t.Fatalf("unexpected repeated arguments: %v", args)
@@ -47,6 +49,10 @@ func TestDiffusersArgumentsIncludeRepeatedInputsAndAdapters(t *testing.T) {
 	}
 	if filepath.Base(args[1]) == "diffusers.py" {
 		t.Fatalf("runtime script shadows the diffusers package: %v", args)
+	}
+	guidanceIndex := slices.Index(args, "--guidance-scale")
+	if guidanceIndex < 0 || guidanceIndex+1 >= len(args) || args[guidanceIndex+1] != "3.5" {
+		t.Fatalf("Diffusers arguments omit catalog guidance: %v", args)
 	}
 }
 

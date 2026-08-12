@@ -12,7 +12,7 @@ export const endpoints = [
 
 export const operatingSteps = [
   ["Detect", "tapioca version", "Stop and install Tapioca if this command is unavailable."],
-  ["Inspect", "tapioca list && tapioca catalog", "Prefer an installed, task-compatible model."],
+  ["Inspect", "tapioca list && tapioca catalog update && tapioca catalog", "Refresh verified recipes, then prefer an installed, task-compatible model."],
   ["Acquire", "tapioca pull MODEL", "Tell the user before a large model download. Never accept gated terms for them."],
   [
     "Serve",
@@ -43,7 +43,7 @@ Agent contract: ${contractVersion}
 ## Quick operating sequence
 
 1. Run \`tapioca version\`.
-2. Inspect \`tapioca list\` and \`tapioca catalog\`; never invent a model ID.
+2. Run \`tapioca catalog update\`, then inspect \`tapioca list\` and \`tapioca catalog\`; never invent a model ID.
 3. Prefer an installed model compatible with the task and machine.
 4. Before a large pull, report the catalog download and memory guidance.
 5. Start programmatic text work with:
@@ -64,7 +64,8 @@ Agent contract: ${contractVersion}
 - Existing LoRA files: use \`tapioca adapter import FILE --base MODEL --name NAME\`; never pass a local path to \`--file\`.
 - Transfers: copy complete adapter folders including \`snapshot.json\`; after copying a compatible base-model folder, run \`tapioca pull MODEL\` without \`--force\` to verify files and rebuild registration.
 - Coding agents: \`tapioca launch codex|claude|opencode|openclaw|hermes MODEL\`.
-- Model discovery: \`tapioca catalog\`.
+- Model discovery: refresh with \`tapioca catalog update\`, then inspect \`tapioca catalog\`.
+- Software updates: \`tapioca update --check\` is read-only; run \`tapioca update\` only when the user asked to install the new binary.
 - Gated models: never pass \`--accept-license\` for the user. Ask them to review and accept provider terms, set their own token, and run the explicit pull. Do not print or persist tokens.
 
 ## Safety
@@ -116,8 +117,10 @@ Tapioca transports tool calls; it does not execute them.
 
 ## Model selection
 
-Treat \`tapioca catalog\` as authoritative for model IDs, tasks, platforms,
+Refresh with \`tapioca catalog update\`, then treat \`tapioca catalog\` as authoritative for model IDs, tasks, platforms,
 download sizes, memory guidance, runtime backends, and GPU requirements.
+The remote catalog can add recipes only for runtimes the installed binary already
+supports. Run \`tapioca update --check\` when a recipe needs a newer runtime.
 Prefer installed models and coder/tool-oriented entries for repository work.
 Do not infer tool support from the ability to chat.
 

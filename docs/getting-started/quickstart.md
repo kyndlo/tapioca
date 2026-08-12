@@ -3,10 +3,12 @@
 ## 1. View models that Tapioca knows how to run
 
 ```bash
+tapioca catalog update
 tapioca catalog
 ```
 
-The table shows the model name, task, runtime backend, approximate download,
+The first command refreshes the small verified recipe manifest without
+reinstalling Tapioca. The table then shows the model name, task, runtime backend, approximate download,
 memory guidance, GPU requirement, and platform.
 
 ## 2. Pick a small first model

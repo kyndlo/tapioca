@@ -10,6 +10,7 @@ Confirm the installation directory is on `PATH`. See
 Run:
 
 ```bash
+tapioca catalog update
 tapioca catalog
 ```
 
@@ -17,6 +18,27 @@ Text commands use curated catalog references. Image and video commands also
 accept `hf://OWNER/REPOSITORY`, but the repository must be compatible with the
 selected MFLUX, MLX-video, or Diffusers runtime. Ollama library names are not
 general Hugging Face references.
+
+If catalog refresh fails, Tapioca continues using its built-in offline catalog.
+A model recipe can be added dynamically only when the installed binary already
+supports its runtime. Run `tapioca update --check` when the refreshed entry
+requires a newer Tapioca runtime.
+
+## An update is available but does not install
+
+First verify the installed version and perform a read-only check:
+
+```bash
+tapioca version
+tapioca update --check
+```
+
+The CLI installation directory must be writable by the current user. Tapioca
+verifies the release checksum before replacement and leaves the previous
+installation in place if verification or staging fails. In Desktop, retry from
+**Settings → Software updates**. Windows closes the running app while its
+installer finishes; macOS and Linux restart after their verified replacement
+is staged. Models and other data under `~/.tapioca` are not part of this update.
 
 ## A download was interrupted
 

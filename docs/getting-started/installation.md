@@ -4,6 +4,31 @@ Tapioca releases contain the `tapioca` command and the native runtime files
 needed for the supported platform. Model weights are downloaded separately
 when they are first used.
 
+## Updating after installation
+
+The CLI can check and install stable releases in place:
+
+```bash
+tapioca update --check
+tapioca update
+```
+
+The updater downloads only the archive for the current OS/architecture and
+verifies its GitHub Release SHA-256 checksum before replacement. It never
+removes models or other managed data. Tapioca Desktop checks at startup and
+shows **Update now** when a verified platform installer is available. You can
+also check manually in **Settings → Software updates**.
+
+Model recipes update on a separate, faster path:
+
+```bash
+tapioca catalog update
+```
+
+Desktop refreshes that catalog at startup and provides **Refresh catalog** in
+Settings. This can add a model that uses an existing runtime without requiring
+a complete app download.
+
 ## macOS Apple Silicon
 
 The simplest installation is:
@@ -117,6 +142,7 @@ Manual archive name: `tapioca-linux-arm64.tar.gz`.
 
 ```text
 tapioca version
+tapioca catalog update
 tapioca catalog
 ```
 

@@ -26,6 +26,7 @@ type Request struct {
 	Height         int
 	Steps          int
 	Seed           uint64
+	GuidanceScale  *float64
 	Backend        string
 	InputImages    []string
 	Adapters       []adapter.Local
@@ -451,6 +452,9 @@ func diffusersArguments(root string, request Request) []string {
 		"--output", request.Output, "--width", fmt.Sprint(request.Width),
 		"--height", fmt.Sprint(request.Height), "--steps", fmt.Sprint(request.Steps),
 		"--seed", fmt.Sprint(request.Seed), "--backend", request.Backend,
+	}
+	if request.GuidanceScale != nil {
+		args = append(args, "--guidance-scale", fmt.Sprint(*request.GuidanceScale))
 	}
 	if request.NegativePrompt != "" {
 		args = append(args, "--negative-prompt", request.NegativePrompt)

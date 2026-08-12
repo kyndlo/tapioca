@@ -17,6 +17,7 @@ tool permissions.
 
    ```bash
    tapioca version
+   tapioca catalog update
    tapioca catalog
    ```
 

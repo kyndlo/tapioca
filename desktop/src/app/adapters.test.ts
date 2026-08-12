@@ -4,6 +4,9 @@ import { createRendererAdapters } from "./adapters";
 
 function apiFixture(overrides: Partial<TapiocaDesktopApi> = {}) {
   const base: TapiocaDesktopApi = {
+    catalogRefresh: vi.fn(),
+    softwareUpdateCheck: vi.fn(),
+    softwareUpdateInstall: vi.fn(),
     health: vi.fn().mockResolvedValue({
       status: "ready",
       protocolVersion: 1,

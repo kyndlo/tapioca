@@ -23,6 +23,21 @@ export function createTapiocaApi(transport: PreloadTransport): TapiocaDesktopApi
         await transport.invoke(IPC_CHANNELS.models),
       );
     },
+    async catalogRefresh() {
+      return ipcSchemas.catalogRefreshResult.parse(
+        await transport.invoke(IPC_CHANNELS.catalogRefresh),
+      );
+    },
+    async softwareUpdateCheck() {
+      return ipcSchemas.softwareUpdateInfoResult.parse(
+        await transport.invoke(IPC_CHANNELS.softwareUpdateCheck),
+      );
+    },
+    async softwareUpdateInstall() {
+      return ipcSchemas.softwareUpdateInstallResult.parse(
+        await transport.invoke(IPC_CHANNELS.softwareUpdateInstall),
+      );
+    },
     async modelPull(raw: Parameters<TapiocaDesktopApi["modelPull"]>[0]) {
       const input = ipcSchemas.modelPullInput.parse(raw);
       return ipcSchemas.modelPullResult.parse(

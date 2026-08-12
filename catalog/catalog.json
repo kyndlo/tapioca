@@ -1,0 +1,588 @@
+{
+  "schema": 1,
+  "generated_at": "2026-08-12T21:19:28.070147Z",
+  "models": {
+    "chatterbox": {
+      "name": "chatterbox",
+      "repo": "ResembleAI/chatterbox",
+      "files": {
+        "multilingual": "",
+        "nano": ""
+      },
+      "kind": "speech",
+      "backends": {
+        "multilingual": "speech-chatterbox",
+        "nano": "speech-chatterbox"
+      },
+      "repos": {
+        "multilingual": "ResembleAI/chatterbox",
+        "nano": "ResembleAI/chatterbox-nano"
+      },
+      "default": "multilingual",
+      "sizes": {
+        "multilingual": "~4 GiB",
+        "nano": "~1 GiB"
+      },
+      "memory": {
+        "multilingual": "12 GiB min; 16 GiB recommended",
+        "nano": "8 GiB min; 12 GiB recommended"
+      },
+      "gpus": {
+        "multilingual": "CPU, Apple MPS, or NVIDIA CUDA",
+        "nano": "CPU, Apple MPS, or NVIDIA CUDA"
+      },
+      "languages": {
+        "multilingual": "23+ languages",
+        "nano": "English"
+      },
+      "features": {
+        "multilingual": "voice cloning, multilingual, emotion control, watermarked",
+        "nano": "voice cloning, paralinguistic tags, watermarked"
+      }
+    },
+    "flux2-klein": {
+      "name": "flux2-klein",
+      "repo": "mlx-community/flux2-klein-4b-4bit",
+      "files": {
+        "4b-q4-mlx": ""
+      },
+      "kind": "image",
+      "backends": {
+        "4b-q4-mlx": "mflux"
+      },
+      "default": "4b-q4-mlx",
+      "width": 1024,
+      "height": 1024,
+      "steps": 4,
+      "sizes": {
+        "4b-q4-mlx": "~4.6 GiB"
+      },
+      "memory": {
+        "4b-q4-mlx": "16 GiB min; 24 GiB recommended"
+      },
+      "gpus": {
+        "4b-q4-mlx": "Apple Silicon GPU"
+      }
+    },
+    "gemma3": {
+      "name": "gemma3",
+      "repo": "ggml-org/gemma-3-4b-it-GGUF",
+      "files": {
+        "12b-mlx": "",
+        "27b-mlx": "",
+        "4b-q4_k_m": "gemma-3-4b-it-Q4_K_M.gguf"
+      },
+      "kind": "text",
+      "backends": {
+        "12b-mlx": "mlx-vlm",
+        "27b-mlx": "mlx-vlm"
+      },
+      "repos": {
+        "12b-mlx": "mlx-community/gemma-3-12b-it-4bit",
+        "27b-mlx": "mlx-community/gemma-3-27b-it-4bit",
+        "4b-q4_k_m": "ggml-org/gemma-3-4b-it-GGUF"
+      },
+      "default": "4b-q4_k_m",
+      "sizes": {
+        "12b-mlx": "~7.6 GiB",
+        "27b-mlx": "~16 GiB",
+        "4b-q4_k_m": "~2.4 GiB"
+      }
+    },
+    "glm-4.7-flash": {
+      "name": "glm-4.7-flash",
+      "repo": "ggml-org/GLM-4.7-Flash-GGUF",
+      "files": {
+        "q4_k_m": "GLM-4.7-Flash-Q4_K_M.gguf",
+        "q8_0": "GLM-4.7-Flash-Q8_0.gguf"
+      },
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~17 GiB",
+        "q8_0": "~30 GiB"
+      }
+    },
+    "krea-2-raw": {
+      "name": "krea-2-raw",
+      "repo": "krea/Krea-2-Raw",
+      "files": {
+        "bf16-cuda": "",
+        "bf16-mps": ""
+      },
+      "kind": "image",
+      "backends": {
+        "bf16-cuda": "diffusers",
+        "bf16-mps": "diffusers-mps"
+      },
+      "default": "bf16-cuda",
+      "width": 1024,
+      "height": 1024,
+      "steps": 52,
+      "sizes": {
+        "bf16-cuda": "~34 GiB",
+        "bf16-mps": "~34 GiB"
+      },
+      "memory": {
+        "bf16-cuda": "48 GiB min; 64 GiB recommended",
+        "bf16-mps": "64 GiB min; 96 GiB recommended"
+      },
+      "gpus": {
+        "bf16-cuda": "NVIDIA CUDA, 24 GiB VRAM recommended; CPU offload supported",
+        "bf16-mps": "Apple Silicon GPU (experimental MPS)"
+      },
+      "features": {
+        "bf16-cuda": "52-step base checkpoint for fine-tuning and post-training; LoRA stacks; gated license",
+        "bf16-mps": "52-step base checkpoint for fine-tuning and post-training; LoRA stacks; gated license; experimental"
+      },
+      "guidance_scale": 3.5,
+      "guidance_scale_set": true,
+      "gated": true,
+      "license": "Krea 2 Community License",
+      "license_url": "https://huggingface.co/krea/Krea-2-Raw"
+    },
+    "krea-2-turbo": {
+      "name": "krea-2-turbo",
+      "repo": "krea/Krea-2-Turbo",
+      "files": {
+        "bf16-cuda": "",
+        "bf16-mps": ""
+      },
+      "kind": "image",
+      "backends": {
+        "bf16-cuda": "diffusers",
+        "bf16-mps": "diffusers-mps"
+      },
+      "default": "bf16-cuda",
+      "width": 1024,
+      "height": 1024,
+      "steps": 8,
+      "sizes": {
+        "bf16-cuda": "~34 GiB",
+        "bf16-mps": "~34 GiB"
+      },
+      "memory": {
+        "bf16-cuda": "32 GiB min; 48 GiB recommended",
+        "bf16-mps": "64 GiB min; 96 GiB recommended"
+      },
+      "gpus": {
+        "bf16-cuda": "NVIDIA CUDA, 16 GiB VRAM min with CPU offload; 24 GiB recommended",
+        "bf16-mps": "Apple Silicon GPU (experimental MPS)"
+      },
+      "features": {
+        "bf16-cuda": "8-step text-to-image, 1K–2K output, LoRA stacks, gated license",
+        "bf16-mps": "8-step text-to-image, 1K–2K output, LoRA stacks, gated license, experimental"
+      },
+      "gated": true,
+      "license": "Krea 2 Community License",
+      "license_url": "https://huggingface.co/krea/Krea-2-Turbo"
+    },
+    "ltx-video": {
+      "name": "ltx-video",
+      "repo": "Lightricks/LTX-Video-0.9.5",
+      "files": {
+        "2b-fp16": ""
+      },
+      "kind": "video",
+      "backends": {
+        "2b-fp16": "diffusers-video"
+      },
+      "default": "2b-fp16",
+      "width": 768,
+      "height": 512,
+      "steps": 8,
+      "frames": 49,
+      "fps": 24,
+      "sizes": {
+        "2b-fp16": "~24 GiB"
+      },
+      "memory": {
+        "2b-fp16": "24 GiB min; 32 GiB recommended"
+      },
+      "gpus": {
+        "2b-fp16": "NVIDIA CUDA, 8 GiB+ VRAM; CPU offload"
+      }
+    },
+    "minimax-h3": {
+      "name": "minimax-h3",
+      "repo": "Comfy-Org/MiniMax-H3",
+      "files": {
+        "fl2va-int8-cuda": "",
+        "fl2va-int8-mac": ""
+      },
+      "kind": "video",
+      "backends": {
+        "fl2va-int8-cuda": "comfy-h3-cuda",
+        "fl2va-int8-mac": "comfy-h3-mps"
+      },
+      "default": "fl2va-int8-mac",
+      "width": 864,
+      "height": 480,
+      "steps": 20,
+      "frames": 73,
+      "fps": 24,
+      "sizes": {
+        "fl2va-int8-cuda": "~41 GiB",
+        "fl2va-int8-mac": "~41 GiB"
+      },
+      "memory": {
+        "fl2va-int8-cuda": "32 GiB system RAM; 16 GiB VRAM recommended",
+        "fl2va-int8-mac": "48 GiB min; 64 GiB recommended"
+      },
+      "gpus": {
+        "fl2va-int8-cuda": "NVIDIA CUDA, 16 GiB VRAM (4070 Ti SUPER supported)",
+        "fl2va-int8-mac": "Apple Silicon GPU"
+      },
+      "features": {
+        "fl2va-int8-cuda": "text/image-to-video, native stereo audio, LoRA stacks, managed ComfyUI",
+        "fl2va-int8-mac": "text/image-to-video, native stereo audio, LoRA stacks, managed ComfyUI"
+      },
+      "artifacts": {
+        "fl2va-int8-cuda": [
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+            "target": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+          },
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
+            "target": "text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"
+          },
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "vae/minimax_h3_video_vae_fp16.safetensors",
+            "target": "vae/minimax_h3_video_vae_fp16.safetensors"
+          },
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "vae/minimax_h3_audio_vae_fp32.safetensors",
+            "target": "vae/minimax_h3_audio_vae_fp32.safetensors"
+          }
+        ],
+        "fl2va-int8-mac": [
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
+            "target": "diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors"
+          },
+          {
+            "repo": "realrebelai/MiniMax-H3_GGUFs",
+            "filename": "qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf",
+            "target": "text_encoders/qwen3vl-32B-MiniMax-H3-Q4_K_M.gguf"
+          },
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "vae/minimax_h3_video_vae_fp16.safetensors",
+            "target": "vae/minimax_h3_video_vae_fp16.safetensors"
+          },
+          {
+            "repo": "Comfy-Org/MiniMax-H3",
+            "filename": "vae/minimax_h3_audio_vae_fp32.safetensors",
+            "target": "vae/minimax_h3_audio_vae_fp32.safetensors"
+          }
+        ]
+      }
+    },
+    "phi4-mini": {
+      "name": "phi4-mini",
+      "repo": "unsloth/Phi-4-mini-instruct-GGUF",
+      "files": {
+        "q4_k_m": "Phi-4-mini-instruct-Q4_K_M.gguf",
+        "q5_k_m": "Phi-4-mini-instruct-Q5_K_M.gguf"
+      },
+      "kind": "text",
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~2.4 GiB",
+        "q5_k_m": "~2.7 GiB"
+      }
+    },
+    "qwen-image-flash": {
+      "name": "qwen-image-flash",
+      "repo": "mlx-community/Qwen-Image-Flash-8bit",
+      "files": {
+        "8bit": "",
+        "bf16": "",
+        "int8": ""
+      },
+      "kind": "image",
+      "backends": {
+        "8bit": "mlx",
+        "bf16": "diffusers",
+        "int8": "mlx"
+      },
+      "default": "int8",
+      "width": 1024,
+      "height": 1024,
+      "steps": 4,
+      "sizes": {
+        "8bit": "~28 GiB",
+        "bf16": "~58 GiB",
+        "int8": "~28 GiB"
+      },
+      "memory": {
+        "8bit": "48 GiB min; 64 GiB recommended",
+        "bf16": "64 GiB min; 96 GiB recommended",
+        "int8": "48 GiB min; 64 GiB recommended"
+      },
+      "gpus": {
+        "8bit": "Apple Silicon GPU",
+        "bf16": "NVIDIA Ampere+, 16 GiB VRAM with offload",
+        "int8": "Apple Silicon GPU"
+      }
+    },
+    "qwen3": {
+      "name": "qwen3",
+      "repo": "Qwen/Qwen3-8B-GGUF",
+      "files": {
+        "30b-mlx": "",
+        "4b-q4_k_m": "Qwen3-4B-Q4_K_M.gguf",
+        "4b-q5_k_m": "Qwen3-4B-Q5_K_M.gguf",
+        "8b-q4_k_m": "Qwen3-8B-Q4_K_M.gguf",
+        "8b-q5_k_m": "Qwen3-8B-Q5_K_M.gguf"
+      },
+      "kind": "text",
+      "backends": {
+        "30b-mlx": "mlx-vlm"
+      },
+      "repos": {
+        "30b-mlx": "mlx-community/Qwen3-30B-A3B-4bit",
+        "4b-q4_k_m": "Qwen/Qwen3-4B-GGUF",
+        "4b-q5_k_m": "Qwen/Qwen3-4B-GGUF",
+        "8b-q4_k_m": "Qwen/Qwen3-8B-GGUF",
+        "8b-q5_k_m": "Qwen/Qwen3-8B-GGUF"
+      },
+      "default": "8b-q4_k_m",
+      "sizes": {
+        "30b-mlx": "~16 GiB",
+        "4b-q4_k_m": "~2.4 GiB",
+        "4b-q5_k_m": "~2.8 GiB",
+        "8b-q4_k_m": "~4.7 GiB",
+        "8b-q5_k_m": "~5.5 GiB"
+      }
+    },
+    "qwen3-coder": {
+      "name": "qwen3-coder",
+      "files": {
+        "30b-mlx": ""
+      },
+      "kind": "text",
+      "backends": {
+        "30b-mlx": "mlx-vlm"
+      },
+      "repos": {
+        "30b-mlx": "mlx-community/Qwen3-Coder-30B-A3B-Instruct-4bit"
+      },
+      "default": "30b-mlx",
+      "sizes": {
+        "30b-mlx": "~16 GiB"
+      }
+    },
+    "qwen3-tts": {
+      "name": "qwen3-tts",
+      "files": {
+        "0.6b": "",
+        "0.6b-mlx": ""
+      },
+      "kind": "speech",
+      "backends": {
+        "0.6b": "speech-qwen",
+        "0.6b-mlx": "speech-qwen-mlx"
+      },
+      "repos": {
+        "0.6b": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+        "0.6b-mlx": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16"
+      },
+      "default": "0.6b",
+      "sizes": {
+        "0.6b": "~2.5 GiB",
+        "0.6b-mlx": "~2.5 GiB"
+      },
+      "memory": {
+        "0.6b": "12 GiB min; 16 GiB recommended",
+        "0.6b-mlx": "12 GiB min; 16 GiB recommended"
+      },
+      "gpus": {
+        "0.6b": "NVIDIA CUDA recommended; CPU supported",
+        "0.6b-mlx": "Apple Silicon GPU"
+      },
+      "languages": {
+        "0.6b": "10 languages",
+        "0.6b-mlx": "10 languages"
+      },
+      "features": {
+        "0.6b": "3-second voice cloning, streaming architecture",
+        "0.6b-mlx": "3-second voice cloning, Apple Silicon optimized"
+      }
+    },
+    "qwen3.6": {
+      "name": "qwen3.6",
+      "files": {
+        "35b-mlx": "",
+        "35b-mlx-4bit": "",
+        "35b-mlx-6bit": "",
+        "35b-mlx-8bit": ""
+      },
+      "kind": "text",
+      "backends": {
+        "35b-mlx": "mlx-vlm",
+        "35b-mlx-4bit": "mlx-vlm",
+        "35b-mlx-6bit": "mlx-vlm",
+        "35b-mlx-8bit": "mlx-vlm"
+      },
+      "repos": {
+        "35b-mlx": "mlx-community/Qwen3.6-35B-A3B-4bit",
+        "35b-mlx-4bit": "mlx-community/Qwen3.6-35B-A3B-4bit",
+        "35b-mlx-6bit": "mlx-community/Qwen3.6-35B-A3B-6bit",
+        "35b-mlx-8bit": "mlx-community/Qwen3.6-35B-A3B-8bit"
+      },
+      "default": "35b-mlx",
+      "sizes": {
+        "35b-mlx": "~20 GiB",
+        "35b-mlx-4bit": "~20 GiB",
+        "35b-mlx-6bit": "~27 GiB",
+        "35b-mlx-8bit": "~36 GiB"
+      }
+    },
+    "sd-turbo": {
+      "name": "sd-turbo",
+      "repo": "stabilityai/sd-turbo",
+      "files": {
+        "fp16": "",
+        "onnx-arm64": "",
+        "onnx-directml": ""
+      },
+      "kind": "image",
+      "backends": {
+        "fp16": "diffusers",
+        "onnx-arm64": "onnx-cpu",
+        "onnx-directml": "onnx-directml"
+      },
+      "repos": {
+        "onnx-arm64": "Heliosoph/sd-turbo-onnx",
+        "onnx-directml": "Heliosoph/sd-turbo-onnx"
+      },
+      "default": "fp16",
+      "width": 512,
+      "height": 512,
+      "steps": 4,
+      "sizes": {
+        "fp16": "~3 GiB",
+        "onnx-arm64": "~4.8 GiB",
+        "onnx-directml": "~4.8 GiB"
+      },
+      "memory": {
+        "fp16": "16 GiB min; 24 GiB recommended",
+        "onnx-arm64": "12 GiB min; 16 GiB recommended",
+        "onnx-directml": "12 GiB min; 16 GiB recommended"
+      },
+      "gpus": {
+        "fp16": "NVIDIA CUDA, 6 GiB+ VRAM",
+        "onnx-arm64": "CPU (native Windows ARM64)",
+        "onnx-directml": "AMD, Intel, or NVIDIA DirectX 12 GPU"
+      }
+    },
+    "sdxl-turbo": {
+      "name": "sdxl-turbo",
+      "repo": "stabilityai/sdxl-turbo",
+      "files": {
+        "fp16": ""
+      },
+      "kind": "image",
+      "backends": {
+        "fp16": "diffusers"
+      },
+      "default": "fp16",
+      "width": 1024,
+      "height": 1024,
+      "steps": 4,
+      "sizes": {
+        "fp16": "~7 GiB"
+      },
+      "memory": {
+        "fp16": "24 GiB min; 32 GiB recommended"
+      },
+      "gpus": {
+        "fp16": "NVIDIA CUDA, 8 GiB+ VRAM"
+      }
+    },
+    "stable-video-diffusion": {
+      "name": "stable-video-diffusion",
+      "repo": "stabilityai/stable-video-diffusion-img2vid-xt",
+      "files": {
+        "xt-fp16": ""
+      },
+      "kind": "video",
+      "backends": {
+        "xt-fp16": "diffusers-video"
+      },
+      "default": "xt-fp16",
+      "width": 1024,
+      "height": 576,
+      "steps": 25,
+      "frames": 25,
+      "fps": 7,
+      "sizes": {
+        "xt-fp16": "~4.5 GiB"
+      },
+      "memory": {
+        "xt-fp16": "16 GiB min; 24 GiB recommended"
+      },
+      "gpus": {
+        "xt-fp16": "NVIDIA CUDA, 8 GiB+ VRAM; CPU offload"
+      }
+    },
+    "wan2.2-video": {
+      "name": "wan2.2-video",
+      "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+      "files": {
+        "5b-q8-mlx": ""
+      },
+      "kind": "video",
+      "backends": {
+        "5b-q8-mlx": "mlx-video"
+      },
+      "default": "5b-q8-mlx",
+      "width": 832,
+      "height": 480,
+      "steps": 40,
+      "frames": 41,
+      "fps": 24,
+      "sizes": {
+        "5b-q8-mlx": "~18 GiB"
+      },
+      "memory": {
+        "5b-q8-mlx": "32 GiB min; 48 GiB recommended"
+      },
+      "gpus": {
+        "5b-q8-mlx": "Apple Silicon GPU"
+      }
+    },
+    "yume-video": {
+      "name": "yume-video",
+      "repo": "ckurasek/Yume-1.5-5B-720P-MLX",
+      "files": {
+        "5b-mlx": ""
+      },
+      "kind": "video",
+      "backends": {
+        "5b-mlx": "mlx-video"
+      },
+      "default": "5b-mlx",
+      "width": 832,
+      "height": 480,
+      "steps": 30,
+      "frames": 81,
+      "fps": 24,
+      "sizes": {
+        "5b-mlx": "~23 GiB"
+      },
+      "memory": {
+        "5b-mlx": "32 GiB min; 48 GiB recommended"
+      },
+      "gpus": {
+        "5b-mlx": "Apple Silicon GPU"
+      }
+    }
+  }
+}

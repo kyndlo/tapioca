@@ -1,46 +1,357 @@
 package catalog
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Model struct {
-	Name       string
-	Repo       string
-	Files      map[string]string
-	Template   string
-	Kind       string
-	Backends   map[string]string
-	Repos      map[string]string
-	Default    string
-	Width      int
-	Height     int
-	Steps      int
-	Frames     int
-	FPS        int
-	Sizes      map[string]string
-	Memory     map[string]string
-	GPUs       map[string]string
-	Languages  map[string]string
-	Features   map[string]string
-	Artifacts  map[string][]Artifact
-	Gated      bool
-	License    string
-	LicenseURL string
+	Name             string                `json:"name"`
+	Repo             string                `json:"repo,omitempty"`
+	Files            map[string]string     `json:"files"`
+	Template         string                `json:"template,omitempty"`
+	Kind             string                `json:"kind,omitempty"`
+	Backends         map[string]string     `json:"backends,omitempty"`
+	Repos            map[string]string     `json:"repos,omitempty"`
+	Default          string                `json:"default"`
+	PlatformDefaults map[string]string     `json:"platform_defaults,omitempty"`
+	Width            int                   `json:"width,omitempty"`
+	Height           int                   `json:"height,omitempty"`
+	Steps            int                   `json:"steps,omitempty"`
+	Frames           int                   `json:"frames,omitempty"`
+	FPS              int                   `json:"fps,omitempty"`
+	Sizes            map[string]string     `json:"sizes"`
+	Memory           map[string]string     `json:"memory,omitempty"`
+	GPUs             map[string]string     `json:"gpus,omitempty"`
+	Languages        map[string]string     `json:"languages,omitempty"`
+	Features         map[string]string     `json:"features,omitempty"`
+	Artifacts        map[string][]Artifact `json:"artifacts,omitempty"`
+	GuidanceScale    float64               `json:"guidance_scale,omitempty"`
+	GuidanceScaleSet bool                  `json:"guidance_scale_set,omitempty"`
+	Gated            bool                  `json:"gated,omitempty"`
+	License          string                `json:"license,omitempty"`
+	LicenseURL       string                `json:"license_url,omitempty"`
 }
 
 // Artifact is one explicitly selected file in a multi-repository model bundle.
 // Target is relative to the model directory and uses forward slashes.
 type Artifact struct {
-	Repo     string
-	Filename string
-	Target   string
+	Repo     string `json:"repo"`
+	Filename string `json:"filename"`
+	Target   string `json:"target"`
 }
 
-var models = map[string]Model{
+const (
+	manifestSchemaVersion = 1
+	defaultManifestURL    = "https://raw.githubusercontent.com/kyndlo/tapioca/main/catalog/catalog.json"
+	defaultChecksumURL    = defaultManifestURL + ".sha256"
+)
+
+type Manifest struct {
+	Schema      int              `json:"schema"`
+	GeneratedAt time.Time        `json:"generated_at"`
+	Models      map[string]Model `json:"models"`
+}
+
+type RefreshResult struct {
+	Path   string `json:"path"`
+	Models int    `json:"models"`
+	SHA256 string `json:"sha256"`
+}
+
+var cachedOverridePath string
+
+var safeName = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
+var safeRepoPart = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+
+func SetOverridePathForTest(path string) func() {
+	previous := cachedOverridePath
+	cachedOverridePath = path
+	return func() { cachedOverridePath = previous }
+}
+
+func cachePath() string {
+	if cachedOverridePath != "" {
+		return cachedOverridePath
+	}
+	if home := os.Getenv("TAPIOCA_HOME"); home != "" {
+		return filepath.Join(home, "catalog.json")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".tapioca", "catalog.json")
+}
+
+func activeModels() map[string]Model {
+	merged := cloneModels(builtInModels)
+	path := cachePath()
+	if path == "" {
+		return merged
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return merged
+	}
+	manifest, err := decodeManifest(data)
+	if err != nil {
+		return merged
+	}
+	for name, model := range manifest.Models {
+		merged[strings.ToLower(name)] = model
+	}
+	return merged
+}
+
+func cloneModels(source map[string]Model) map[string]Model {
+	result := make(map[string]Model, len(source))
+	for name, model := range source {
+		result[name] = model
+	}
+	return result
+}
+
+func BuiltInManifest() Manifest {
+	return Manifest{
+		Schema: manifestSchemaVersion, GeneratedAt: time.Now().UTC(),
+		Models: cloneModels(builtInModels),
+	}
+}
+
+func EncodeBuiltInManifest(generatedAt time.Time) ([]byte, error) {
+	manifest := BuiltInManifest()
+	manifest.GeneratedAt = generatedAt.UTC()
+	return json.MarshalIndent(manifest, "", "  ")
+}
+
+// ValidateManifest validates a published catalog without activating it. It is
+// used by CI so the remote catalog may add recipes independently of the binary
+// while remaining constrained to runtimes and paths Tapioca already supports.
+func ValidateManifest(data []byte) error {
+	_, err := decodeManifest(data)
+	return err
+}
+
+func Refresh(ctx context.Context) (RefreshResult, error) {
+	manifestURL := os.Getenv("TAPIOCA_CATALOG_URL")
+	if manifestURL == "" {
+		manifestURL = defaultManifestURL
+	}
+	checksumURL := os.Getenv("TAPIOCA_CATALOG_CHECKSUM_URL")
+	if checksumURL == "" {
+		checksumURL = manifestURL + ".sha256"
+		if manifestURL == defaultManifestURL {
+			checksumURL = defaultChecksumURL
+		}
+	}
+	manifestData, err := fetch(ctx, manifestURL, 8<<20)
+	if err != nil {
+		return RefreshResult{}, fmt.Errorf("download catalog: %w", err)
+	}
+	checksumData, err := fetch(ctx, checksumURL, 4096)
+	if err != nil {
+		return RefreshResult{}, fmt.Errorf("download catalog checksum: %w", err)
+	}
+	expected := strings.Fields(string(checksumData))
+	if len(expected) == 0 || len(expected[0]) != sha256.Size*2 {
+		return RefreshResult{}, errors.New("catalog checksum is invalid")
+	}
+	digest := sha256.Sum256(manifestData)
+	actual := hex.EncodeToString(digest[:])
+	if !strings.EqualFold(expected[0], actual) {
+		return RefreshResult{}, errors.New("catalog checksum did not match")
+	}
+	manifest, err := decodeManifest(manifestData)
+	if err != nil {
+		return RefreshResult{}, err
+	}
+	path := cachePath()
+	if path == "" {
+		return RefreshResult{}, errors.New("cannot determine Tapioca catalog path")
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return RefreshResult{}, err
+	}
+	temporaryFile, err := os.CreateTemp(filepath.Dir(path), ".catalog-*.tmp")
+	if err != nil {
+		return RefreshResult{}, err
+	}
+	temporary := temporaryFile.Name()
+	defer os.Remove(temporary)
+	if err := temporaryFile.Chmod(0o644); err != nil {
+		temporaryFile.Close()
+		return RefreshResult{}, err
+	}
+	if _, err := temporaryFile.Write(append(manifestData, '\n')); err != nil {
+		temporaryFile.Close()
+		return RefreshResult{}, err
+	}
+	if err := temporaryFile.Close(); err != nil {
+		return RefreshResult{}, err
+	}
+	if err := os.Rename(temporary, path); err != nil {
+		return RefreshResult{}, err
+	}
+	return RefreshResult{Path: path, Models: len(manifest.Models), SHA256: actual}, nil
+}
+
+func fetch(ctx context.Context, url string, limit int64) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s", resp.Status)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, limit+1))
+	if err != nil {
+		return nil, err
+	}
+	if int64(len(data)) > limit {
+		return nil, errors.New("response exceeds size limit")
+	}
+	return data, nil
+}
+
+func decodeManifest(data []byte) (Manifest, error) {
+	decoder := json.NewDecoder(strings.NewReader(string(data)))
+	decoder.DisallowUnknownFields()
+	var manifest Manifest
+	if err := decoder.Decode(&manifest); err != nil {
+		return Manifest{}, fmt.Errorf("invalid catalog manifest: %w", err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		return Manifest{}, errors.New("invalid catalog manifest: trailing JSON content")
+	}
+	if manifest.Schema != manifestSchemaVersion {
+		return Manifest{}, fmt.Errorf("unsupported catalog schema %d", manifest.Schema)
+	}
+	if len(manifest.Models) == 0 || len(manifest.Models) > 1000 {
+		return Manifest{}, errors.New("catalog must contain between 1 and 1000 models")
+	}
+	if manifest.GeneratedAt.IsZero() || manifest.GeneratedAt.After(time.Now().UTC().Add(24*time.Hour)) {
+		return Manifest{}, errors.New("catalog generated_at is missing or invalid")
+	}
+	for name, model := range manifest.Models {
+		if err := validateModel(name, model); err != nil {
+			return Manifest{}, err
+		}
+	}
+	return manifest, nil
+}
+
+func validateModel(name string, model Model) error {
+	if !safeName.MatchString(name) || model.Name != name {
+		return fmt.Errorf("invalid catalog model name %q", name)
+	}
+	if len(model.Files) == 0 || model.Default == "" {
+		return fmt.Errorf("catalog model %s requires files and a default variant", name)
+	}
+	if _, ok := model.Files[model.Default]; !ok {
+		return fmt.Errorf("catalog model %s has unknown default variant %q", name, model.Default)
+	}
+	for platform, variant := range model.PlatformDefaults {
+		if platform == "" {
+			return fmt.Errorf("catalog model %s has an empty platform default", name)
+		}
+		if _, ok := model.Files[variant]; !ok {
+			return fmt.Errorf("catalog model %s has platform default for unknown variant %q", name, variant)
+		}
+	}
+	if model.Repo != "" && !validRepo(model.Repo) {
+		return fmt.Errorf("catalog model %s has invalid repository", name)
+	}
+	allowedBackends := map[string]bool{
+		"": true, "mlx": true, "mlx-vlm": true, "mlx-video": true,
+		"mflux": true, "diffusers": true, "diffusers-mps": true,
+		"diffusers-video": true, "onnx-directml": true, "onnx-cpu": true,
+		"comfy-h3-mps": true, "comfy-h3-cuda": true,
+		"speech-chatterbox": true, "speech-qwen": true, "speech-qwen-mlx": true,
+	}
+	for variant := range model.Files {
+		if !safeName.MatchString(variant) {
+			return fmt.Errorf("catalog model %s has invalid variant %q", name, variant)
+		}
+		if !allowedBackends[model.Backends[variant]] {
+			return fmt.Errorf("catalog model %s has unsupported backend %q", name, model.Backends[variant])
+		}
+		if repo := model.Repos[variant]; repo != "" && !validRepo(repo) {
+			return fmt.Errorf("catalog model %s has invalid variant repository", name)
+		}
+		if file := model.Files[variant]; file != "" && !validRelativePath(file) {
+			return fmt.Errorf("catalog model %s has unsafe file path", name)
+		}
+	}
+	for label, values := range map[string]map[string]string{
+		"backend": model.Backends, "repository": model.Repos, "size": model.Sizes,
+		"memory": model.Memory, "GPU": model.GPUs, "language": model.Languages,
+		"feature": model.Features,
+	} {
+		for variant := range values {
+			if _, ok := model.Files[variant]; !ok {
+				return fmt.Errorf("catalog model %s has %s metadata for unknown variant %q", name, label, variant)
+			}
+		}
+	}
+	for variant, artifacts := range model.Artifacts {
+		if _, ok := model.Files[variant]; !ok {
+			return fmt.Errorf("catalog model %s has artifacts for unknown variant %q", name, variant)
+		}
+		for _, artifact := range artifacts {
+			if !validRepo(artifact.Repo) || !validRelativePath(artifact.Filename) ||
+				!validRelativePath(artifact.Target) {
+				return fmt.Errorf("catalog model %s has an unsafe artifact", name)
+			}
+		}
+	}
+	if model.Gated && (model.License == "" || !strings.HasPrefix(model.LicenseURL, "https://")) {
+		return fmt.Errorf("gated catalog model %s requires license metadata", name)
+	}
+	return nil
+}
+
+func validRepo(value string) bool {
+	parts := strings.Split(value, "/")
+	return len(parts) == 2 && safeRepoPart.MatchString(parts[0]) && safeRepoPart.MatchString(parts[1])
+}
+
+func validRelativePath(value string) bool {
+	if value == "" || strings.HasPrefix(value, "/") || strings.HasPrefix(value, "\\") ||
+		strings.Contains(value, ":") {
+		return false
+	}
+	for _, component := range strings.FieldsFunc(value, func(r rune) bool { return r == '/' || r == '\\' }) {
+		if component == ".." || component == "." || component == "" {
+			return false
+		}
+	}
+	clean := filepath.Clean(filepath.FromSlash(value))
+	return !filepath.IsAbs(clean) && clean != "." && clean != ".." &&
+		!strings.HasPrefix(clean, ".."+string(filepath.Separator))
+}
+
+var builtInModels = map[string]Model{
 	"chatterbox": {
 		Name:    "chatterbox",
 		Repo:    "ResembleAI/chatterbox",
@@ -388,6 +699,44 @@ var models = map[string]Model{
 			"bf16-mps":  "8-step text-to-image, 1K–2K output, LoRA stacks, gated license, experimental",
 		},
 	},
+	"krea-2-raw": {
+		Name:             "krea-2-raw",
+		Repo:             "krea/Krea-2-Raw",
+		Kind:             "image",
+		Default:          "bf16-cuda",
+		Width:            1024,
+		Height:           1024,
+		Steps:            52,
+		GuidanceScale:    3.5,
+		GuidanceScaleSet: true,
+		Gated:            true,
+		License:          "Krea 2 Community License",
+		LicenseURL:       "https://huggingface.co/krea/Krea-2-Raw",
+		Files: map[string]string{
+			"bf16-cuda": "",
+			"bf16-mps":  "",
+		},
+		Backends: map[string]string{
+			"bf16-cuda": "diffusers",
+			"bf16-mps":  "diffusers-mps",
+		},
+		Sizes: map[string]string{
+			"bf16-cuda": "~34 GiB",
+			"bf16-mps":  "~34 GiB",
+		},
+		Memory: map[string]string{
+			"bf16-cuda": "48 GiB min; 64 GiB recommended",
+			"bf16-mps":  "64 GiB min; 96 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"bf16-cuda": "NVIDIA CUDA, 24 GiB VRAM recommended; CPU offload supported",
+			"bf16-mps":  "Apple Silicon GPU (experimental MPS)",
+		},
+		Features: map[string]string{
+			"bf16-cuda": "52-step base checkpoint for fine-tuning and post-training; LoRA stacks; gated license",
+			"bf16-mps":  "52-step base checkpoint for fine-tuning and post-training; LoRA stacks; gated license; experimental",
+		},
+	},
 	"wan2.2-video": {
 		Name:    "wan2.2-video",
 		Repo:    "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
@@ -512,27 +861,29 @@ var models = map[string]Model{
 }
 
 type Resolved struct {
-	Name       string
-	Repo       string
-	Filename   string
-	URL        string
-	Kind       string
-	Backend    string
-	Width      int
-	Height     int
-	Steps      int
-	Frames     int
-	FPS        int
-	Size       string
-	Platform   string
-	Memory     string
-	GPU        string
-	Languages  string
-	Features   string
-	Artifacts  []Artifact
-	Gated      bool
-	License    string
-	LicenseURL string
+	Name             string
+	Repo             string
+	Filename         string
+	URL              string
+	Kind             string
+	Backend          string
+	Width            int
+	Height           int
+	Steps            int
+	Frames           int
+	FPS              int
+	Size             string
+	Platform         string
+	Memory           string
+	GPU              string
+	Languages        string
+	Features         string
+	Artifacts        []Artifact
+	GuidanceScale    float64
+	GuidanceScaleSet bool
+	Gated            bool
+	License          string
+	LicenseURL       string
 }
 
 func Resolve(ref string) (Resolved, error) {
@@ -545,7 +896,7 @@ func ResolveFor(ref, goos string) (Resolved, error) {
 
 func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	name, tag, _ := strings.Cut(ref, ":")
-	m, ok := models[strings.ToLower(name)]
+	m, ok := activeModels()[strings.ToLower(name)]
 	if !ok {
 		return Resolved{}, fmt.Errorf(
 			"unknown model %q; run `tapioca catalog` to see available models", name,
@@ -553,6 +904,13 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	if tag == "" {
 		tag = m.Default
+	}
+	if platformDefault := m.PlatformDefaults[goos+"/"+goarch]; platformDefault != "" &&
+		!strings.Contains(ref, ":") {
+		tag = platformDefault
+	} else if platformDefault := m.PlatformDefaults[goos]; platformDefault != "" &&
+		!strings.Contains(ref, ":") {
+		tag = platformDefault
 	}
 	if m.Name == "qwen-image-flash" && !strings.Contains(ref, ":") {
 		if goos == "darwin" {
@@ -576,7 +934,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 			tag = "fl2va-int8-cuda"
 		}
 	}
-	if m.Name == "krea-2-turbo" && !strings.Contains(ref, ":") {
+	if (m.Name == "krea-2-turbo" || m.Name == "krea-2-raw") &&
+		!strings.Contains(ref, ":") {
 		if goos == "darwin" && goarch == "arm64" {
 			tag = "bf16-mps"
 		} else {
@@ -591,7 +950,7 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	if variantRepo := m.Repos[strings.ToLower(tag)]; variantRepo != "" {
 		repo = variantRepo
 	}
-	if m.Kind == "image" && strings.EqualFold(tag, "bf16") {
+	if m.Name == "qwen-image-flash" && strings.EqualFold(tag, "bf16") {
 		repo = "nvidia/Qwen-Image-Flash"
 	}
 	url := ""
@@ -622,25 +981,26 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{
-		Name:      m.Name + ":" + strings.ToLower(tag),
-		Repo:      repo,
-		Filename:  filename,
-		URL:       url,
-		Kind:      m.Kind,
-		Backend:   backend,
-		Width:     m.Width,
-		Height:    m.Height,
-		Steps:     m.Steps,
-		Frames:    m.Frames,
-		FPS:       m.FPS,
-		Size:      m.Sizes[strings.ToLower(tag)],
-		Platform:  platform,
-		Memory:    memory,
-		GPU:       gpu,
-		Languages: m.Languages[strings.ToLower(tag)],
-		Features:  m.Features[strings.ToLower(tag)],
-		Artifacts: append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
-		Gated:     m.Gated, License: m.License, LicenseURL: m.LicenseURL,
+		Name:          m.Name + ":" + strings.ToLower(tag),
+		Repo:          repo,
+		Filename:      filename,
+		URL:           url,
+		Kind:          m.Kind,
+		Backend:       backend,
+		Width:         m.Width,
+		Height:        m.Height,
+		Steps:         m.Steps,
+		Frames:        m.Frames,
+		FPS:           m.FPS,
+		Size:          m.Sizes[strings.ToLower(tag)],
+		Platform:      platform,
+		Memory:        memory,
+		GPU:           gpu,
+		Languages:     m.Languages[strings.ToLower(tag)],
+		Features:      m.Features[strings.ToLower(tag)],
+		Artifacts:     append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
+		GuidanceScale: m.GuidanceScale, GuidanceScaleSet: m.GuidanceScaleSet,
+		Gated: m.Gated, License: m.License, LicenseURL: m.LicenseURL,
 	}, nil
 }
 
@@ -677,7 +1037,7 @@ func requirements(model Model, variant, backend string) (string, string) {
 
 func Refs() []string {
 	var refs []string
-	for name, model := range models {
+	for name, model := range activeModels() {
 		for variant := range model.Files {
 			refs = append(refs, name+":"+variant)
 		}

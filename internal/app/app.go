@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -22,9 +23,10 @@ import (
 	"github.com/carlos/tapioca/internal/config"
 	"github.com/carlos/tapioca/internal/modellicense"
 	"github.com/carlos/tapioca/internal/server"
+	"github.com/carlos/tapioca/internal/updater"
 )
 
-const version = "0.8.0"
+const Version = "0.9.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -57,9 +59,11 @@ func Run(args []string) error {
 	case "list":
 		return list()
 	case "catalog":
-		return showCatalog()
+		return catalogCommand(args[1:])
+	case "update":
+		return updateCommand(args[1:])
 	case "version", "--version", "-v":
-		fmt.Println("tapioca", version)
+		fmt.Println("tapioca", Version)
 		return nil
 	case "help", "--help", "-h":
 		usage(os.Stdout)
@@ -84,7 +88,8 @@ Usage:
   tapioca adapter (inspect|pull|import|list) [REFERENCE]
   tapioca create NAME --base MODEL [--adapter REFERENCE]
   tapioca launch (codex|claude|opencode|openclaw|hermes) MODEL [-- CLIENT_ARGS...]
-  tapioca catalog
+  tapioca catalog [update]
+  tapioca update [--check]
   tapioca list
 
 Examples:
@@ -133,6 +138,61 @@ func pull(args []string) error {
 	}
 	_, err = pullResolved(resolved, *force)
 	return err
+}
+
+func catalogCommand(args []string) error {
+	if len(args) == 0 {
+		return showCatalog()
+	}
+	if len(args) != 1 || args[0] != "update" {
+		return errors.New("usage: tapioca catalog [update]")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	result, err := catalog.Refresh(ctx)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("updated catalog: %d models cached at %s\n", result.Models, result.Path)
+	return nil
+}
+
+func updateCommand(args []string) error {
+	fs := flag.NewFlagSet("update", flag.ContinueOnError)
+	checkOnly := fs.Bool("check", false, "check for an update without installing it")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() != 0 {
+		return errors.New("usage: tapioca update [--check]")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	if *checkOnly {
+		info, err := updater.Check(ctx, Version)
+		if err != nil {
+			return err
+		}
+		if !info.Available {
+			fmt.Printf("tapioca %s is current\n", Version)
+			return nil
+		}
+		fmt.Printf("tapioca %s is available: %s\n", info.Latest, info.ReleaseURL)
+		return nil
+	}
+	result, err := updater.Apply(ctx, Version)
+	if err != nil {
+		return err
+	}
+	if !result.Available {
+		fmt.Printf("tapioca %s is current\n", Version)
+		return nil
+	}
+	fmt.Printf("updated tapioca %s → %s at %s\n", Version, result.Latest, result.Executable)
+	if runtime.GOOS == "windows" {
+		fmt.Println("the replacement will finish after this process exits")
+	}
+	return nil
 }
 
 func showCatalog() error {

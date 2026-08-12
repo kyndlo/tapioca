@@ -5,11 +5,26 @@
 ```bash
 tapioca version
 tapioca list
+tapioca catalog update
 tapioca catalog
 ```
 
 Treat catalog output as authoritative for model names, tasks, platforms,
-download size, memory, runtime, and GPU requirements.
+download size, memory, runtime, and GPU requirements. Refreshing downloads a
+small checksummed catalog and safely retains the built-in catalog if validation
+or the network fails.
+
+## Update Tapioca
+
+```bash
+tapioca update --check
+tapioca update
+```
+
+The check is read-only. Installing an update downloads the matching verified
+GitHub Release and replaces Tapioca without deleting models, imported LoRAs,
+voices, or generated media. Agents must obtain user approval before installing
+an application update.
 
 ## Acquire and run
 

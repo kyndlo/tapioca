@@ -2,7 +2,9 @@
 
 ## Select a local model
 
-Run `tapioca list` first, then `tapioca catalog`. Prefer:
+Run `tapioca list`, then `tapioca catalog update`, then `tapioca catalog`.
+Catalog refresh is a safe read of published model recipes; it does not download
+model weights or replace the application. Prefer:
 
 - An installed model to avoid an unnecessary download.
 - A coder/tool model for repository work.

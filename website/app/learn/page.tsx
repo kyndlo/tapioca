@@ -7,6 +7,7 @@ const windowsDesktop = `${latest}/download/tapioca-desktop-windows-amd64.exe`;
 
 const contents = [
   ["install", "Install Tapioca"],
+  ["updates", "Keep Tapioca current"],
   ["choose", "Choose by memory"],
   ["chat", "Run an LLM"],
   ["voice", "Clone a voice"],
@@ -32,7 +33,7 @@ export default function Learn() {
         <Link className="brand" href="/" aria-label="Tapioca home">
           <img src="/tapioca.png" alt="" /><span>tapioca</span>
         </Link>
-        <div><a href="#install">Install</a><a href="/import">Import & transfer</a><a href="#loras">LoRAs</a><a href="/llm">For agents</a><a className="button small ghost" href={repo}>GitHub ↗</a></div>
+        <div><a href="#install">Install</a><a href="#updates">Updates</a><a href="/import">Import & transfer</a><a href="#loras">LoRAs</a><a href="/llm">For agents</a><a className="button small ghost" href={repo}>GitHub ↗</a></div>
       </nav>
 
       <section className="learnHero">
@@ -83,8 +84,19 @@ export default function Learn() {
             <div className="beforeDownload"><b>Before downloading models</b><span>Keep 10–20 GiB of free disk space for beginner text or image models.</span><span>Video models can require 20–50 GiB.</span><span>Model files live in <code>~/.tapioca</code> or <code>%USERPROFILE%\.tapioca</code>.</span></div>
           </section>
 
+          <section className="learnSection" id="updates">
+            <p className="lesson">Lesson 02</p><h2>Keep Tapioca current without losing anything</h2>
+            <p className="lessonIntro">Tapioca separates small model-catalog updates from larger software updates. Neither one deletes downloaded models, imported LoRAs, cloned voices, or generated files.</p>
+            <div className="stepsDetailed">
+              <article><span>1</span><div><h3>Refresh model recipes</h3><Command>tapioca catalog update</Command><p>Use this when a newly documented model does not appear. It downloads and validates a small checksummed catalog. Desktop does this automatically at startup and also offers <b>Settings → Refresh catalog</b>.</p></div></article>
+              <article><span>2</span><div><h3>Check for a new app version</h3><Command>tapioca update --check</Command><p>This only checks GitHub Releases; it does not change the computer. Desktop checks automatically and displays an update banner.</p></div></article>
+              <article><span>3</span><div><h3>Install the verified update</h3><Command>tapioca update</Command><p>The CLI downloads the matching Mac, Windows, or Linux bundle, verifies its SHA-256 checksum, and replaces the executable and runtime. Desktop users click <b>Update now</b>.</p></div></article>
+            </div>
+            <div className="rule"><span>Which update do I need?</span><p>If the model uses a runtime Tapioca already supports, <code>catalog update</code> is enough. If Tapioca says the model requires a newer runtime or command, install the software update.</p></div>
+          </section>
+
           <section className="learnSection" id="choose">
-            <p className="lesson">Lesson 02</p><h2>Choose by memory, not hype</h2>
+            <p className="lesson">Lesson 03</p><h2>Choose by memory, not hype</h2>
             <p className="lessonIntro">A model must fit in memory while it runs. Download size is not the same as memory use, so use Tapioca’s memory recommendation as your first filter.</p>
             <div className="memoryTable">
               <div className="memoryHead"><b>Your computer</b><b>Safe first choices</b><b>Avoid at first</b></div>
@@ -93,13 +105,14 @@ export default function Learn() {
               <div><b>24–32 GiB memory</b><span>12B–35B quantized LLMs<br />SDXL or LTX Video</span><span>Models recommending 48 GiB+</span></div>
               <div><b>48–96 GiB memory</b><span>Large MLX models<br />Qwen Image Flash<br />MiniMax-H3 on supported hardware</span><span>Anything above the catalog recommendation</span></div>
             </div>
-            <Command>tapioca catalog</Command>
+            <Command>{`tapioca catalog update
+tapioca catalog`}</Command>
             <p>Read each row from left to right: model name, task, download, memory, GPU, platform, and features. If your platform is not listed, choose another variant.</p>
             <div className="rule"><span>Golden rule</span><p>Start small, confirm it works, and move up one size. A smaller responsive model is more useful than a larger model that makes the computer swap or crash.</p></div>
           </section>
 
           <section className="learnSection" id="chat">
-            <p className="lesson">Lesson 03</p><h2>Run your first LLM</h2>
+            <p className="lesson">Lesson 04</p><h2>Run your first LLM</h2>
             <div className="stepsDetailed">
               <article><span>1</span><div><h3>Choose Chat in the app</h3><p>Select <code>qwen3:4b-q4_k_m</code> for the safest first run on Mac or Windows. It needs about 8 GiB memory.</p></div></article>
               <article><span>2</span><div><h3>Send a message</h3><p>Tapioca downloads the model automatically the first time. Keep the app open while the progress bar completes.</p><Command>tapioca run qwen3:4b-q4_k_m</Command></div></article>
@@ -111,7 +124,7 @@ export default function Learn() {
           </section>
 
           <section className="learnSection" id="voice">
-            <p className="lesson">Lesson 04</p><h2>Clone a voice responsibly</h2>
+            <p className="lesson">Lesson 05</p><h2>Clone a voice responsibly</h2>
             <div className="safetyCallout"><span>Permission first</span><p>Clone only your own voice or a voice whose speaker has clearly agreed. Never use a cloned voice to impersonate someone, bypass verification, or mislead listeners.</p></div>
             <h3>Prepare the recording</h3>
             <ul className="checklist"><li>Record one person for 3–10 seconds.</li><li>Use a quiet room with no music or echo.</li><li>Speak naturally and save WAV when possible.</li><li>Write the exact words spoken in the sample.</li></ul>
@@ -124,7 +137,7 @@ export default function Learn() {
           </section>
 
           <section className="learnSection" id="images">
-            <p className="lesson">Lesson 05</p><h2>Generate your first image</h2>
+            <p className="lesson">Lesson 06</p><h2>Generate your first image</h2>
             <p className="lessonIntro">Open <b>Images</b>, select the model recommended for your hardware, write what should be visible, and choose Generate. Keep the first prompt simple so failures are easy to diagnose.</p>
             <div className="platformRecipes">
               <article><span>Mac · 16 GiB+</span><h3>FLUX.2 Klein</h3><Command>{`tapioca image flux2-klein:4b-q4-mlx \\\n  --prompt "A red fox in snow" \\\n  --output fox.png`}</Command></article>
@@ -134,13 +147,13 @@ export default function Learn() {
 tapioca pull krea-2-turbo --accept-license
 tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.png`}</Command></article>
 			</div>
-			<div className="rule"><span>Gated model</span><p>Krea 2 Turbo requires you to accept its terms on Hugging Face first. Review the Krea 2 Community License, then paste a read token into Tapioca Desktop for that pull, or set <code>HF_TOKEN</code> and use <code>--accept-license</code> in the CLI. Tapioca never accepts terms for you and does not save the token. Review outputs before sharing them.</p></div>
+			<div className="rule"><span>Gated model: two approvals</span><p>First, sign in at Hugging Face and accept Krea&apos;s provider terms. Second, set an approved read token and run <code>--accept-license</code> to record your local Tapioca acknowledgement. That flag does not bypass Hugging Face access. Tapioca never accepts terms for you and does not save the token. Review outputs before sharing them.</p></div>
 			<h3>Write a useful prompt</h3><p>Describe <b>subject + setting + lighting + visual style + composition</b>. Example: “A red fox in a snowy pine forest, golden-hour light, detailed wildlife photograph, eye-level portrait.”</p>
             <Expected>The first run downloads several gigabytes and prepares a private runtime. A progress bar may pause while files load into memory. Later images reuse both downloads.</Expected>
           </section>
 
           <section className="learnSection" id="video">
-            <p className="lesson">Lesson 06</p><h2>Generate motion and video</h2>
+            <p className="lesson">Lesson 07</p><h2>Generate motion and video</h2>
             <p className="lessonIntro">Video needs much more memory and time than images. Start with a short low-memory clip. Add a starting image when identity or composition matters.</p>
             <div className="platformRecipes">
               <article><span>Mac · 32 GiB+</span><h3>Wan 2.2</h3><Command>{`tapioca video wan2.2-video:5b-q8-mlx \\\n  --prompt "A fox running through snow" \\\n  --preset low-memory --output fox.mp4`}</Command></article>
@@ -152,7 +165,7 @@ tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.p
           </section>
 
           <section className="learnSection" id="loras">
-            <p className="lesson">Lesson 07</p><h2>Choose the correct LoRA</h2>
+            <p className="lesson">Lesson 08</p><h2>Choose the correct LoRA</h2>
             <p className="lessonIntro">A LoRA is a small add-on—not a complete model. It can add a style, subject, motion, or editing behavior only when it was trained for the same base-model architecture you are running.</p>
             <div className="loraFormula"><b>base model</b><i>+</i><b>compatible LoRA</b><i>+</i><b>prompt and inputs</b><i>=</i><strong>output</strong></div>
             <h3>The six checks to make before downloading</h3>
@@ -192,7 +205,7 @@ tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
           </section>
 
           <section className="learnSection" id="reuse-loras">
-            <p className="lesson">Lesson 08</p><h2>Reuse downloaded LoRAs</h2>
+            <p className="lesson">Lesson 09</p><h2>Reuse downloaded LoRAs</h2>
             <p className="lessonIntro">A LoRA only needs to be downloaded or imported once. Tapioca keeps it in its managed adapter library and reuses the local copy whenever you select the same reference.</p>
             <h3>1. See what is already installed</h3>
             <Command>tapioca adapter list</Command>
@@ -220,10 +233,10 @@ tapioca adapter pull ms://OWNER/REPOSITORY#adapter.safetensors`}</Command>
           </section>
 
           <section className="learnSection" id="help">
-            <p className="lesson">Lesson 09</p><h2>Fix common beginner problems</h2>
+            <p className="lesson">Lesson 10</p><h2>Fix common beginner problems</h2>
             <div className="faq">
               <details><summary>Nothing seems to happen</summary><p>Look for download or runtime preparation progress. First runs can take minutes. Keep the app open and confirm free disk space.</p></details>
-              <details><summary>The model is not listed</summary><p>Update Tapioca, then run <code>tapioca catalog</code>. Catalogs are compiled into each release, so an old binary cannot see newly added entries.</p></details>
+              <details><summary>The model is not listed</summary><p>Run <code>tapioca catalog update</code>, then <code>tapioca catalog</code>. Desktop users can choose <b>Refresh catalog</b> in Settings. The verified remote catalog can add recipes for existing runtimes without reinstalling Tapioca; a brand-new runtime still needs <code>tapioca update</code>.</p></details>
 			  <details><summary>A gated Hugging Face model says access denied</summary><p>Open its Hugging Face page while signed in, accept the provider terms, create a read token, set <code>HF_TOKEN</code>, and pull once with <code>--accept-license</code>. The token must be present in the same terminal that launches Tapioca.</p></details>
 			  <details><summary>Windows is not using NVIDIA</summary><p>Install a current NVIDIA driver, run <code>nvidia-smi</code>, close GPU-heavy apps, and assign Tapioca to the high-performance GPU in Windows Graphics settings.</p></details>
               <details><summary>The computer runs out of memory</summary><p>Choose a smaller model, use a lower quantization, select low-memory, and reduce video resolution or frames.</p></details>

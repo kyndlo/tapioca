@@ -17,6 +17,7 @@ def main():
     parser.add_argument("--height", type=int, default=1024)
     parser.add_argument("--steps", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--guidance-scale", type=float)
     parser.add_argument(
         "--backend", choices=["diffusers", "diffusers-mps"], default="diffusers"
     )
@@ -129,7 +130,11 @@ def main():
     if "true_cfg_scale" in supported:
         generation["true_cfg_scale"] = 1.0
     elif "guidance_scale" in supported:
-        generation["guidance_scale"] = 0.0 if "turbo" in args.model.lower() else 7.5
+        generation["guidance_scale"] = (
+            args.guidance_scale
+            if args.guidance_scale is not None
+            else (0.0 if "turbo" in args.model.lower() else 7.5)
+        )
     generation = {key: value for key, value in generation.items() if key in supported}
     image = pipe(**generation).images[0]
     image.save(args.output)

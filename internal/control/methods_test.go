@@ -3,8 +3,11 @@ package control
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
+
+	"github.com/carlos/tapioca/internal/catalog"
 )
 
 func TestHandlerDispatchesReadOnlyMethods(t *testing.T) {
@@ -121,6 +124,22 @@ func TestHandlerReturnsStructuredMethodAndDependencyErrors(t *testing.T) {
 	_, err = handler.Handle(context.Background(), Request{Method: "catalog.list"})
 	if err == nil || err.Code != "internal_error" || err.Message != "catalog unavailable" {
 		t.Fatalf("catalog error = %#v", err)
+	}
+}
+
+func TestHandlerRefreshesCatalog(t *testing.T) {
+	handler := NewHandler(Dependencies{
+		RefreshCatalog: func(context.Context) (catalog.RefreshResult, error) {
+			return catalog.RefreshResult{Path: "/catalog.json", Models: 12, SHA256: strings.Repeat("a", 64)}, nil
+		},
+	})
+	result, err := handler.Handle(context.Background(), Request{Method: "catalog.refresh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	refresh := result.(catalog.RefreshResult)
+	if refresh.Models != 12 || refresh.Path != "/catalog.json" {
+		t.Fatalf("result = %#v", refresh)
 	}
 }
 

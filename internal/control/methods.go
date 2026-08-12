@@ -44,15 +44,16 @@ type InstalledModel struct {
 }
 
 type Dependencies struct {
-	Catalog   func(context.Context) ([]CatalogModel, error)
-	Installed func(context.Context) ([]InstalledModel, error)
-	Pull      PullModelFunc
-	Servers   *ModelServerManager
-	Chat      ChatFunc
-	Image     ImageRunFunc
-	Video     VideoRunFunc
-	Speech    SpeechRunFunc
-	Now       func() time.Time
+	Catalog        func(context.Context) ([]CatalogModel, error)
+	RefreshCatalog func(context.Context) (catalog.RefreshResult, error)
+	Installed      func(context.Context) ([]InstalledModel, error)
+	Pull           PullModelFunc
+	Servers        *ModelServerManager
+	Chat           ChatFunc
+	Image          ImageRunFunc
+	Video          VideoRunFunc
+	Speech         SpeechRunFunc
+	Now            func() time.Time
 }
 
 type Handler struct {
@@ -61,11 +62,14 @@ type Handler struct {
 	startedAt     time.Time
 }
 
-const ControlVersion = "0.8.0"
+const ControlVersion = "0.9.0"
 
 func NewHandler(dependencies Dependencies) *Handler {
 	if dependencies.Catalog == nil {
 		dependencies.Catalog = loadCatalog
+	}
+	if dependencies.RefreshCatalog == nil {
+		dependencies.RefreshCatalog = catalog.Refresh
 	}
 	if dependencies.Installed == nil {
 		dependencies.Installed = loadInstalled
@@ -118,7 +122,7 @@ func (h *Handler) Handle(ctx context.Context, request Request) (any, *ProtocolEr
 		}, nil
 	}
 	switch request.Method {
-	case "handshake", "capabilities.get", "health.get", "catalog.list", "installed.list":
+	case "handshake", "capabilities.get", "health.get", "catalog.list", "catalog.refresh", "installed.list":
 		if err := decodeNoParams(request.Params); err != nil {
 			return nil, err
 		}
@@ -161,6 +165,8 @@ func (h *Handler) Handle(ctx context.Context, request Request) (any, *ProtocolEr
 		}
 	case "catalog.list":
 		result, err = call(jobContext, h.dependencies.Catalog)
+	case "catalog.refresh":
+		result, err = call(jobContext, h.dependencies.RefreshCatalog)
 	case "installed.list":
 		result, err = call(jobContext, h.dependencies.Installed)
 	default:
@@ -189,6 +195,7 @@ func capabilities() map[string]any {
 			"system.info",
 			"storage.info",
 			"catalog.list",
+			"catalog.refresh",
 			"catalog.get",
 			"installed.list",
 			"model.pull",

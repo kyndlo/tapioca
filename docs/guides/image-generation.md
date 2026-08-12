@@ -46,6 +46,23 @@ accept a token for one pull and discards it afterward. The Krea license includes
 commercial-use limits and an acceptable-use policy. Review every output before
 sharing it and review the current terms before using the model.
 
+### Krea 2 Raw for fine-tuning workflows
+
+`krea-2-raw` uses the same gated provider setup and curated component snapshot,
+but it is the base checkpoint intended for post-training and fine-tuning rather
+than Krea's recommended fast inference path. Its catalog defaults are 52 steps
+and guidance 3.5:
+
+```bash
+export HF_TOKEN=hf_your_read_token
+tapioca pull krea-2-raw --accept-license
+tapioca image krea-2-raw --prompt "A hand-built ceramic robot in soft window light" \
+  --width 1024 --height 1024 --steps 52 --output raw-test.png
+```
+
+For normal image creation, start with `krea-2-turbo`; choose Raw when you need
+the base model's behavior or are evaluating a compatible fine-tuning workflow.
+
 ## Windows x64 with AMD or Intel graphics
 
 Use the ONNX DirectML variant:

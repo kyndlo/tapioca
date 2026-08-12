@@ -190,6 +190,7 @@ export default function LlmGuide() {
             <article><span>3</span><code>inspect / pull / import</code><p>Acquire from Hugging Face, Civitai, ModelScope, or a verified local file.</p></article>
             <article><span>4</span><code>ordered --adapter</code><p>Apply transformer LoRAs in command order; never infer compatibility by extension.</p></article>
             <article><span>5</span><code>verify output</code><p>Wait for exit, preserve the returned path, and inspect video plus audio streams.</p></article>
+			<article><span>!</span><code>gated model</code><p>Stop for user review. Never accept provider terms or expose an access token on the user&apos;s behalf.</p></article>
           </div>
           <pre className="agentCode"><code>{videoExample}</code></pre>
         </div>
@@ -252,6 +253,7 @@ export default function LlmGuide() {
           <article><span>↓</span><h3>Disclose downloads</h3><p>Report size and memory before pulling a very large model.</p></article>
           <article><span>✓</span><h3>Permission tools</h3><p>Treat every model-produced call as an untrusted proposal.</p></article>
           <article><span>≈</span><h3>Consent for voices</h3><p>Possessing an audio file does not imply permission to clone it.</p></article>
+		  <article><span>§</span><h3>License gates</h3><p>Require the user to review and accept gated model terms themselves.</p></article>
         </div>
       </section>
 

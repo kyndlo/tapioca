@@ -72,8 +72,10 @@ func (h *Handler) handleFeature(
 		return catalogDetail(ctx, params.Name)
 	case "model.pull":
 		var params struct {
-			Name  string `json:"name"`
-			Force bool   `json:"force,omitempty"`
+			Name          string `json:"name"`
+			Force         bool   `json:"force,omitempty"`
+			AcceptLicense bool   `json:"accept_license,omitempty"`
+			HFToken       string `json:"hf_token,omitempty"`
 		}
 		if err := decodeParams(request.Params, &params); err != nil {
 			return nil, err
@@ -81,10 +83,28 @@ func (h *Handler) handleFeature(
 		if strings.TrimSpace(params.Name) == "" {
 			return nil, invalidParams("params.name is required", nil)
 		}
-		if _, resolveError := catalog.Resolve(params.Name); resolveError != nil {
+		resolved, resolveError := catalog.Resolve(params.Name)
+		if resolveError != nil {
 			return nil, &ProtocolError{
 				Code: "model_not_found", Message: resolveError.Error(), Retryable: false,
 			}
+		}
+		if params.AcceptLicense {
+			if !resolved.Gated {
+				return nil, invalidParams("selected model does not require license acceptance", nil)
+			}
+			if acceptError := app.AcceptModelLicense(params.Name); acceptError != nil {
+				return nil, operationError(ctx, "license_acceptance_failed", acceptError)
+			}
+		}
+		if len(params.HFToken) > 1024 {
+			return nil, invalidParams("params.hf_token is too long", nil)
+		}
+		if params.HFToken != "" {
+			if !resolved.Gated {
+				return nil, invalidParams("params.hf_token is only accepted for gated models", nil)
+			}
+			ctx = app.WithHuggingFaceToken(ctx, params.HFToken)
 		}
 		model, err := h.dependencies.Pull(ctx, params.Name, params.Force, func(progress app.PullProgress) {
 			reportProgress(ctx, progress)
@@ -276,6 +296,9 @@ func catalogDetail(ctx context.Context, name string) (any, *ProtocolError) {
 		Size: resolved.Size, Memory: resolved.Memory, GPU: resolved.GPU,
 		Platforms: normalizePlatforms(resolved.Platform),
 		Languages: resolved.Languages, Features: resolved.Features,
+		Width: resolved.Width, Height: resolved.Height, Steps: resolved.Steps,
+		Frames: resolved.Frames, FPS: resolved.FPS,
+		Gated: resolved.Gated, License: resolved.License, LicenseURL: resolved.LicenseURL,
 	}, nil
 }
 

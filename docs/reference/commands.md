@@ -24,10 +24,16 @@ Download a catalog model explicitly:
 ```bash
 tapioca pull MODEL[:VARIANT]
 tapioca pull MODEL[:VARIANT] --force
+tapioca pull GATED_MODEL[:VARIANT] --accept-license
 ```
 
 Explicit pull is optional for `run`, `serve`, `launch`, `image`, `video`, and `tts`;
 they download a missing catalog model automatically.
+
+Gated models do not auto-pull until their terms have been accepted explicitly.
+First accept access with the provider, set its access token in the environment,
+then use `--accept-license`. Tapioca remembers the acknowledgement locally; it
+does not store the provider token.
 
 ## `run`
 

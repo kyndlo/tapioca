@@ -14,21 +14,24 @@ import (
 )
 
 type CatalogModel struct {
-	Name      string   `json:"name"`
-	Kind      string   `json:"kind"`
-	Backend   string   `json:"backend"`
-	Repo      string   `json:"repo"`
-	Size      string   `json:"size,omitempty"`
-	Memory    string   `json:"memory,omitempty"`
-	GPU       string   `json:"gpu,omitempty"`
-	Platforms []string `json:"platforms"`
-	Languages string   `json:"languages,omitempty"`
-	Features  string   `json:"features,omitempty"`
-	Width     int      `json:"width,omitempty"`
-	Height    int      `json:"height,omitempty"`
-	Steps     int      `json:"steps,omitempty"`
-	Frames    int      `json:"frames,omitempty"`
-	FPS       int      `json:"fps,omitempty"`
+	Name       string   `json:"name"`
+	Kind       string   `json:"kind"`
+	Backend    string   `json:"backend"`
+	Repo       string   `json:"repo"`
+	Size       string   `json:"size,omitempty"`
+	Memory     string   `json:"memory,omitempty"`
+	GPU        string   `json:"gpu,omitempty"`
+	Platforms  []string `json:"platforms"`
+	Languages  string   `json:"languages,omitempty"`
+	Features   string   `json:"features,omitempty"`
+	Width      int      `json:"width,omitempty"`
+	Height     int      `json:"height,omitempty"`
+	Steps      int      `json:"steps,omitempty"`
+	Frames     int      `json:"frames,omitempty"`
+	FPS        int      `json:"fps,omitempty"`
+	Gated      bool     `json:"gated,omitempty"`
+	License    string   `json:"license,omitempty"`
+	LicenseURL string   `json:"license_url,omitempty"`
 }
 
 type InstalledModel struct {
@@ -58,7 +61,7 @@ type Handler struct {
 	startedAt     time.Time
 }
 
-const ControlVersion = "0.7.2"
+const ControlVersion = "0.8.0"
 
 func NewHandler(dependencies Dependencies) *Handler {
 	if dependencies.Catalog == nil {
@@ -279,21 +282,24 @@ func loadCatalog(ctx context.Context) ([]CatalogModel, error) {
 			backend = "llama.cpp"
 		}
 		models = append(models, CatalogModel{
-			Name:      resolved.Name,
-			Kind:      kind,
-			Backend:   backend,
-			Repo:      resolved.Repo,
-			Size:      resolved.Size,
-			Memory:    resolved.Memory,
-			GPU:       resolved.GPU,
-			Platforms: normalizePlatforms(resolved.Platform),
-			Languages: resolved.Languages,
-			Features:  resolved.Features,
-			Width:     resolved.Width,
-			Height:    resolved.Height,
-			Steps:     resolved.Steps,
-			Frames:    resolved.Frames,
-			FPS:       resolved.FPS,
+			Name:       resolved.Name,
+			Kind:       kind,
+			Backend:    backend,
+			Repo:       resolved.Repo,
+			Size:       resolved.Size,
+			Memory:     resolved.Memory,
+			GPU:        resolved.GPU,
+			Platforms:  normalizePlatforms(resolved.Platform),
+			Languages:  resolved.Languages,
+			Features:   resolved.Features,
+			Width:      resolved.Width,
+			Height:     resolved.Height,
+			Steps:      resolved.Steps,
+			Frames:     resolved.Frames,
+			FPS:        resolved.FPS,
+			Gated:      resolved.Gated,
+			License:    resolved.License,
+			LicenseURL: resolved.LicenseURL,
 		})
 	}
 	return models, nil

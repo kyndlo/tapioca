@@ -17,31 +17,49 @@ def main():
     parser.add_argument("--height", type=int, default=1024)
     parser.add_argument("--steps", type=int, default=4)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument(
+        "--backend", choices=["diffusers", "diffusers-mps"], default="diffusers"
+    )
     args = parser.parse_args()
 
     import torch
     from diffusers import DiffusionPipeline
     from diffusers.utils import load_image
 
-    if not torch.cuda.is_available():
+    use_mps = args.backend == "diffusers-mps"
+    if use_mps and not torch.backends.mps.is_available():
+        raise SystemExit(
+            "Apple Metal acceleration is unavailable. This model requires an "
+            "Apple Silicon Mac with MPS support."
+        )
+    if not use_mps and not torch.cuda.is_available():
         raise SystemExit(
             "CUDA is unavailable. Install a current NVIDIA driver and a CUDA-enabled "
             "PyTorch build; AMD and CPU diffusion backends are not supported yet."
         )
     is_qwen_image = "qwen-image" in args.model.lower()
-    if is_qwen_image and not torch.cuda.is_bf16_supported():
+    if is_qwen_image and not use_mps and not torch.cuda.is_bf16_supported():
         raise SystemExit(
             "Qwen-Image-Flash requires a CUDA GPU with bfloat16 support "
             "(NVIDIA Ampere generation or newer)."
         )
 
-    properties = torch.cuda.get_device_properties(0)
-    vram_gb = properties.total_memory / (1024 ** 3)
-    print(
-        f"using CUDA device: {torch.cuda.get_device_name(0)} ({vram_gb:.1f} GB VRAM)",
-        file=sys.stderr,
+    device = "mps" if use_mps else "cuda"
+    vram_gb = 0
+    if use_mps:
+        print("using Apple Metal (MPS) with unified memory", file=sys.stderr)
+    else:
+        properties = torch.cuda.get_device_properties(0)
+        vram_gb = properties.total_memory / (1024 ** 3)
+        print(
+            f"using CUDA device: {torch.cuda.get_device_name(0)} ({vram_gb:.1f} GB VRAM)",
+            file=sys.stderr,
+        )
+    dtype = (
+        torch.bfloat16
+        if (is_qwen_image or "krea-2" in args.model.lower())
+        else torch.float16
     )
-    dtype = torch.bfloat16 if is_qwen_image else torch.float16
     load_options = {
         "torch_dtype": dtype,
         "local_files_only": True,
@@ -74,7 +92,9 @@ def main():
             if name.endswith(".safetensors"):
                 weight_bytes += os.path.getsize(os.path.join(root, name))
     weight_gb = weight_bytes / (1024 ** 3)
-    if weight_gb and weight_gb <= vram_gb * 0.65:
+    if use_mps:
+        pipe.to("mps")
+    elif weight_gb and weight_gb <= vram_gb * 0.65:
         pipe.to("cuda")
     else:
         print(
@@ -88,7 +108,7 @@ def main():
     if hasattr(pipe, "enable_vae_slicing"):
         pipe.enable_vae_slicing()
 
-    generator = torch.Generator(device="cuda").manual_seed(args.seed)
+    generator = torch.Generator(device="cpu" if use_mps else device).manual_seed(args.seed)
     supported = inspect.signature(pipe.__call__).parameters
     generation = {
         "prompt": args.prompt,

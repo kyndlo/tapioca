@@ -93,7 +93,10 @@ export function createRendererAdapters(
             : ["macos", "windows", "linux"],
         },
         installed: Boolean(local),
-        installedBytes: local ? requirements.diskBytes : undefined,
+		installedBytes: local ? requirements.diskBytes : undefined,
+		gated: model.gated,
+		license: model.license,
+		licenseUrl: model.license_url,
       };
     });
   };
@@ -111,7 +114,12 @@ export function createRendererAdapters(
       const abort = () => void api.cancelJob({ jobId }).catch(() => undefined);
       options.signal.addEventListener("abort", abort, { once: true });
       try {
-        await api.modelPull({ name: modelId, jobId });
+		await api.modelPull({
+			name: modelId,
+			jobId,
+			acceptLicense: options.acceptLicense,
+			accessToken: options.accessToken,
+		});
         const refreshed = await listModels();
         const installed = refreshed.find((model) => model.id === modelId);
         if (!installed) throw new Error("Pulled model is missing from registry");
@@ -655,9 +663,9 @@ function desktopKind(kind: string): ModelKind {
 
 function modelRequirements(backend: string, size?: string, memory?: string) {
   const lower = backend.toLowerCase();
-  const accelerators: Accelerator[] = lower.includes("mlx") || lower.includes("comfy-h3-mps")
+	const accelerators: Accelerator[] = lower.includes("mlx") || lower.includes("comfy-h3-mps") || lower.includes("diffusers-mps")
     ? ["apple"]
-    : lower.includes("cuda") || lower.includes("comfy-h3-cuda")
+		: lower.includes("cuda") || lower.includes("comfy-h3-cuda") || lower === "diffusers" || lower === "diffusers-video"
       ? ["nvidia"]
       : ["cpu", "apple", "nvidia", "amd", "intel"];
   return {

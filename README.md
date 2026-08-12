@@ -118,12 +118,20 @@ On Windows x64, MiniMax-H3 automatically provisions its pinned Python and
 CUDA-enabled media runtime; users need a current NVIDIA driver, not Git, a
 system Python installation, or the CUDA Toolkit.
 
+Krea 2 Turbo is available as `krea-2-turbo` for Windows/Linux NVIDIA and,
+experimentally, Apple Silicon Macs with large unified memory. The curated
+Diffusers snapshot is about 34 GiB and defaults to 8 steps at 1024×1024. It is
+a gated model: users must accept its Hugging Face terms, set `HF_TOKEN`, review
+the Krea 2 Community License, and run
+`tapioca pull krea-2-turbo --accept-license`. Tapioca does not accept provider
+terms or store access tokens on a user's behalf.
+
 ## Everyday commands
 
 ```text
 tapioca catalog
 tapioca list
-tapioca pull MODEL[:VARIANT]
+tapioca pull MODEL[:VARIANT] [--accept-license]
 tapioca run MODEL [--context TOKENS]
 tapioca serve MODEL [--port 11435] [--context TOKENS]
 tapioca image MODEL --prompt TEXT [--output image.png]

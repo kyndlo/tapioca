@@ -67,6 +67,7 @@ test("renders the dedicated LLM and agent guide", async () => {
   assert.match(html, /adapter inspect/);
   assert.match(html, /adapter list/);
   assert.match(html, /Civitai, ModelScope/i);
+	assert.match(html, /gated model/i);
 });
 
 test("renders the complete beginner learning center", async () => {
@@ -90,6 +91,8 @@ test("renders the complete beginner learning center", async () => {
   assert.match(html, /adapter inspect/);
   assert.match(html, /tapioca-desktop-macos-arm64\.dmg/);
   assert.match(html, /tapioca-desktop-windows-amd64\.exe/);
+	assert.match(html, /krea-2-turbo/);
+	assert.match(html, /--accept-license/);
 });
 
 test("renders a prominent import and transfer guide", async () => {

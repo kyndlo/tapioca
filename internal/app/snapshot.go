@@ -50,6 +50,9 @@ func pullSnapshotWithContext(
 	if model.Backend == "mflux" {
 		include = textSnapshotFile
 	}
+	if model.Gated {
+		include = licensedImageSnapshotFile
+	}
 	return pullHubSnapshotWithContext(ctx, model, destination, force, include, report)
 }
 
@@ -137,10 +140,7 @@ func pullHubSnapshotWithContext(
 	if err != nil {
 		return err
 	}
-	token := os.Getenv("HF_TOKEN")
-	if token == "" {
-		token = os.Getenv("HUGGING_FACE_HUB_TOKEN")
-	}
+	token := huggingFaceToken(ctx)
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -151,6 +151,12 @@ func pullHubSnapshotWithContext(
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
+		if model.Gated && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
+			return fmt.Errorf(
+				"access to gated model %s was denied; accept its terms at %s and set HF_TOKEN to a Hugging Face read token",
+				model.Repo, model.LicenseURL,
+			)
+		}
 		return fmt.Errorf("Hugging Face metadata request failed: %s", resp.Status)
 	}
 	var metadata hubModel
@@ -202,6 +208,12 @@ func pullHubSnapshotWithContext(
 		partial := path + ".partial"
 		url := "https://huggingface.co/" + model.Repo + "/resolve/main/" + name
 		if err := downloadWithContext(ctx, url, partial, report); err != nil {
+			if model.Gated && (strings.Contains(err.Error(), "401") || strings.Contains(err.Error(), "403")) {
+				return fmt.Errorf(
+					"access to gated model %s was denied; accept its terms at %s and provide a valid Hugging Face read token",
+					model.Repo, model.LicenseURL,
+				)
+			}
 			return err
 		}
 		if err := os.Rename(partial, path); err != nil {
@@ -238,6 +250,18 @@ func imageSnapshotFile(name string) bool {
 	}
 	switch name {
 	case "model_index.json", "config.json", "LICENSE", "NOTICE":
+		return true
+	default:
+		return false
+	}
+}
+
+func licensedImageSnapshotFile(name string) bool {
+	if imageSnapshotFile(name) {
+		return true
+	}
+	switch name {
+	case "LICENSE.pdf", "README.md":
 		return true
 	default:
 		return false

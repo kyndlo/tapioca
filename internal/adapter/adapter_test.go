@@ -78,6 +78,13 @@ func TestValidateCompatibility(t *testing.T) {
 	if err := ValidateCompatibility("ltx-video:2b-fp16", "diffusers-video", item); err == nil {
 		t.Fatal("expected a Wan adapter to be rejected for an LTX base")
 	}
+	krea := Local{File: "portrait_krea2_turbo.safetensors"}
+	if err := ValidateCompatibility("krea-2-turbo:bf16-cuda", "diffusers", krea); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateCompatibility("flux2-klein:4b-q4-mlx", "mflux", krea); err == nil {
+		t.Fatal("expected a Krea 2 adapter to be rejected for a Flux base")
+	}
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)

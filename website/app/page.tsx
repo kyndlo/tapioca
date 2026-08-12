@@ -212,6 +212,11 @@ export default function Home() {
             CUDA and DirectML on Windows, native ONNX on Windows ARM64, and
             CUDA media generation on Linux.
           </p>
+		  <p>
+			Krea 2 Turbo adds fast 8-step 1K image generation on NVIDIA and,
+			experimentally, high-memory Apple Silicon. Tapioca shows its gated license
+			before download and never stores the user&apos;s Hugging Face token.
+		  </p>
           <div className="actions">
             <a className="button cream" href={`${repo}/blob/main/docs/guides/image-generation.md`}>Image guide</a>
             <a className="button darkGhost" href={`${repo}/blob/main/docs/guides/video-generation.md`}>Video guide</a>

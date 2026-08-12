@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/carlos/tapioca/internal/adapter"
+	"github.com/carlos/tapioca/internal/pythonruntime"
 )
 
 //go:embed mlx_video.py diffusers_video.py h3_video.py requirements-mlx.txt requirements-diffusers.txt
@@ -706,30 +707,6 @@ func pythonArguments(root, script string, request Request) []string {
 	return args
 }
 
-type pythonCandidate struct {
-	name   string
-	prefix []string
-}
-
-func pythonCandidates(goos string) []pythonCandidate {
-	if goos == "windows" {
-		// `python3.exe` is commonly a nonfunctional Microsoft Store alias.
-		return []pythonCandidate{{"py", []string{"-3"}}, {"python", nil}, {"python3", nil}}
-	}
-	return []pythonCandidate{{"python3", nil}, {"python", nil}}
-}
-
 func systemPython() (string, []string, error) {
-	for _, candidate := range pythonCandidates(runtime.GOOS) {
-		path, err := exec.LookPath(candidate.name)
-		if err != nil {
-			continue
-		}
-		args := append(append([]string{}, candidate.prefix...), "--version")
-		check := exec.Command(path, args...)
-		if err := check.Run(); err == nil {
-			return path, candidate.prefix, nil
-		}
-	}
-	return "", nil, errors.New("Python 3.10 or newer is required for video generation")
+	return pythonruntime.Find("video generation")
 }

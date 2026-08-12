@@ -62,6 +62,17 @@ func TestImageSnapshotIncludesSplitONNXVAE(t *testing.T) {
 	}
 }
 
+func TestLicensedImageSnapshotIncludesTermsButNotDuplicateWeights(t *testing.T) {
+	for _, name := range []string{"README.md", "LICENSE.pdf", "transformer/diffusion_pytorch_model-00001-of-00003.safetensors"} {
+		if !licensedImageSnapshotFile(name) {
+			t.Errorf("licensedImageSnapshotFile(%q) = false", name)
+		}
+	}
+	if licensedImageSnapshotFile("turbo.safetensors") {
+		t.Fatal("top-level duplicate checkpoint should not be downloaded")
+	}
+}
+
 func TestPullArtifactsRejectsEscapingTarget(t *testing.T) {
 	err := pullArtifactsWithContext(
 		context.Background(),

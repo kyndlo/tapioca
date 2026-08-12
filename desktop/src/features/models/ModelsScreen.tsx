@@ -123,7 +123,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
     return counts;
   }, [models]);
 
-  const pull = async (model: ModelRecord) => {
+	const pull = async (model: ModelRecord, acceptLicense = false, accessToken?: string) => {
     const controller = new AbortController();
     pullControllers.current.set(model.id, controller);
     setTransfers((current) => ({
@@ -135,8 +135,10 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
       },
     }));
     try {
-      const installed = await adapter.pullModel(model.id, {
-        signal: controller.signal,
+		const installed = await adapter.pullModel(model.id, {
+			signal: controller.signal,
+			acceptLicense,
+			accessToken,
         onProgress(progress) {
           setTransfers((current) => ({
             ...current,
@@ -338,7 +340,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
               transfer={transfers[model.id]}
               onCancel={() => void cancelPull(model)}
               onOpen={() => setSelected(model)}
-              onPull={() => void pull(model)}
+				onPull={() => model.gated ? setSelected(model) : void pull(model)}
             />
           ))}
         </div>
@@ -368,7 +370,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
           transfer={transfers[selected.id]}
           onCancel={() => void cancelPull(selected)}
           onClose={() => setSelected(undefined)}
-          onPull={() => void pull(selected)}
+			onPull={(acceptLicense, accessToken) => void pull(selected, acceptLicense, accessToken)}
           onRemove={() => setRemoveTarget(selected)}
         />
       ) : null}
@@ -511,12 +513,14 @@ function ModelDetail({
   machine: MachineProfile;
   transfer?: TransferState;
   onClose(): void;
-  onPull(): void;
+  onPull(acceptLicense: boolean, accessToken?: string): void;
   onCancel(): void;
   onRemove(): void;
 }) {
   const compatibility = modelCompatibility(model, machine);
   const estimate = estimatedDiskAfterInstall(model, machine);
+	const [licenseAccepted, setLicenseAccepted] = useState(false);
+	const [accessToken, setAccessToken] = useState("");
   useDialogEscape(onClose);
   return (
     <div className="model-modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -576,11 +580,38 @@ function ModelDetail({
             <dd>{model.requirements.accelerators.join(", ")}</dd>
           </div>
         </dl>
-        <div className="model-tags">
+		<div className="model-tags">
           {model.tags.map((tag) => (
             <span key={tag}>{tag}</span>
           ))}
-        </div>
+		</div>
+		{model.gated ? (
+			<div className="model-license">
+				<strong>{model.license ?? "Gated model license"}</strong>
+				<p>
+					First accept the provider terms at {model.licenseUrl}. Paste a Hugging Face read
+					 token for this download. Tapioca passes it only to the local downloader and does not save it.
+				</p>
+				<label className="model-license__token">
+					<span>Hugging Face read token</span>
+					<input
+						type="password"
+						value={accessToken}
+						onChange={(event) => setAccessToken(event.target.value)}
+						placeholder="hf_…"
+						autoComplete="off"
+					/>
+				</label>
+				<label>
+					<input
+						type="checkbox"
+						checked={licenseAccepted}
+						onChange={(event) => setLicenseAccepted(event.target.checked)}
+					/>
+					<span>I reviewed and accept these model terms.</span>
+				</label>
+			</div>
+		) : null}
         <div className="model-detail__actions">
           {transfer ? (
             <button className="model-secondary" type="button" onClick={onCancel}>
@@ -597,8 +628,8 @@ function ModelDetail({
             <button
               className="model-primary"
               type="button"
-              onClick={onPull}
-              disabled={compatibility.level === "incompatible"}
+				onClick={() => onPull(licenseAccepted, accessToken)}
+				disabled={compatibility.level === "incompatible" || (model.gated && (!licenseAccepted || !accessToken.trim()))}
             >
               Pull {estimate.required}
             </button>

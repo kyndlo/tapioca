@@ -123,13 +123,6 @@ func TestH3CUDAServerAggressivelyOffloadsBetweenNodes(t *testing.T) {
 	}
 }
 
-func TestWindowsPythonCandidatesAvoidStoreAliasFirst(t *testing.T) {
-	candidates := pythonCandidates("windows")
-	if len(candidates) != 3 || candidates[0].name != "py" || candidates[1].name != "python" || candidates[2].name != "python3" {
-		t.Fatalf("Windows candidates = %#v", candidates)
-	}
-}
-
 func TestParseNVIDIASMI(t *testing.T) {
 	gpu, err := parseNVIDIASMI("0, NVIDIA RTX A2000, 6144, 591.74\n1, NVIDIA GeForce RTX 4070 Ti SUPER, 16376, 591.74\n")
 	if err != nil {

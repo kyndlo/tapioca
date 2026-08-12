@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -103,6 +104,26 @@ func TestChatExitCommand(t *testing.T) {
 		if isChatExit(input) {
 			t.Errorf("%q should be sent to the model", input)
 		}
+	}
+}
+
+func TestPullGatedModelRequiresExplicitLicenseAcceptance(t *testing.T) {
+	t.Setenv("TAPIOCA_HOME", t.TempDir())
+	err := pull([]string{"krea-2-turbo:bf16-mps"})
+	if err == nil || !strings.Contains(err.Error(), "--accept-license") ||
+		!strings.Contains(err.Error(), "HF_TOKEN") {
+		t.Fatalf("pull gated model error = %v", err)
+	}
+}
+
+func TestHuggingFaceTokenContextOverridesEnvironmentWithoutPersistence(t *testing.T) {
+	t.Setenv("HF_TOKEN", "environment-token")
+	ctx := WithHuggingFaceToken(context.Background(), "one-time-token")
+	if got := huggingFaceToken(ctx); got != "one-time-token" {
+		t.Fatalf("huggingFaceToken() = %q", got)
+	}
+	if got := huggingFaceToken(context.Background()); got != "environment-token" {
+		t.Fatalf("environment token = %q", got)
 	}
 }
 

@@ -110,6 +110,25 @@ func TestResolveTurboImageProfiles(t *testing.T) {
 	}
 }
 
+func TestResolveKrea2TurboProfiles(t *testing.T) {
+	mac, err := ResolveForPlatform("krea-2-turbo", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mac.Name != "krea-2-turbo:bf16-mps" || mac.Backend != "diffusers-mps" ||
+		!mac.Gated || mac.Steps != 8 || mac.LicenseURL == "" {
+		t.Fatalf("unexpected macOS Krea profile: %#v", mac)
+	}
+	windows, err := ResolveForPlatform("krea-2-turbo", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windows.Name != "krea-2-turbo:bf16-cuda" || windows.Backend != "diffusers" ||
+		windows.Platform != "Windows/Linux NVIDIA" {
+		t.Fatalf("unexpected Windows Krea profile: %#v", windows)
+	}
+}
+
 func TestResolveWindowsDiffusionProfiles(t *testing.T) {
 	directml, err := ResolveForPlatform("sd-turbo:onnx-directml", "windows", "amd64")
 	if err != nil {

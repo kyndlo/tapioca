@@ -153,7 +153,7 @@ func pullHubSnapshotWithContext(
 	if resp.StatusCode >= 300 {
 		if model.Gated && (resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden) {
 			return fmt.Errorf(
-				"access to gated model %s was denied; accept its terms at %s and set HF_TOKEN to a Hugging Face read token",
+				"Tapioca recorded your local license acceptance, but Hugging Face denied access to %s; approve access at %s and set HF_TOKEN to an approved read token",
 				model.Repo, model.LicenseURL,
 			)
 		}
@@ -210,7 +210,7 @@ func pullHubSnapshotWithContext(
 		if err := downloadWithContext(ctx, url, partial, report); err != nil {
 			if model.Gated && (strings.Contains(err.Error(), "401") || strings.Contains(err.Error(), "403")) {
 				return fmt.Errorf(
-					"access to gated model %s was denied; accept its terms at %s and provide a valid Hugging Face read token",
+					"Tapioca recorded your local license acceptance, but Hugging Face denied access to %s; approve access at %s and provide an approved read token in HF_TOKEN",
 					model.Repo, model.LicenseURL,
 				)
 			}

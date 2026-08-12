@@ -129,6 +129,26 @@ func TestResolveKrea2TurboProfiles(t *testing.T) {
 	}
 }
 
+func TestResolveKrea2RawProfiles(t *testing.T) {
+	mac, err := ResolveForPlatform("krea-2-raw", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mac.Name != "krea-2-raw:bf16-mps" || mac.Backend != "diffusers-mps" ||
+		!mac.Gated || mac.Steps != 52 || !mac.GuidanceScaleSet ||
+		mac.GuidanceScale != 3.5 || mac.LicenseURL == "" {
+		t.Fatalf("unexpected macOS Krea Raw profile: %#v", mac)
+	}
+	windows, err := ResolveForPlatform("krea-2-raw", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windows.Name != "krea-2-raw:bf16-cuda" || windows.Backend != "diffusers" ||
+		windows.Platform != "Windows/Linux NVIDIA" {
+		t.Fatalf("unexpected Windows Krea Raw profile: %#v", windows)
+	}
+}
+
 func TestResolveWindowsDiffusionProfiles(t *testing.T) {
 	directml, err := ResolveForPlatform("sd-turbo:onnx-directml", "windows", "amd64")
 	if err != nil {

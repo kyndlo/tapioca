@@ -18,6 +18,7 @@ Current agent contract: `v1`.
 
    ```bash
    tapioca list
+   tapioca catalog update
    tapioca catalog
    ```
 
@@ -64,6 +65,9 @@ Current agent contract: `v1`.
   exposure.
 - Treat `tapioca catalog` as the authority for model IDs, platforms, memory,
   GPU requirements, and backends.
+- Refresh the verified catalog before declaring that a model is unavailable.
+  `tapioca update --check` is read-only; do not install a binary update unless
+  the user requested that system change.
 - Do not claim that a model supports tools merely because it can chat. Prefer
   catalog entries described as coder or tool-capable.
 - Do not overwrite a user's normal Codex, Claude Code, OpenCode, OpenClaw, or

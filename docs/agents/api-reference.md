@@ -30,8 +30,9 @@ connection alone does not mean the model has finished loading.
 GET /v1/models
 ```
 
-Use this endpoint to confirm the active served model. Use `tapioca catalog` to
-discover models that can be installed.
+Use this endpoint to confirm the active served model. Refresh with
+`tapioca catalog update`, then use `tapioca catalog` to discover models that
+can be installed.
 
 ## OpenAI Chat Completions
 

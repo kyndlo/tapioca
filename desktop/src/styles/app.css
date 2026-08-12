@@ -192,6 +192,36 @@ main {
   overflow: auto;
 }
 
+.software-update-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: 11px var(--space-6);
+  border-bottom: 1px solid rgba(216, 172, 255, 0.28);
+  background: linear-gradient(90deg, rgba(126, 27, 234, 0.24), rgba(31, 205, 209, 0.08));
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.software-update-banner strong { color: var(--color-text); }
+.software-update-banner button { padding: 7px 12px; border: 0; border-radius: var(--radius-sm); background: var(--color-cream); color: var(--color-text-dark); font-weight: 800; }
+
+.settings-update-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  margin: 0 0 var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-update-card p { margin: 6px 0 0; color: var(--color-text-muted); }
+.settings-update-card .settings-update-card__error { color: var(--color-red); }
+
 .route-loading,
 .route-error {
   width: min(720px, calc(100% - 48px));

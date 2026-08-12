@@ -53,6 +53,23 @@ export const systemSnapshotSchema = z
   })
   .strict();
 
+export const catalogRefreshResultSchema = z.object({
+  path: z.string().min(1),
+  models: z.number().int().positive(),
+  sha256: z.string().regex(/^[a-f0-9]{64}$/),
+}).strict();
+
+export const softwareUpdateInfoSchema = z.object({
+  currentVersion: z.string().min(1),
+  latestVersion: z.string().min(1),
+  available: z.boolean(),
+  releaseUrl: z.string().url(),
+}).strict();
+export const softwareUpdateInstallResultSchema = z.object({
+  started: z.boolean(),
+  message: z.string().min(1),
+}).strict();
+
 export const modelCatalogResultSchema = z
   .object({
     catalog: z.array(catalogModelSchema),
@@ -322,6 +339,9 @@ export const IPC_CHANNELS = {
   health: "tapioca:health",
   systemSnapshot: "tapioca:system-snapshot",
   models: "tapioca:models",
+  catalogRefresh: "tapioca:catalog-refresh",
+  softwareUpdateCheck: "tapioca:software-update-check",
+  softwareUpdateInstall: "tapioca:software-update-install",
   modelPull: "tapioca:model-pull",
   modelRemove: "tapioca:model-remove",
   cancelJob: "tapioca:cancel-job",
@@ -350,6 +370,9 @@ export const ipcSchemas = {
   healthResult: healthResultSchema,
   systemSnapshotResult: systemSnapshotSchema,
   modelsResult: modelCatalogResultSchema,
+  catalogRefreshResult: catalogRefreshResultSchema,
+  softwareUpdateInfoResult: softwareUpdateInfoSchema,
+  softwareUpdateInstallResult: softwareUpdateInstallResultSchema,
   modelPullInput: modelPullInputSchema,
   modelPullResult: modelCatalogResultSchema.shape.installed.element,
   modelRemoveInput: modelRemoveInputSchema,
@@ -387,6 +410,9 @@ export interface TapiocaDesktopApi {
   health(): Promise<z.infer<typeof healthResultSchema>>;
   systemSnapshot(): Promise<z.infer<typeof systemSnapshotSchema>>;
   models(): Promise<z.infer<typeof modelCatalogResultSchema>>;
+  catalogRefresh(): Promise<z.infer<typeof catalogRefreshResultSchema>>;
+  softwareUpdateCheck(): Promise<z.infer<typeof softwareUpdateInfoSchema>>;
+  softwareUpdateInstall(): Promise<z.infer<typeof softwareUpdateInstallResultSchema>>;
   modelPull(input: z.infer<typeof modelPullInputSchema>): Promise<z.infer<typeof modelCatalogResultSchema>["installed"][number]>;
   modelRemove(input: z.infer<typeof modelRemoveInputSchema>): Promise<void>;
   cancelJob(input: z.infer<typeof cancelJobInputSchema>): Promise<boolean>;

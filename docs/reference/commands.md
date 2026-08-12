@@ -7,7 +7,34 @@ platform requirements:
 
 ```bash
 tapioca catalog
+tapioca catalog update
 ```
+
+`catalog update` downloads the published JSON manifest and SHA-256 checksum,
+validates every repository, backend, variant, and relative artifact path, then
+atomically caches it at `~/.tapioca/catalog.json` (or
+`%USERPROFILE%\.tapioca\catalog.json` on Windows). A missing or invalid cache
+automatically falls back to the catalog compiled into the binary.
+
+The remote catalog can add or update recipes for runtimes the installed
+version already understands. A new runtime or file format still requires a
+Tapioca software update.
+
+## `update`
+
+Check or install the newest stable CLI bundle from GitHub Releases:
+
+```bash
+tapioca update --check
+tapioca update
+```
+
+Tapioca chooses the archive for the current OS and architecture, streams it to
+a temporary directory, verifies the published SHA-256 checksum, rejects unsafe
+archive paths, and replaces the executable and bundled runtime. Managed data
+under `~/.tapioca` is not changed. Windows completes replacement just after the
+current process exits. Desktop checks separately at startup and offers an
+Update button when its matching installer is available.
 
 ## `list`
 

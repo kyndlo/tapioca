@@ -282,11 +282,15 @@ func (h *Handler) generateImage(
 	if cacheError != nil {
 		return nil, cacheError
 	}
+	var guidanceScale *float64
+	if resolved.GuidanceScaleSet {
+		guidanceScale = &resolved.GuidanceScale
+	}
 	runError := h.dependencies.Image(ctx, cacheDir, imageruntime.Request{
 		ModelPath: model.Path, Prompt: params.Prompt,
 		NegativePrompt: params.NegativePrompt, Output: output,
 		Width: params.Width, Height: params.Height, Steps: params.Steps,
-		Seed: params.Seed, Backend: model.Backend,
+		Seed: params.Seed, Backend: model.Backend, GuidanceScale: guidanceScale,
 		InputImages: inputs, Adapters: loras,
 	}, logs, logs)
 	if runError != nil {

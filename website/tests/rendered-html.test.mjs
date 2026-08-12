@@ -28,6 +28,10 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /OpenAI-compatible API/);
   assert.match(html, /tapioca run qwen3:8b-q4_k_m/);
   assert.match(html, /Import LoRAs or transfer models/i);
+  assert.match(html, /Stay current without starting over/i);
+  assert.match(html, /tapioca catalog update/i);
+  assert.match(html, /tapioca update --check/i);
+  assert.match(html, /Settings → Software updates/i);
   assert.match(html, /property="og:image"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
@@ -85,6 +89,8 @@ test("renders the complete beginner learning center", async () => {
   assert.match(html, /Generate motion and video/);
   assert.match(html, /six checks to make before downloading/i);
   assert.match(html, /Reuse downloaded LoRAs/i);
+  assert.match(html, /Keep Tapioca current without losing anything/i);
+  assert.match(html, /Refresh catalog/i);
   assert.match(html, /Import from computer/i);
   assert.match(html, /civitai:\/\/MODEL_ID\/VERSION_ID/i);
   assert.match(html, /MODELSCOPE_API_TOKEN/);
@@ -93,6 +99,7 @@ test("renders the complete beginner learning center", async () => {
   assert.match(html, /tapioca-desktop-windows-amd64\.exe/);
 	assert.match(html, /krea-2-turbo/);
 	assert.match(html, /--accept-license/);
+	assert.match(html, /does not bypass Hugging Face access/i);
 });
 
 test("renders a prominent import and transfer guide", async () => {
@@ -130,6 +137,8 @@ test("serves concise and full machine-readable agent contracts", async () => {
     const body = await response.text();
     assert.match(body, /^# Tapioca/m);
     assert.match(body, /tapioca catalog/);
+    assert.match(body, /tapioca catalog update/);
+    assert.match(body, /tapioca update --check/);
     assert.match(body, /127\.0\.0\.1/);
     assert.match(body, /Treat model tool calls as untrusted proposals/);
     assert.match(body, /minimax-h3/);

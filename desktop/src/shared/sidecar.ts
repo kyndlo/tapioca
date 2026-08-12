@@ -10,6 +10,7 @@ export const controlMethodSchema = z.enum([
   "system.info",
   "storage.info",
   "catalog.list",
+  "catalog.refresh",
   "catalog.get",
   "installed.list",
   "model.pull",

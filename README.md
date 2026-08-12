@@ -53,6 +53,8 @@ Download the latest installer from
 
 ```bash
 tapioca catalog
+tapioca catalog update
+tapioca update [--check]
 tapioca run gemma3:12b-mlx
 ```
 
@@ -107,6 +109,11 @@ or read the machine-oriented
 
 Run `tapioca catalog` for the exact models, download sizes, memory guidance,
 GPU requirements, and supported platforms in the installed release.
+Run `tapioca catalog update` to fetch the checksummed catalog independently of
+the binary, or use **Refresh catalog** in Desktop settings. The compiled
+catalog remains an offline fallback. `tapioca update` verifies the latest
+GitHub Release checksum and replaces the CLI/runtime without touching models,
+adapters, voices, or outputs.
 
 MiniMax-H3 is available for Apple Silicon and Windows/Linux NVIDIA as
 `minimax-h3`. It supports text-to-video, image-to-video, and native stereo
@@ -124,12 +131,16 @@ Diffusers snapshot is about 34 GiB and defaults to 8 steps at 1024×1024. It is
 a gated model: users must accept its Hugging Face terms, set `HF_TOKEN`, review
 the Krea 2 Community License, and run
 `tapioca pull krea-2-turbo --accept-license`. Tapioca does not accept provider
-terms or store access tokens on a user's behalf.
+terms or store access tokens on a user's behalf. `--accept-license` records the
+local Tapioca acknowledgement; it does not approve access in the user's
+Hugging Face account.
 
 ## Everyday commands
 
 ```text
 tapioca catalog
+tapioca catalog update
+tapioca update [--check]
 tapioca list
 tapioca pull MODEL[:VARIANT] [--accept-license]
 tapioca run MODEL [--context TOKENS]

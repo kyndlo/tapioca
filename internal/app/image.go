@@ -147,10 +147,15 @@ func imageCommand(args []string, requireInput bool) error {
 	ctx, stop := signal.NotifyContext(context.Background(), terminationSignals()...)
 	defer stop()
 	fmt.Fprintf(os.Stderr, "generating %dx%d image with %s...\n", *width, *height, model.Name)
+	var guidanceScale *float64
+	if profile.GuidanceScaleSet {
+		guidanceScale = &profile.GuidanceScale
+	}
 	if err := imageruntime.Run(ctx, filepath.Join(home, "runtime"), imageruntime.Request{
 		ModelPath: model.Path, Prompt: *prompt, NegativePrompt: *negative,
 		Output: target, Width: *width, Height: *height, Steps: *steps, Seed: *seed,
-		Backend: model.Backend, InputImages: imagePaths, Adapters: adapters,
+		Backend: model.Backend, GuidanceScale: guidanceScale,
+		InputImages: imagePaths, Adapters: adapters,
 	}); err != nil {
 		return err
 	}

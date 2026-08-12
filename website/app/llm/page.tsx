@@ -185,7 +185,7 @@ export default function LlmGuide() {
         </div>
         <div className="apiGrid">
           <div className="endpointList">
-            <article><span>1</span><code>tapioca catalog</code><p>Confirm platform, memory, and the exact model ID.</p></article>
+            <article><span>1</span><code>tapioca catalog update &amp;&amp; tapioca catalog</code><p>Refresh verified recipes, then confirm platform, memory, and the exact model ID.</p></article>
             <article><span>2</span><code>adapter list</code><p>Reuse its canonical reference when the required LoRA is already installed.</p></article>
             <article><span>3</span><code>inspect / pull / import</code><p>Acquire from Hugging Face, Civitai, ModelScope, or a verified local file.</p></article>
             <article><span>4</span><code>ordered --adapter</code><p>Apply transformer LoRAs in command order; never infer compatibility by extension.</p></article>

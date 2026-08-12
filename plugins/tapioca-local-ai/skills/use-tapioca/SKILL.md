@@ -12,7 +12,9 @@ host agent's normal permission model.
 
 1. Run `tapioca version`. If the executable is missing, stop and direct the
    user to `https://github.com/kyndlo/tapioca/releases/latest`.
-2. Run `tapioca list`, then `tapioca catalog`. Never invent a model ID.
+2. Run `tapioca catalog update`, then inspect `tapioca list` and
+   `tapioca catalog`. A failed refresh safely falls back to the built-in
+   catalog. Never invent a model ID.
 3. Prefer an installed model suited to the task and hardware. Before pulling a
    large model, report its catalog download and memory guidance.
 4. Choose the narrowest command:
@@ -38,6 +40,8 @@ requests, or managed server lifecycle are useful.
 - Do not overwrite primary coding-agent profiles; use `tapioca launch`.
 - Require permission before cloning or imitating a voice.
 - Do not delete models, voices, adapters, or outputs without an explicit request.
+- `tapioca update --check` is read-only. Do not run `tapioca update` unless the
+  user asked to replace the installed application or CLI.
 - Save generated files to the requested workspace and report their paths.
 - Use `--verbose` only for diagnosis.
 - Inspect LoRA metadata before pulling it. Require the declared base family to

@@ -32,6 +32,12 @@ jobs:
           cache: true
       - run: go vet ./...
       - run: go test ./...
+      - name: Verify published catalog manifest
+        run: |
+          go run ./cmd/catalog-manifest validate catalog/catalog.json
+          expected="$(awk '{print $1}' catalog/catalog.json.sha256)"
+          actual="$(sha256sum catalog/catalog.json | awk '{print $1}')"
+          test "${expected}" = "${actual}"
       - name: Validate agent contract and helper
         run: |
           python3 scripts/validate-agent-contract.py
@@ -101,6 +107,10 @@ jobs:
           test -n "${desktop_dmg}"
           cp "${desktop_dmg}" tapioca-desktop-macos-arm64.dmg
           shasum -a 256 tapioca-desktop-macos-arm64.dmg > tapioca-desktop-macos-arm64.dmg.sha256
+          desktop_zip="$(find desktop/release -maxdepth 1 -name '*-mac*.zip' -print -quit)"
+          test -n "${desktop_zip}"
+          cp "${desktop_zip}" tapioca-desktop-macos-arm64.zip
+          shasum -a 256 tapioca-desktop-macos-arm64.zip > tapioca-desktop-macos-arm64.zip.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -110,6 +120,8 @@ jobs:
             tapioca-darwin-arm64.tar.gz.sha256
             tapioca-desktop-macos-arm64.dmg
             tapioca-desktop-macos-arm64.dmg.sha256
+            tapioca-desktop-macos-arm64.zip
+            tapioca-desktop-macos-arm64.zip.sha256
             desktop/release/*.dmg
             desktop/release/*-mac.zip
           if-no-files-found: error
@@ -290,6 +302,10 @@ jobs:
         run: |
           tar -C dist -czf tapioca-linux-amd64.tar.gz tapioca runtime
           sha256sum tapioca-linux-amd64.tar.gz > tapioca-linux-amd64.tar.gz.sha256
+          desktop_appimage="$(find desktop/release -maxdepth 1 -name '*.AppImage' -print -quit)"
+          test -n "${desktop_appimage}"
+          cp "${desktop_appimage}" tapioca-desktop-linux-amd64.AppImage
+          sha256sum tapioca-desktop-linux-amd64.AppImage > tapioca-desktop-linux-amd64.AppImage.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -297,6 +313,8 @@ jobs:
           path: |
             tapioca-linux-amd64.tar.gz
             tapioca-linux-amd64.tar.gz.sha256
+            tapioca-desktop-linux-amd64.AppImage
+            tapioca-desktop-linux-amd64.AppImage.sha256
             desktop/release/*.AppImage
             desktop/release/*-linux.tar.gz
           if-no-files-found: error
@@ -342,6 +360,10 @@ jobs:
         run: |
           tar -C dist -czf tapioca-linux-arm64.tar.gz tapioca runtime
           sha256sum tapioca-linux-arm64.tar.gz > tapioca-linux-arm64.tar.gz.sha256
+          desktop_appimage="$(find desktop/release -maxdepth 1 -name '*.AppImage' -print -quit)"
+          test -n "${desktop_appimage}"
+          cp "${desktop_appimage}" tapioca-desktop-linux-arm64.AppImage
+          sha256sum tapioca-desktop-linux-arm64.AppImage > tapioca-desktop-linux-arm64.AppImage.sha256
 
       - uses: actions/upload-artifact@v4
         with:
@@ -349,6 +371,8 @@ jobs:
           path: |
             tapioca-linux-arm64.tar.gz
             tapioca-linux-arm64.tar.gz.sha256
+            tapioca-desktop-linux-arm64.AppImage
+            tapioca-desktop-linux-arm64.AppImage.sha256
             desktop/release/*.AppImage
             desktop/release/*-linux.tar.gz
           if-no-files-found: error

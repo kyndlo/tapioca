@@ -1,6 +1,8 @@
 const repo = "https://github.com/kyndlo/tapioca";
 
 const commands = [
+  ["catalog update", "Refresh verified model recipes", "tapioca catalog update"],
+  ["update", "Install the latest verified release", "tapioca update --check && tapioca update"],
   ["pull", "Download a model once", "tapioca pull qwen3:8b-q4_k_m"],
   ["run", "Chat in your terminal", "tapioca run qwen3:8b-q4_k_m"],
   ["serve", "Open an API for your apps", "tapioca serve qwen3:8b-q4_k_m"],
@@ -55,6 +57,7 @@ export default function Home() {
         <div className="navlinks">
           <a href="#desktop">Desktop app</a>
           <a href="/learn">Beginner guide</a>
+          <a href="#updates">Updates</a>
           <a href="/import">Import & transfer</a>
           <a href="#voices">Voices</a>
           <a href="#commands">Commands</a>
@@ -104,7 +107,7 @@ export default function Home() {
 
       <section className="section desktopShowcase" id="desktop">
         <div className="desktopIntro">
-          <p className="kicker light">New · Tapioca Desktop</p>
+          <p className="kicker light">New · Tapioca Desktop 0.9</p>
           <h2>Local AI now has<br />a friendly face.</h2>
           <p>
             Chat, create images and videos, clone voices, manage models, and
@@ -116,12 +119,13 @@ export default function Home() {
             <span><b>Creative studio</b>Images, video, speech, and voice cloning</span>
             <span><b>Agent cockpit</b>Codex, Claude Code, OpenCode, OpenClaw, and Hermes</span>
             <span><b>Model manager</b>Discover, pull, remove, and inspect models</span>
+            <span><b>Stay current</b>Automatic release checks and refreshable model recipes</span>
           </div>
           <div className="actions">
             <a className="button cream" href={`${repo}/releases/latest`}>Download the desktop app →</a>
             <a className="button darkGhost" href={`${repo}/tree/main/desktop`}>Explore the source</a>
           </div>
-          <small>Available in the latest release for supported macOS and Windows builds.</small>
+          <small>Checks GitHub Releases at startup, verifies downloads, and preserves your models and outputs while updating.</small>
         </div>
         <figure className="desktopFrame">
           <div className="desktopFrameTop">
@@ -155,8 +159,8 @@ export default function Home() {
             <span className="stepNo">2</span>
             <p className="label">Choose</p>
             <h3>Pick a model</h3>
-            <pre><code>tapioca catalog</code></pre>
-            <p>See download size, memory guidance, GPU needs, and the right variant for your computer.</p>
+            <pre><code>tapioca catalog update{`\n`}tapioca catalog</code></pre>
+            <p>Refresh verified model recipes without reinstalling, then see download size, memory guidance, GPU needs, and the right variant for your computer.</p>
           </article>
           <article>
             <span className="stepNo">3</span>
@@ -188,7 +192,7 @@ export default function Home() {
 
       <section className="section commandSection" id="commands">
         <div className="sectionHead compact">
-          <p className="kicker">03 · Seven verbs, lots of power</p>
+          <p className="kicker">03 · Small command surface, lots of power</p>
           <h2>A pleasantly small command surface.</h2>
           <p>Learn the shape once, then move from a chat to an API, an image, or a full coding agent.</p>
         </div>
@@ -203,9 +207,22 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="section updateSection" id="updates">
+        <div className="sectionHead compact">
+          <p className="kicker">04 · Stay current without starting over</p>
+          <h2>New models quickly.<br />New runtimes safely.</h2>
+          <p>The model catalog and Tapioca itself update separately. Your downloaded models, LoRAs, voices, and generated media stay in place.</p>
+        </div>
+        <div className="updateGrid">
+          <article><span>Fast path</span><h3>Refresh model recipes</h3><code>tapioca catalog update</code><p>Downloads a small JSON manifest and checksum, validates repositories, variants, backends, and paths, then caches it locally. If anything is invalid, Tapioca keeps using its built-in offline catalog.</p></article>
+          <article><span>Software path</span><h3>Update Tapioca</h3><code>tapioca update --check<br />tapioca update</code><p>Selects the correct GitHub Release for your operating system and architecture, verifies SHA-256, then replaces the CLI and runtime without touching <code>~/.tapioca</code>.</p></article>
+          <article><span>Desktop path</span><h3>Click Update now</h3><code>Settings → Software updates</code><p>The app checks at startup, shows a banner when a newer version exists, and also provides <b>Refresh catalog</b> in Settings. macOS, Windows, and Linux receive platform-specific verified packages.</p></article>
+        </div>
+      </section>
+
       <section className="section studio">
         <div>
-          <p className="kicker light">04 · The local studio</p>
+          <p className="kicker light">05 · The local studio</p>
           <h2>Words in.<br />Pixels and motion out.</h2>
           <p>
             Tapioca understands platform-native diffusion: MLX and MFLUX on Mac,
@@ -215,7 +232,8 @@ export default function Home() {
 		  <p>
 			Krea 2 Turbo adds fast 8-step 1K image generation on NVIDIA and,
 			experimentally, high-memory Apple Silicon. Tapioca shows its gated license
-			before download and never stores the user&apos;s Hugging Face token.
+			before download and never stores the user&apos;s Hugging Face token. Provider
+			approval and local <code>--accept-license</code> acknowledgement are separate steps.
 		  </p>
           <div className="actions">
             <a className="button cream" href={`${repo}/blob/main/docs/guides/image-generation.md`}>Image guide</a>
@@ -234,7 +252,7 @@ export default function Home() {
 
       <section className="section voices" id="voices">
         <div className="voiceIntro">
-          <p className="kicker">05 · Local voices</p>
+          <p className="kicker">06 · Local voices</p>
           <h2>A voice you can keep.</h2>
           <p>
             Turn text into speech or save a short, consented recording as a
@@ -264,7 +282,7 @@ export default function Home() {
 
       <section className="section linux">
         <div className="sectionHead compact">
-          <p className="kicker">06 · Laptop to cloud</p>
+          <p className="kicker">07 · Laptop to cloud</p>
           <h2>The same commands on your Linux GPU box.</h2>
           <p>
             Ship a local workflow to an x64 or ARM64 workstation, headless
@@ -277,6 +295,7 @@ export default function Home() {
             <div><i /><i /><i /><span>bash</span></div>
             <code>curl -fsSL https://tapioca.rootfruit.cc/install.sh | sh</code>
             <code className="success">✓ installed tapioca for linux/amd64</code>
+            <code>tapioca catalog update</code>
             <code>tapioca catalog</code>
           </div>
           <div className="linuxPoints">
@@ -290,7 +309,7 @@ export default function Home() {
 
       <section className="section experts" id="experts">
         <div className="sectionHead">
-          <p className="kicker">07 · Expert lane</p>
+          <p className="kicker">08 · Expert lane</p>
           <h2>Simple outside.<br />Serious underneath.</h2>
           <p>Use Tapioca as an orchestration layer, a local OpenAI-compatible endpoint, or a portable runtime for your team.</p>
         </div>

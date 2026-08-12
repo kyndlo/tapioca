@@ -34,6 +34,7 @@ import { ControlService } from "./control-service";
 import { isAudioCapturePermission, isTrustedRendererUrl } from "./security";
 import { settleControlBeforeWindow } from "./startup";
 import { MediaRegistry, type MediaKind } from "./media-registry";
+import { checkDesktopUpdate, installDesktopUpdate } from "./app-updater";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -56,6 +57,7 @@ const mediaRegistry = new MediaRegistry();
 let shutdownStarted = false;
 let sidecarExecutable: string | undefined;
 let restartPromise: Promise<void> | undefined;
+let desktopUpdate: Awaited<ReturnType<typeof checkDesktopUpdate>> | undefined;
 const zSystemInfo = z
   .object({
     goos: z.string().min(1),
@@ -231,6 +233,35 @@ function registerIpcHandlers(): void {
       installed: installedListResultSchema
         .parse(installed)
         .map(publicInstalledModel),
+    });
+  });
+  ipcMain.handle(IPC_CHANNELS.catalogRefresh, async (event) => {
+    assertTrustedFrame(event);
+    return ipcSchemas.catalogRefreshResult.parse(
+      await controlClient.request("catalog.refresh"),
+    );
+  });
+  ipcMain.handle(IPC_CHANNELS.softwareUpdateCheck, async (event) => {
+    assertTrustedFrame(event);
+    desktopUpdate = await checkDesktopUpdate(app.getVersion());
+    return ipcSchemas.softwareUpdateInfoResult.parse({
+      currentVersion: desktopUpdate.currentVersion,
+      latestVersion: desktopUpdate.latestVersion,
+      available: desktopUpdate.available,
+      releaseUrl: desktopUpdate.releaseUrl,
+    });
+  });
+  ipcMain.handle(IPC_CHANNELS.softwareUpdateInstall, async (event) => {
+    assertTrustedFrame(event);
+    if (!app.isPackaged) throw new Error("Desktop self-update is available only in packaged builds");
+    desktopUpdate ??= await checkDesktopUpdate(app.getVersion());
+    const result = await installDesktopUpdate(desktopUpdate, app.getPath("temp"));
+    if (result.shouldQuit) {
+      setTimeout(() => app.quit(), 750);
+    }
+    return ipcSchemas.softwareUpdateInstallResult.parse({
+      started: result.started,
+      message: result.message,
     });
   });
   ipcMain.handle(IPC_CHANNELS.modelPull, async (event, raw: unknown) => {

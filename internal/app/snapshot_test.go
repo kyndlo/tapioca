@@ -71,6 +71,9 @@ func TestLicensedImageSnapshotIncludesTermsButNotDuplicateWeights(t *testing.T) 
 	if licensedImageSnapshotFile("turbo.safetensors") {
 		t.Fatal("top-level duplicate checkpoint should not be downloaded")
 	}
+	if licensedImageSnapshotFile("raw.safetensors") {
+		t.Fatal("top-level Raw duplicate checkpoint should not be downloaded")
+	}
 }
 
 func TestPullArtifactsRejectsEscapingTarget(t *testing.T) {

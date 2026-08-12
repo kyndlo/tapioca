@@ -131,6 +131,15 @@ h1 em { color: var(--purple); font-style: normal; }
 .commandGrid h3 { margin: 0; font: 750 21px var(--font-mono); }.prompt { color: var(--purple); font: 800 24px var(--font-mono); }
 .commandGrid p { margin: 9px 0 18px; color: var(--muted); font-size: 13px; }
 .commandGrid code { display: block; padding: 11px; background: var(--cream); border-radius: 7px; font-size: 11px; overflow-x: auto; }
+.updateSection { background: var(--ink); color: white; }
+.updateSection .sectionHead > p:last-child { color: #c7b6c1; }
+.updateGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.updateGrid article { padding: 28px; border: 1px solid #553446; border-radius: 14px; background: rgba(255,255,255,.035); }
+.updateGrid article > span { color: var(--purple-soft); font: 700 10px var(--font-mono); letter-spacing: .12em; text-transform: uppercase; }
+.updateGrid h3 { margin: 13px 0 18px; font-size: 22px; }
+.updateGrid article > code { display: block; margin-bottom: 18px; padding: 13px; border-radius: 8px; background: #0e0b0f; color: #f5eafa; font-size: 11px; line-height: 1.8; }
+.updateGrid p code { color: #f2dfff; font-family: var(--font-mono); }
+.updateGrid p { margin: 0; color: #baa8b4; font-size: 13px; line-height: 1.7; }
 
 .studio { background: linear-gradient(135deg, #7711c9, #b316db 55%, #e327b1); color: white; display: grid; grid-template-columns: 1fr 1fr; gap: 90px; align-items: center; }
 .kicker.light { color: var(--cyan); }.studio h2 { margin: 20px 0 25px; }.studio > div > p:not(.kicker) { color: #eedaf5; line-height: 1.7; max-width: 500px; }
@@ -353,7 +362,7 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
   .hero, .desktopShowcase, .studio, .voices, .linuxLayout, .expertLayout { grid-template-columns: 1fr; }
   .hero { padding-top: 40px; }.heroArt { min-height: 490px; }
   .sectionHead { display: block; }.sectionHead .kicker { margin-bottom: 22px; }.sectionHead h2 { margin-bottom: 22px; }
-  .steps, .platforms { grid-template-columns: 1fr; }.steps article + article { border-left: 0; border-top: 1px solid var(--line); }
+  .steps, .platforms, .updateGrid { grid-template-columns: 1fr; }.steps article + article { border-left: 0; border-top: 1px solid var(--line); }
   .desktopShowcase, .studio, .voices { gap: 55px; }.desktopFrame { transform: none; }.ticker { justify-content: flex-start; padding-left: 24px; }
   .llmNav > div > a:not(.button) { display: none; }
   .llmHero, .toolSection, .skillsSection, .apiGrid { grid-template-columns: 1fr; }

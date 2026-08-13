@@ -98,6 +98,9 @@ Use `--seconds` to request an approximate duration without calculating a valid
 frame count manually. For example, `--seconds 5` selects 124 frames at 24 FPS,
 which produces approximately 5.17 seconds. Tapioca prints the selected frame
 count before generation. Do not combine `--seconds` with `--frames`.
+One generation is limited to 513 frames. Because MiniMax-H3 uses `17n+5`, its
+largest valid value within that limit is 498 frames. For longer videos,
+generate short clips and compose them afterward.
 
 Compatible MiniMax-H3 transformer LoRAs can be stacked in command order:
 

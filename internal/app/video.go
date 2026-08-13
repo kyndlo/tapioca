@@ -93,6 +93,12 @@ func video(args []string) error {
 	if *width <= 0 || *height <= 0 || *width%32 != 0 || *height%32 != 0 {
 		return errors.New("width and height must be positive and divisible by 32")
 	}
+	if *frames > videoruntime.MaxVideoFrames {
+		return fmt.Errorf(
+			"frames must not exceed %d for one generation; compose longer videos from shorter clips",
+			videoruntime.MaxVideoFrames,
+		)
+	}
 	if profile.Backend == "comfy-h3-mps" || profile.Backend == "comfy-h3-cuda" {
 		if *frames < 5 || (*frames-5)%17 != 0 {
 			return errors.New("MiniMax-H3 frames must have the form 17n+5 (for example 5, 73, or 124)")
@@ -186,22 +192,37 @@ func videoFramesForSeconds(model catalog.Resolved, seconds float64, fps int) (in
 	if fps <= 0 {
 		return 0, errors.New("fps must be positive")
 	}
-	step, offset := 4, 1
-	if model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda" {
-		step, offset = 17, 5
-	} else if model.Name == "ltx-video:2b-fp16" {
-		step, offset = 8, 1
-	}
+	step, offset := videoFrameRule(model)
 	target := seconds * float64(fps)
-	maxInt := int(^uint(0) >> 1)
-	if math.IsInf(target, 0) || target > float64(maxInt-step-offset) {
-		return 0, errors.New("seconds value is too large")
-	}
-	n := int(math.Round((target - float64(offset)) / float64(step)))
+	n := math.Round((target - float64(offset)) / float64(step))
 	if n < 0 {
 		n = 0
 	}
-	return n*step + offset, nil
+	frames := n*float64(step) + float64(offset)
+	if frames > videoruntime.MaxVideoFrames {
+		maximumFrames := maximumValidVideoFrames(model)
+		return 0, fmt.Errorf(
+			"%.2f seconds resolves to %.0f frames; %s supports at most %d frames (approximately %.2f seconds at %d fps) per generation; compose longer videos from shorter clips",
+			seconds, frames, model.Name, maximumFrames,
+			float64(maximumFrames)/float64(fps), fps,
+		)
+	}
+	return int(frames), nil
+}
+
+func videoFrameRule(model catalog.Resolved) (step, offset int) {
+	if model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda" {
+		return 17, 5
+	}
+	if model.Name == "ltx-video:2b-fp16" {
+		return 8, 1
+	}
+	return 4, 1
+}
+
+func maximumValidVideoFrames(model catalog.Resolved) int {
+	step, offset := videoFrameRule(model)
+	return ((videoruntime.MaxVideoFrames-offset)/step)*step + offset
 }
 
 type videoDefaults struct {

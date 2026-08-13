@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -265,6 +266,21 @@ func TestCreatorRejectsUnsafePathsAndParameters(t *testing.T) {
 		Reference: "hf://owner/repo", Scale: &invalidScale,
 	}}, "model", "mflux"); err == nil || err.Code != "invalid_params" {
 		t.Fatalf("invalid LoRA scale error = %#v", err)
+	}
+}
+
+func TestValidateVideoUsesRuntimeFrameLimit(t *testing.T) {
+	valid := VideoGenerateParams{
+		Width: 512, Height: 512, Steps: 4,
+		Frames: videoruntime.MaxVideoFrames, FPS: 24,
+	}
+	if err := validateVideo(valid); err != nil {
+		t.Fatalf("maximum frame count was rejected: %v", err)
+	}
+	valid.Frames++
+	if err := validateVideo(valid); err == nil ||
+		!strings.Contains(err.Message, fmt.Sprint(videoruntime.MaxVideoFrames)) {
+		t.Fatalf("frame limit error = %#v", err)
 	}
 }
 

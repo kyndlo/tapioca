@@ -153,6 +153,14 @@ func TestVideoValidationBeforeDownload(t *testing.T) {
 			[]string{"minimax-h3", "--prompt", "test", "--seconds", "0"},
 			"positive finite number",
 		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--seconds", "60"},
+			"at most 498 frames",
+		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--frames", "515"},
+			"must not exceed 513",
+		},
 	}
 	for _, test := range tests {
 		err := video(test.args)
@@ -185,8 +193,11 @@ func TestVideoFramesForSeconds(t *testing.T) {
 		{"H3 three seconds", h3, 3, 24, 73},
 		{"H3 five seconds", h3, 5, 24, 124},
 		{"H3 eight seconds", h3, 8, 24, 192},
+		{"H3 boundary", h3, 21, 24, 498},
 		{"LTX two seconds", ltx, 2, 24, 49},
+		{"LTX boundary", ltx, 21.3, 24, 513},
 		{"Wan three seconds", wan, 3, 24, 73},
+		{"H3 custom FPS", h3, 10, 30, 294},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -219,6 +230,23 @@ func TestVideoFramesForSecondsRejectsInvalidInput(t *testing.T) {
 		if _, err := videoFramesForSeconds(model, test.seconds, test.fps); err == nil {
 			t.Errorf("videoFramesForSeconds(%v, %d) unexpectedly succeeded", test.seconds, test.fps)
 		}
+	}
+}
+
+func TestMaximumValidVideoFrames(t *testing.T) {
+	h3, err := catalog.ResolveForPlatform("minimax-h3", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ltx, err := catalog.ResolveForPlatform("ltx-video:2b-fp16", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := maximumValidVideoFrames(h3); got != 498 {
+		t.Fatalf("MiniMax-H3 maximum frames = %d, want 498", got)
+	}
+	if got := maximumValidVideoFrames(ltx); got != 513 {
+		t.Fatalf("LTX maximum frames = %d, want 513", got)
 	}
 }
 

@@ -121,6 +121,10 @@ tapioca video minimax-h3 --prompt "A cinematic tracking shot" \
 ```
 
 At 24 FPS this selects 124 MiniMax-H3 frames, approximately 5.17 seconds.
+One generation is limited to 513 frames; the nearest valid maximum can be
+lower for a model's frame rule (498 for MiniMax-H3). Requests beyond the limit
+fail with the maximum approximate duration for the selected model and FPS.
+Compose longer videos from multiple short clips.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
 `--adapter-scale` when the selected backend supports LoRAs. MiniMax-H3 uses a

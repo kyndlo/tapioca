@@ -112,7 +112,7 @@ Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 
 Image, edit, and video commands use seed `0` by default. Pass `--seed NUMBER`
 for an explicit reproducible seed or `--random-seed` to generate and print a
-random `uint64`. The two flags cannot be combined. Copy the printed value into
+random seed. The two flags cannot be combined. Copy the printed value into
 `--seed NUMBER` to reproduce the same configuration later.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and

@@ -76,7 +76,7 @@ func imageCommand(args []string, requireInput bool) error {
 			seedSet = true
 		}
 	})
-	effectiveSeed, err := resolveMediaSeed(*seed, seedSet, *randomSeed)
+	effectiveSeed, err := resolveMediaSeed(*seed, seedSet, *randomSeed, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -111,9 +111,6 @@ func imageCommand(args []string, requireInput bool) error {
 			"the native Qwen Image Flash MLX backend currently supports text-to-image only; " +
 				"use flux2-klein with MFLUX for image editing",
 		)
-	}
-	if *randomSeed {
-		fmt.Fprintf(os.Stderr, "using random seed %d\n", effectiveSeed)
 	}
 	var explicitScale *float64
 	if adapterScale.set {

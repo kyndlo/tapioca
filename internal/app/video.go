@@ -63,7 +63,7 @@ func video(args []string) error {
 	}
 	changed := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { changed[f.Name] = true })
-	effectiveSeed, err := resolveMediaSeed(*seed, changed["seed"], *randomSeed)
+	effectiveSeed, err := resolveMediaSeed(*seed, changed["seed"], *randomSeed, os.Stderr)
 	if err != nil {
 		return err
 	}
@@ -107,9 +107,6 @@ func video(args []string) error {
 	}
 	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
-	}
-	if *randomSeed {
-		fmt.Fprintf(os.Stderr, "using random seed %d\n", effectiveSeed)
 	}
 	var explicitScale *float64
 	if adapterScale.set {

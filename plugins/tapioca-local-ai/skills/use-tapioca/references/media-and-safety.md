@@ -3,18 +3,26 @@
 ## Images
 
 ```bash
-tapioca image MODEL --prompt "A pearl astronaut" --output image.png
+tapioca image MODEL --prompt "A pearl astronaut" \
+  --random-seed --output image.png
 ```
+
+Image, edit, and video use seed `0` by default. Use `--random-seed` for a new
+variation, capture the printed seed, and report it with the output path. Reuse
+that value with `--seed NUMBER` for the same generation settings. The two seed
+flags are mutually exclusive.
 
 ## Video
 
 ```bash
 tapioca video MODEL --prompt "A pearl astronaut waving" \
-  --image image.png --output video.mp4
+  --image image.png --seconds 5 --output video.mp4
 ```
 
 Confirm input files exist. CPU diffusion can take minutes, and a runtime that
 does not report a percentage is not necessarily stalled.
+`--seconds` requests an approximate duration and prints the selected valid frame
+count. Never combine it with `--frames`.
 
 ### MiniMax-H3
 
@@ -26,7 +34,7 @@ files manually. The low-memory preset is 640×352, 73 frames, 10 steps, and
 tapioca pull minimax-h3
 tapioca video minimax-h3 \
   --prompt 'A friendly presenter says exactly: "Hello from Tapioca."' \
-  --preset low-memory --output minimax-h3.mp4
+  --preset low-memory --seconds 5 --output minimax-h3.mp4
 ```
 
 For a LoRA, first run `tapioca adapter inspect`. Proceed only when the model

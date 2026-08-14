@@ -235,6 +235,12 @@ export default function Home() {
 			before download and never stores the user&apos;s Hugging Face token. Provider
 			approval and local <code>--accept-license</code> acknowledgement are separate steps.
 		  </p>
+          <p>
+            Ask for video length with <code>--seconds</code> and let Tapioca choose a
+            valid frame count. Explore image or video variations with
+            <code>--random-seed</code>, then reuse the printed value with
+            <code>--seed</code> when you want the same generation settings again.
+          </p>
           <div className="actions">
             <a className="button cream" href={`${repo}/blob/main/docs/guides/image-generation.md`}>Image guide</a>
             <a className="button darkGhost" href={`${repo}/blob/main/docs/guides/video-generation.md`}>Video guide</a>

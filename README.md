@@ -145,9 +145,9 @@ tapioca list
 tapioca pull MODEL[:VARIANT] [--accept-license]
 tapioca run MODEL [--context TOKENS]
 tapioca serve MODEL [--port 11435] [--context TOKENS]
-tapioca image MODEL --prompt TEXT [--output image.png]
+tapioca image MODEL --prompt TEXT [--seed NUMBER | --random-seed] [--output image.png]
 tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
-tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
+tapioca video MODEL --prompt TEXT [--image start.png] [--seconds N | --frames N] [--seed NUMBER | --random-seed] [--output video.mp4]
 tapioca tts MODEL --text TEXT [--voice NAME] [--output speech.wav]
 tapioca voice (create|list|inspect|remove) [NAME]
 tapioca adapter (inspect|pull|import|list) [REFERENCE]
@@ -156,6 +156,23 @@ tapioca launch CLIENT MODEL [-- CLIENT_ARGS...]
 ```
 
 See the [command reference](docs/reference/commands.md) for flags and examples.
+
+### Choose video length and reusable seeds
+
+Use `--seconds` when you know the approximate clip length but not the valid
+frame count for a model. Tapioca selects and prints the nearest supported frame
+count. Do not combine `--seconds` with `--frames`:
+
+```bash
+tapioca video minimax-h3 \
+  --prompt 'A presenter says exactly: "Hello from Tapioca."' \
+  --seconds 5 --random-seed --output hello.mp4
+```
+
+Image, edit, and video commands use seed `0` by default. `--random-seed`
+generates and prints a portable random seed. Copy that value into
+`--seed NUMBER` to reproduce the same generation settings later. The two seed
+flags cannot be combined.
 
 ## Current scope
 

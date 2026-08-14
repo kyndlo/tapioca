@@ -43,11 +43,15 @@ The selected client must already be installed. Pass client arguments after
 ```bash
 tapioca image MODEL \
   --prompt "A friendly pearl astronaut" \
+  --random-seed \
   --output image.png
 ```
 
 Use a catalog model compatible with the current OS and GPU. Image generation
 may take minutes on CPU. Do not treat an absent percentage as a stalled job.
+When `--random-seed` is used, capture the printed value and report it with the
+output path. Reuse it with `--seed NUMBER` when the user asks to reproduce the
+same generation settings. Do not combine the two seed flags.
 
 ## Video
 
@@ -55,11 +59,17 @@ may take minutes on CPU. Do not treat an absent percentage as a stalled job.
 tapioca video MODEL \
   --prompt "A friendly pearl astronaut waving" \
   --image image.png \
+  --seconds 5 \
   --output video.mp4
 ```
 
 When an input image is provided, preserve its path exactly and confirm it
 exists before starting the job.
+Use `--seconds` for an approximate duration when the user has not requested an
+exact valid frame count. Tapioca selects and prints the nearest model-compatible
+frame count. `--seconds` and `--frames` are mutually exclusive. Use
+`--random-seed` for exploration and report the printed seed; use an explicit
+`--seed NUMBER` for repeatable settings.
 
 ### MiniMax-H3 video and LoRAs
 
@@ -71,12 +81,13 @@ let `tapioca pull` resolve and verify the complete bundle:
 tapioca pull minimax-h3
 tapioca video minimax-h3 \
   --prompt 'A friendly presenter says exactly: "Hello from Tapioca."' \
-  --preset low-memory \
+  --preset low-memory --seconds 5 \
   --output minimax-h3.mp4
 ```
 
 The low-memory preset generates 640×352, 73 frames, 10 sampling steps, and
-24 FPS. MiniMax-H3 frame counts must have the form `17n+5`.
+24 FPS before duration overrides. `--seconds 5` selects 124 frames, about 5.17
+seconds at 24 FPS. MiniMax-H3 frame counts must have the form `17n+5`.
 
 Before using an adapter, inspect it and verify that its model card declares
 MiniMax-H3 as the base architecture:

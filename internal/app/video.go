@@ -50,7 +50,8 @@ func video(args []string) error {
 	seconds := fs.Float64("seconds", 0, "approximate video duration in seconds")
 	steps := fs.Int("steps", profile.Steps, "denoising steps")
 	fps := fs.Int("fps", profile.FPS, "output frames per second")
-	seed := fs.Uint64("seed", 0, "random seed")
+	seed := fs.Uint64("seed", 0, "generation seed (default 0)")
+	randomSeed := fs.Bool("random-seed", false, "generate and print a random seed")
 	var adapterValues stringList
 	adapterValues = append(adapterValues, recipeAdapters...)
 	adapterFile := ""
@@ -64,6 +65,10 @@ func video(args []string) error {
 	}
 	changed := map[string]bool{}
 	fs.Visit(func(f *flag.Flag) { changed[f.Name] = true })
+	effectiveSeed, err := resolveMediaSeed(*seed, changed["seed"], *randomSeed, os.Stderr)
+	if err != nil {
+		return err
+	}
 	defaults, err := videoPreset(profile, *preset)
 	if err != nil {
 		return err
@@ -175,7 +180,7 @@ func video(args []string) error {
 	err = videoruntime.Run(ctx, filepath.Join(home, "runtime"), videoruntime.Request{
 		ModelPath: model.Path, Prompt: effectivePrompt, NegativePrompt: *negative,
 		InputImage: imagePath, Output: target, Width: *width, Height: *height,
-		Frames: *frames, Steps: *steps, FPS: *fps, Seed: *seed, Backend: model.Backend,
+		Frames: *frames, Steps: *steps, FPS: *fps, Seed: effectiveSeed, Backend: model.Backend,
 		Adapters: adapters,
 	})
 	if err != nil {

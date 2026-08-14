@@ -152,9 +152,14 @@ downloader for that pull. Agents must not accept model terms for a user.
 --height PIXELS
 --steps NUMBER
 --seed NUMBER
+--random-seed
 ```
 
 Width and height must be positive and divisible by 16.
+
+The default seed is `0`. Use `--random-seed` to generate a random seed and
+print it before generation. Reuse the printed value later with `--seed NUMBER`
+to reproduce the same configuration. Do not combine the two seed flags.
 
 ## Edit one or more images
 

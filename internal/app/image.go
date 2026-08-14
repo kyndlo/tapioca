@@ -55,7 +55,8 @@ func imageCommand(args []string, requireInput bool) error {
 	width := fs.Int("width", widthDefault, "image width (divisible by 16)")
 	height := fs.Int("height", heightDefault, "image height (divisible by 16)")
 	steps := fs.Int("steps", stepsDefault, "denoising steps")
-	seed := fs.Uint64("seed", 0, "random seed")
+	seed := fs.Uint64("seed", 0, "generation seed (default 0)")
+	randomSeed := fs.Bool("random-seed", false, "generate and print a random seed")
 	var inputImages stringList
 	fs.Var(&inputImages, "image", "input/reference image; repeatable")
 	var adapterValues stringList
@@ -68,6 +69,16 @@ func imageCommand(args []string, requireInput bool) error {
 	}
 	if fs.NArg() != 0 || *prompt == "" {
 		return errors.New("usage: tapioca image MODEL --prompt TEXT [flags]")
+	}
+	seedSet := false
+	fs.Visit(func(f *flag.Flag) {
+		if f.Name == "seed" {
+			seedSet = true
+		}
+	})
+	effectiveSeed, err := resolveMediaSeed(*seed, seedSet, *randomSeed, os.Stderr)
+	if err != nil {
+		return err
 	}
 	if *width <= 0 || *height <= 0 || *width%16 != 0 || *height%16 != 0 {
 		return errors.New("width and height must be positive and divisible by 16")
@@ -153,7 +164,7 @@ func imageCommand(args []string, requireInput bool) error {
 	}
 	if err := imageruntime.Run(ctx, filepath.Join(home, "runtime"), imageruntime.Request{
 		ModelPath: model.Path, Prompt: *prompt, NegativePrompt: *negative,
-		Output: target, Width: *width, Height: *height, Steps: *steps, Seed: *seed,
+		Output: target, Width: *width, Height: *height, Steps: *steps, Seed: effectiveSeed,
 		Backend: model.Backend, GuidanceScale: guidanceScale,
 		InputImages: imagePaths, Adapters: adapters,
 	}); err != nil {

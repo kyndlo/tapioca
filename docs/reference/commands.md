@@ -87,7 +87,7 @@ tapioca image MODEL --prompt TEXT [flags]
 ```
 
 Flags include `--negative-prompt`, `--output`, `--width`, `--height`,
-`--steps`, `--seed`, repeated `--image`, repeated `--adapter`,
+`--steps`, `--seed`, `--random-seed`, repeated `--image`, repeated `--adapter`,
 `--adapter-file`, and `--adapter-scale`. Dimensions must be divisible by 16.
 
 ## `edit`
@@ -108,7 +108,12 @@ tapioca video MODEL --prompt TEXT [flags]
 
 Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 `--enhance-prompt`, `--width`, `--height`, `--frames`, `--steps`, `--fps`,
-`--seconds`, and `--seed`.
+`--seconds`, `--seed`, and `--random-seed`.
+
+Image, edit, and video commands use seed `0` by default. Pass `--seed NUMBER`
+for an explicit reproducible seed or `--random-seed` to generate and print a
+random seed. The two flags cannot be combined. Copy the printed value into
+`--seed NUMBER` to reproduce the same configuration later.
 
 `--seconds` requests an approximate duration and selects the closest valid
 frame count for the model and FPS. It cannot be combined with `--frames`.

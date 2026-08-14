@@ -42,6 +42,9 @@ type Request struct {
 	Adapters       []adapter.Local
 }
 
+// MaxVideoFrames bounds a single generation across CLI and control surfaces.
+const MaxVideoFrames = 513
+
 func Run(ctx context.Context, cacheDir string, request Request) error {
 	switch request.Backend {
 	case "mlx-video":

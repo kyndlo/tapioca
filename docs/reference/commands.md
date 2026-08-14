@@ -108,12 +108,28 @@ tapioca video MODEL --prompt TEXT [flags]
 
 Flags include `--image`, `--negative-prompt`, `--output`, `--preset`,
 `--enhance-prompt`, `--width`, `--height`, `--frames`, `--steps`, `--fps`,
-`--seed`, and `--random-seed`.
+`--seconds`, `--seed`, and `--random-seed`.
 
 Image, edit, and video commands use seed `0` by default. Pass `--seed NUMBER`
 for an explicit reproducible seed or `--random-seed` to generate and print a
 random seed. The two flags cannot be combined. Copy the printed value into
 `--seed NUMBER` to reproduce the same configuration later.
+
+`--seconds` requests an approximate duration and selects the closest valid
+frame count for the model and FPS. It cannot be combined with `--frames`.
+MiniMax-H3 follows `17n+5`, LTX Video follows `8n+1`, and other video models
+follow `4n+1`. For example:
+
+```bash
+tapioca video minimax-h3 --prompt "A cinematic tracking shot" \
+  --seconds 5 --output five-seconds.mp4
+```
+
+At 24 FPS this selects 124 MiniMax-H3 frames, approximately 5.17 seconds.
+One generation is limited to 513 frames; the nearest valid maximum can be
+lower for a model's frame rule (498 for MiniMax-H3). Requests beyond the limit
+fail with the maximum approximate duration for the selected model and FPS.
+Compose longer videos from multiple short clips.
 
 Video additionally supports repeated `--adapter`, `--adapter-file`, and
 `--adapter-scale` when the selected backend supports LoRAs. MiniMax-H3 uses a

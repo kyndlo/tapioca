@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -148,6 +149,22 @@ func TestVideoValidationBeforeDownload(t *testing.T) {
 			[]string{"minimax-h3", "--prompt", "test", "--seed", "42", "--random-seed"},
 			"cannot be used together",
 		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--seconds", "3", "--frames", "73"},
+			"cannot be used together",
+		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--seconds", "0"},
+			"positive finite number",
+		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--seconds", "60"},
+			"at most 498 frames",
+		},
+		{
+			[]string{"minimax-h3", "--prompt", "test", "--frames", "515"},
+			"must not exceed 513",
+		},
 	}
 	for _, test := range tests {
 		err := video(test.args)
@@ -164,6 +181,86 @@ func TestImageSeedValidationBeforeDownload(t *testing.T) {
 	})
 	if err == nil || !strings.Contains(err.Error(), "cannot be used together") {
 		t.Fatalf("image seed conflict error = %v", err)
+	}
+}
+
+func TestVideoFramesForSeconds(t *testing.T) {
+	h3, err := catalog.ResolveForPlatform("minimax-h3", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ltx, err := catalog.ResolveForPlatform("ltx-video:2b-fp16", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wan, err := catalog.ResolveForPlatform("wan2.2-video:5b-q8-mlx", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		name    string
+		model   catalog.Resolved
+		seconds float64
+		fps     int
+		want    int
+	}{
+		{"H3 three seconds", h3, 3, 24, 73},
+		{"H3 five seconds", h3, 5, 24, 124},
+		{"H3 eight seconds", h3, 8, 24, 192},
+		{"H3 boundary", h3, 21, 24, 498},
+		{"LTX two seconds", ltx, 2, 24, 49},
+		{"LTX boundary", ltx, 21.3, 24, 513},
+		{"Wan three seconds", wan, 3, 24, 73},
+		{"H3 custom FPS", h3, 10, 30, 294},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := videoFramesForSeconds(test.model, test.seconds, test.fps)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Fatalf("videoFramesForSeconds() = %d, want %d", got, test.want)
+			}
+		})
+	}
+}
+
+func TestVideoFramesForSecondsRejectsInvalidInput(t *testing.T) {
+	model, err := catalog.ResolveForPlatform("minimax-h3", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		seconds float64
+		fps     int
+	}{
+		{0, 24},
+		{-1, 24},
+		{math.NaN(), 24},
+		{math.Inf(1), 24},
+		{3, 0},
+	} {
+		if _, err := videoFramesForSeconds(model, test.seconds, test.fps); err == nil {
+			t.Errorf("videoFramesForSeconds(%v, %d) unexpectedly succeeded", test.seconds, test.fps)
+		}
+	}
+}
+
+func TestMaximumValidVideoFrames(t *testing.T) {
+	h3, err := catalog.ResolveForPlatform("minimax-h3", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ltx, err := catalog.ResolveForPlatform("ltx-video:2b-fp16", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := maximumValidVideoFrames(h3); got != 498 {
+		t.Fatalf("MiniMax-H3 maximum frames = %d, want 498", got)
+	}
+	if got := maximumValidVideoFrames(ltx); got != 513 {
+		t.Fatalf("LTX maximum frames = %d, want 513", got)
 	}
 }
 

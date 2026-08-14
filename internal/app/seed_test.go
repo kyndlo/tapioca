@@ -49,8 +49,23 @@ func TestResolveMediaSeedReportsRandomSourceFailure(t *testing.T) {
 	}
 }
 
+func TestResolveMediaSeedReportsOutputFailure(t *testing.T) {
+	_, err := resolveMediaSeedFrom(
+		0, false, true, bytes.NewReader([]byte{0, 0, 0, 1}), errorWriter{},
+	)
+	if err == nil || !strings.Contains(err.Error(), "report random seed") {
+		t.Fatalf("output failure error = %v", err)
+	}
+}
+
 type errorReader struct{}
 
 func (errorReader) Read([]byte) (int, error) {
+	return 0, errors.New("unavailable")
+}
+
+type errorWriter struct{}
+
+func (errorWriter) Write([]byte) (int, error) {
 	return 0, errors.New("unavailable")
 }

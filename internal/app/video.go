@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -46,6 +47,7 @@ func video(args []string) error {
 	width := fs.Int("width", profile.Width, "video width (divisible by 32)")
 	height := fs.Int("height", profile.Height, "video height (divisible by 32)")
 	frames := fs.Int("frames", profile.Frames, "number of frames (4n+1)")
+	seconds := fs.Float64("seconds", 0, "approximate video duration in seconds")
 	steps := fs.Int("steps", profile.Steps, "denoising steps")
 	fps := fs.Int("fps", profile.FPS, "output frames per second")
 	seed := fs.Uint64("seed", 0, "generation seed (default 0)")
@@ -83,8 +85,24 @@ func video(args []string) error {
 	if !changed["steps"] {
 		*steps = defaults.steps
 	}
+	if changed["seconds"] && changed["frames"] {
+		return errors.New("--seconds and --frames cannot be used together")
+	}
+	if changed["seconds"] {
+		framesForDuration, err := videoFramesForSeconds(profile, *seconds, *fps)
+		if err != nil {
+			return err
+		}
+		*frames = framesForDuration
+	}
 	if *width <= 0 || *height <= 0 || *width%32 != 0 || *height%32 != 0 {
 		return errors.New("width and height must be positive and divisible by 32")
+	}
+	if *frames > videoruntime.MaxVideoFrames {
+		return fmt.Errorf(
+			"frames must not exceed %d for one generation; compose longer videos from shorter clips",
+			videoruntime.MaxVideoFrames,
+		)
 	}
 	if profile.Backend == "comfy-h3-mps" || profile.Backend == "comfy-h3-cuda" {
 		if *frames < 5 || (*frames-5)%17 != 0 {
@@ -107,6 +125,10 @@ func video(args []string) error {
 	}
 	if profile.Name == "stable-video-diffusion:xt-fp16" && len(adapterValues) > 0 {
 		return errors.New("stable-video-diffusion does not support LoRA adapters in Tapioca")
+	}
+	if changed["seconds"] {
+		fmt.Fprintf(os.Stderr, "requested %.2fs; using %d frames at %d fps (%.2fs)\n",
+			*seconds, *frames, *fps, float64(*frames)/float64(*fps))
 	}
 	var explicitScale *float64
 	if adapterScale.set {
@@ -166,6 +188,46 @@ func video(args []string) error {
 	}
 	fmt.Println(target)
 	return nil
+}
+
+func videoFramesForSeconds(model catalog.Resolved, seconds float64, fps int) (int, error) {
+	if seconds <= 0 || math.IsNaN(seconds) || math.IsInf(seconds, 0) {
+		return 0, errors.New("seconds must be a positive finite number")
+	}
+	if fps <= 0 {
+		return 0, errors.New("fps must be positive")
+	}
+	step, offset := videoFrameRule(model)
+	target := seconds * float64(fps)
+	n := math.Round((target - float64(offset)) / float64(step))
+	if n < 0 {
+		n = 0
+	}
+	frames := n*float64(step) + float64(offset)
+	if frames > videoruntime.MaxVideoFrames {
+		maximumFrames := maximumValidVideoFrames(model)
+		return 0, fmt.Errorf(
+			"%.2f seconds resolves to %.0f frames; %s supports at most %d frames (approximately %.2f seconds at %d fps) per generation; compose longer videos from shorter clips",
+			seconds, frames, model.Name, maximumFrames,
+			float64(maximumFrames)/float64(fps), fps,
+		)
+	}
+	return int(frames), nil
+}
+
+func videoFrameRule(model catalog.Resolved) (step, offset int) {
+	if model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda" {
+		return 17, 5
+	}
+	if model.Name == "ltx-video:2b-fp16" {
+		return 8, 1
+	}
+	return 4, 1
+}
+
+func maximumValidVideoFrames(model catalog.Resolved) int {
+	step, offset := videoFrameRule(model)
+	return ((videoruntime.MaxVideoFrames-offset)/step)*step + offset
 }
 
 type videoDefaults struct {

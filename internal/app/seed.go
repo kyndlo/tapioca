@@ -30,7 +30,9 @@ func resolveMediaSeedFrom(
 	}
 	resolved := uint64(binary.BigEndian.Uint32(value[:]))
 	if output != nil {
-		fmt.Fprintf(output, "using random seed %d\n", resolved)
+		if _, err := fmt.Fprintf(output, "using random seed %d\n", resolved); err != nil {
+			return 0, fmt.Errorf("report random seed: %w", err)
+		}
 	}
 	return resolved, nil
 }

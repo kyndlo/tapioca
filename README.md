@@ -146,7 +146,7 @@ tapioca pull MODEL[:VARIANT] [--accept-license]
 tapioca run MODEL [--context TOKENS]
 tapioca serve MODEL [--port 11435] [--context TOKENS]
 tapioca image MODEL --prompt TEXT [--seed NUMBER | --random-seed] [--output image.png]
-tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
+tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT [--seed NUMBER | --random-seed]
 tapioca video MODEL --prompt TEXT [--image start.png] [--seconds N | --frames N] [--seed NUMBER | --random-seed] [--output video.mp4]
 tapioca tts MODEL --text TEXT [--voice NAME] [--output speech.wav]
 tapioca voice (create|list|inspect|remove) [NAME]

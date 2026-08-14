@@ -107,7 +107,7 @@ export default function Home() {
 
       <section className="section desktopShowcase" id="desktop">
         <div className="desktopIntro">
-          <p className="kicker light">New · Tapioca Desktop 0.9</p>
+          <p className="kicker light">New · Tapioca Desktop 0.10.0</p>
           <h2>Local AI now has<br />a friendly face.</h2>
           <p>
             Chat, create images and videos, clone voices, manage models, and

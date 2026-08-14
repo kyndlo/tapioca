@@ -212,10 +212,12 @@ func creatorCapabilities() map[string]any {
 			"parameters": map[string]any{
 				"width_height": "multiples of 8 from 64 through 4096",
 				"steps":        "1 through 200; omit for the catalog default",
-				"frames":       "1 through 513; omit for the catalog default",
-				"fps":          "1 through 60; omit for the catalog default",
-				"input_image":  "optional regular PNG, JPEG, or WebP file up to 100 MiB",
-				"output_name":  "optional .mp4 filename without directories",
+				"frames": fmt.Sprintf(
+					"1 through %d; omit for the catalog default", videoruntime.MaxVideoFrames,
+				),
+				"fps":         "1 through 60; omit for the catalog default",
+				"input_image": "optional regular PNG, JPEG, or WebP file up to 100 MiB",
+				"output_name": "optional .mp4 filename without directories",
 			},
 		},
 		"speech": map[string]any{
@@ -537,8 +539,10 @@ func validateVideo(params VideoGenerateParams) *ProtocolError {
 	if err := validateDimensions(params.Width, params.Height, params.Steps); err != nil {
 		return err
 	}
-	if params.Frames < 1 || params.Frames > 513 {
-		return invalidParams("frames must be between 1 and 513", nil)
+	if params.Frames < 1 || params.Frames > videoruntime.MaxVideoFrames {
+		return invalidParams(fmt.Sprintf(
+			"frames must be between 1 and %d", videoruntime.MaxVideoFrames,
+		), nil)
 	}
 	if params.FPS < 1 || params.FPS > 60 {
 		return invalidParams("fps must be between 1 and 60", nil)

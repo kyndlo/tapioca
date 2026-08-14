@@ -32,6 +32,11 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /tapioca catalog update/i);
   assert.match(html, /tapioca update --check/i);
   assert.match(html, /Settings → Software updates/i);
+  assert.match(html, /--seconds/);
+  assert.match(html, /--random-seed/);
+  assert.match(html, /--seed/);
+  assert.match(html, /same generation settings again/i);
+  assert.match(html, /Tapioca Desktop 0\.10\.0/i);
   assert.match(html, /property="og:image"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });
@@ -100,6 +105,10 @@ test("renders the complete beginner learning center", async () => {
 	assert.match(html, /krea-2-turbo/);
 	assert.match(html, /--accept-license/);
 	assert.match(html, /does not bypass Hugging Face access/i);
+	assert.match(html, /Choose an approximate duration/i);
+	assert.match(html, /Explore, then reproduce/i);
+	assert.match(html, /final duration can differ slightly/i);
+	assert.match(html, /repeat the same generation settings/i);
 });
 
 test("renders a prominent import and transfer guide", async () => {
@@ -147,5 +156,9 @@ test("serves concise and full machine-readable agent contracts", async () => {
     assert.match(body, /civitai:\/\/MODEL_ID\/VERSION_ID/);
     assert.match(body, /adapter import FILE --base MODEL/);
     assert.match(body, /copy.*snapshot\.json/is);
+    assert.match(body, /--seconds/);
+    assert.match(body, /--random-seed/);
+    assert.match(body, /reuse it with `--seed NUMBER`/i);
+    assert.match(body, /never combine it with `--frames`/i);
   }
 });

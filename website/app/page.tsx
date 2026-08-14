@@ -107,7 +107,7 @@ export default function Home() {
 
       <section className="section desktopShowcase" id="desktop">
         <div className="desktopIntro">
-          <p className="kicker light">New · Tapioca Desktop 0.9</p>
+          <p className="kicker light">New · Tapioca Desktop 0.10.0</p>
           <h2>Local AI now has<br />a friendly face.</h2>
           <p>
             Chat, create images and videos, clone voices, manage models, and
@@ -235,6 +235,12 @@ export default function Home() {
 			before download and never stores the user&apos;s Hugging Face token. Provider
 			approval and local <code>--accept-license</code> acknowledgement are separate steps.
 		  </p>
+          <p>
+            Ask for video length with <code>--seconds</code> and let Tapioca choose a
+            valid frame count. Explore image or video variations with
+            <code>--random-seed</code>, then reuse the printed value with
+            <code>--seed</code> when you want the same generation settings again.
+          </p>
           <div className="actions">
             <a className="button cream" href={`${repo}/blob/main/docs/guides/image-generation.md`}>Image guide</a>
             <a className="button darkGhost" href={`${repo}/blob/main/docs/guides/video-generation.md`}>Video guide</a>

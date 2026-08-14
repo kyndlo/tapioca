@@ -57,6 +57,8 @@ Agent contract: ${contractVersion}
 - Text and tool calls: OpenAI Chat Completions and Responses APIs.
 - Claude compatibility: Anthropic Messages API.
 - Media: \`tapioca image\`, \`tapioca video\`, and \`tapioca tts\`.
+- Media duration: prefer \`--seconds N\` for approximate video length; never combine it with \`--frames\`.
+- Media seeds: use \`--random-seed\` for variation, report the printed value, and reuse it with \`--seed NUMBER\` for repeatable settings.
 - Bundle-aware video: resolve \`minimax-h3\` through the catalog; never assemble its weights manually.
 - LoRA library: run \`tapioca adapter list\` and reuse installed adapters before requesting a download.
 - LoRA providers: \`hf://\`, \`civitai://MODEL_ID/VERSION_ID\`, \`ms://\`, and verified \`local://\` imports.
@@ -150,13 +152,20 @@ Human-readable guide: https://tapioca.rootfruit.cc/import
 
 \`\`\`bash
 tapioca image MODEL --prompt "A pearl astronaut" --output image.png
-tapioca video MODEL --prompt "A pearl astronaut waving" --image image.png --output video.mp4
+tapioca video MODEL --prompt "A pearl astronaut waving" --image image.png --seconds 5 --output video.mp4
 tapioca tts MODEL --text "Hello from Tapioca." --output hello.wav
 \`\`\`
 
 CPU image and video generation may take minutes. An absent percentage does not
 necessarily mean a job is stalled. Confirm input paths exist and report exact
 output paths.
+
+Image, edit, and video use seed \`0\` by default. When variation is requested,
+pass \`--random-seed\`, capture the value Tapioca prints, and report it with the
+output path. Reuse that value with \`--seed NUMBER\` for the same generation
+settings. Never combine the two seed flags. For video, \`--seconds N\` selects
+and prints the nearest model-compatible frame count; it is mutually exclusive
+with \`--frames\` and the resulting duration is approximate.
 
 ### MiniMax-H3
 
@@ -169,11 +178,13 @@ private, replaceable engine detail.
 tapioca pull minimax-h3
 tapioca video minimax-h3 \\
   --prompt 'A friendly presenter says exactly: "Hello from Tapioca."' \\
-  --preset low-memory --output minimax-h3.mp4
+  --preset low-memory --seconds 5 --output minimax-h3.mp4
 \`\`\`
 
-The low-memory preset is 640x352, 73 frames, 10 steps, and 24 FPS. MiniMax-H3
-frame counts must have the form \`17n+5\`.
+The low-memory preset is 640x352, 73 frames, 10 steps, and 24 FPS before a
+duration override. MiniMax-H3 frame counts must have the form \`17n+5\`.
+With \`--seconds 5\`, Tapioca selects 124 frames, approximately 5.17 seconds at
+24 FPS.
 
 On Windows x64, do not ask the user to install Python, Git, or the CUDA Toolkit
 for MiniMax-H3. Tapioca provisions a pinned Python 3.12 and CUDA runtime. A

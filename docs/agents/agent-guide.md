@@ -76,6 +76,11 @@ Current agent contract: `v1`.
   use the reference voice.
 - Put generated files in the user's requested workspace. Otherwise, report the
   exact output path returned by Tapioca.
+- Use `--seconds` for approximate video duration and never combine it with
+  `--frames`. Report the selected frame count printed by Tapioca.
+- Image, edit, and video use seed `0` by default. Use `--random-seed` only when
+  variation is wanted, report its printed value, and reuse that value with
+  `--seed NUMBER` for repeatable settings. Never combine the seed flags.
 - Add `--verbose` only for diagnosis. Normal commands intentionally suppress
   noisy backend logs.
 - For LoRAs, inspect the Hugging Face, Civitai, or ModelScope reference before

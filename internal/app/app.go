@@ -26,7 +26,7 @@ import (
 	"github.com/carlos/tapioca/internal/updater"
 )
 
-const Version = "0.9.0"
+const Version = "0.10.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -80,9 +80,9 @@ Usage:
   tapioca pull MODEL[:QUANT] [--accept-license]
   tapioca serve MODEL [--port 11435] [--context 65536]
   tapioca run MODEL
-  tapioca image MODEL --prompt TEXT [--output image.png]
-  tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT
-  tapioca video MODEL --prompt TEXT [--image start.png] [--output video.mp4]
+  tapioca image MODEL --prompt TEXT [--seed NUMBER | --random-seed] [--output image.png]
+  tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT [--seed NUMBER | --random-seed]
+  tapioca video MODEL --prompt TEXT [--image start.png] [--seconds N | --frames N] [--seed NUMBER | --random-seed] [--output video.mp4]
   tapioca tts MODEL --text TEXT [--voice NAME | --voice-sample FILE] [--output speech.wav]
   tapioca voice (create|list|inspect|remove) [NAME]
   tapioca adapter (inspect|pull|import|list) [REFERENCE]
@@ -98,7 +98,7 @@ Examples:
   tapioca run glm-4.7-flash:q8_0
   tapioca pull qwen-image-flash:int8
   tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
-  tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow"
+  tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow" --seconds 5 --random-seed
   tapioca voice create narrator --model chatterbox:nano --audio voice.wav
   tapioca tts chatterbox:nano --voice narrator --text "Hello from Tapioca"
   tapioca adapter inspect hf://Alissonerdx/BFS-Best-Face-Swap

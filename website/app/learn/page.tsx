@@ -149,6 +149,7 @@ tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.p
 			</div>
 			<div className="rule"><span>Gated model: two approvals</span><p>First, sign in at Hugging Face and accept Krea&apos;s provider terms. Second, set an approved read token and run <code>--accept-license</code> to record your local Tapioca acknowledgement. That flag does not bypass Hugging Face access. Tapioca never accepts terms for you and does not save the token. Review outputs before sharing them.</p></div>
 			<h3>Write a useful prompt</h3><p>Describe <b>subject + setting + lighting + visual style + composition</b>. Example: “A red fox in a snowy pine forest, golden-hour light, detailed wildlife photograph, eye-level portrait.”</p>
+            <div className="rule"><span>Explore, then reproduce</span><p>Image, edit, and video use seed <code>0</code> by default. Add <code>--random-seed</code> for a new variation and save the number Tapioca prints. Use that number later as <code>--seed NUMBER</code> to repeat the same generation settings. Do not combine the two seed flags.</p></div>
             <Expected>The first run downloads several gigabytes and prepares a private runtime. A progress bar may pause while files load into memory. Later images reuse both downloads.</Expected>
           </section>
 
@@ -160,6 +161,8 @@ tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.p
               <article><span>Windows · NVIDIA 8 GiB+</span><h3>LTX Video</h3><Command>{`tapioca video ltx-video:2b-fp16 \\\n  --prompt "A fox running through snow" \\\n  --preset low-memory --output fox.mp4`}</Command></article>
               <article><span>48 GiB Mac or 16 GiB NVIDIA</span><h3>MiniMax-H3 + audio</h3><Command>{`tapioca video minimax-h3 \\\n  --image start.png \\\n  --prompt 'A presenter says exactly: "Hello."' \\\n  --preset low-memory --output hello.mp4`}</Command></article>
             </div>
+            <div className="rule"><span>Choose an approximate duration</span><p>Use <code>--seconds 5</code> instead of calculating a model-compatible frame count. Tapioca prints the selected frame count before generation; the final duration can differ slightly because each video family has its own frame rule. Do not combine <code>--seconds</code> with <code>--frames</code>.</p></div>
+            <Command>tapioca video minimax-h3 --prompt &quot;A presenter waves&quot; --seconds 5 --output hello.mp4</Command>
             <div className="rule"><span>Long videos</span><p>Local video models are best at short shots. Build a 30–60 second video from several 3–5 second clips, then join them. One enormous generation is slower, less stable, and more likely to drift away from the subject.</p></div>
             <ul className="checklist"><li>Use <code>--image</code> to anchor the first frame.</li><li>Use <code>--preset low-memory</code> for the first test.</li><li>Reduce resolution, frames, or steps when memory runs out.</li><li>MiniMax-H3 makes native stereo audio; most other video models do not.</li></ul>
           </section>

@@ -62,7 +62,7 @@ type Handler struct {
 	startedAt     time.Time
 }
 
-const ControlVersion = "0.9.0"
+const ControlVersion = "0.10.0"
 
 func NewHandler(dependencies Dependencies) *Handler {
 	if dependencies.Catalog == nil {

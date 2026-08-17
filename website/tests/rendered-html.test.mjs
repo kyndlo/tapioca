@@ -32,6 +32,9 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /tapioca catalog update/i);
   assert.match(html, /tapioca update --check/i);
   assert.match(html, /Settings → Software updates/i);
+  assert.match(html, /Questions are welcome/i);
+  assert.match(html, /Join us on Discord/i);
+  assert.match(html, /https:\/\/discord\.gg\/vkFpNvY2ZY/);
   assert.match(html, /--seconds/);
   assert.match(html, /--random-seed/);
   assert.match(html, /--seed/);

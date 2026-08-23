@@ -125,6 +125,12 @@ On Windows x64, MiniMax-H3 automatically provisions its pinned Python and
 CUDA-enabled media runtime; users need a current NVIDIA driver, not Git, a
 system Python installation, or the CUDA Toolkit.
 
+Qwen3.8-27B is available as `qwen3.8`. Apple Silicon uses the optimized
+`27b-mlx` snapshot by default, while Windows and Linux use the portable
+`27b-q4_k_m` GGUF variant. It is aimed at agentic coding, reliable tool use,
+and long-horizon reasoning; use `27b-q5_k_m` when additional quality is worth
+the larger download and memory footprint.
+
 Krea 2 Turbo is available as `krea-2-turbo` for Windows/Linux NVIDIA and,
 experimentally, Apple Silicon Macs with large unified memory. The curated
 Diffusers snapshot is about 34 GiB and defaults to 8 steps at 1024×1024. It is

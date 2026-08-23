@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyBundledRuntime } from "./verify-runtime.ts";
 
-export const LLAMA_CPP_VERSION = "b9637";
+export const LLAMA_CPP_VERSION = "b10603";
 
 export function llamaRuntimeAsset(
   platform: NodeJS.Platform,

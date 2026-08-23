@@ -45,6 +45,11 @@ Use an 8K–16K context instead of the model's maximum advertised context.
 | `qwen3:30b-mlx` | ~16 GiB | General use and tools |
 | `qwen3-coder:30b-mlx` | ~16 GiB | Coding agents |
 | `qwen3.6:35b-mlx` | ~20 GiB | Larger Qwen MLX option |
+| `qwen3.8:27b-mlx` | ~15 GiB | Newest Qwen agentic coding and tool use |
+
+On Windows or Linux, `qwen3.8:27b-q4_k_m` is the portable GGUF option and
+needs at least 24 GiB of system memory. Qwen3.8 is a reasoning-heavy model;
+start with a moderate context size and allow extra time for complex tasks.
 
 For image and video recommendations, use the
 [image](image-generation.md) and [video](video-generation.md) guides.

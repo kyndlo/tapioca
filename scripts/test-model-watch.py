@@ -55,6 +55,19 @@ class ModelWatchTests(unittest.TestCase):
         )
         self.assertIsNone(model_watch.MODEL_POST.search("Showcase from my weekend"))
 
+    def test_catalog_health_reports_failed_checks(self):
+        original = model_watch.request_status
+        model_watch.request_status = lambda url: 404 if "missing" in url else 200
+        try:
+            failures = model_watch.catalog_health(
+                {"owner/present", "owner/missing"},
+                [("owner/present", "model.gguf")],
+            )
+        finally:
+            model_watch.request_status = original
+        self.assertEqual(len(failures), 1)
+        self.assertIn("owner/missing", failures[0])
+
 
 if __name__ == "__main__":
     unittest.main()

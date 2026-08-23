@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import datetime as dt
 import json
 import re
@@ -39,8 +40,8 @@ MODEL_POST = re.compile(
 )
 
 
-def request_bytes(url: str, *, method: str = "GET") -> bytes:
-    for attempt in range(3):
+def request_bytes(url: str, *, method: str = "GET", retries: int = 0) -> bytes:
+    for attempt in range(retries + 1):
         request = urllib.request.Request(
             url,
             method=method,
@@ -53,7 +54,7 @@ def request_bytes(url: str, *, method: str = "GET") -> bytes:
             with urllib.request.urlopen(request, timeout=30) as response:
                 return response.read()
         except urllib.error.HTTPError as error:
-            if error.code != 429 or attempt == 2:
+            if error.code != 429 or attempt == retries:
                 raise
             retry_after = error.headers.get("Retry-After", "")
             delay = int(retry_after) if retry_after.isdigit() else 5 * (attempt + 1)
@@ -62,8 +63,12 @@ def request_bytes(url: str, *, method: str = "GET") -> bytes:
 
 
 def request_status(url: str) -> int:
+    request = urllib.request.Request(
+        url, method="HEAD", headers={"User-Agent": USER_AGENT}
+    )
     try:
-        request_bytes(url, method="HEAD")
+        with urllib.request.urlopen(request, timeout=15):
+            pass
         return 200
     except urllib.error.HTTPError as error:
         return error.code
@@ -111,7 +116,7 @@ def hugging_face_models(pipeline: str, limit: int = 20) -> list[dict]:
 def reddit_posts(subreddits: tuple[str, ...] = SUBREDDITS) -> list[dict[str, str]]:
     joined = "+".join(subreddits)
     url = f"https://www.reddit.com/r/{joined}/new/.rss"
-    root = ET.fromstring(request_bytes(url))
+    root = ET.fromstring(request_bytes(url, retries=2))
     namespace = {"atom": "http://www.w3.org/2005/Atom"}
     posts: list[dict[str, str]] = []
     for entry in root.findall("atom:entry", namespace):
@@ -140,23 +145,32 @@ def reddit_posts(subreddits: tuple[str, ...] = SUBREDDITS) -> list[dict[str, str
 
 
 def catalog_health(repositories: set[str], artifacts: list[tuple[str, str]]) -> list[str]:
-    failures: list[str] = []
+    checks: list[tuple[str, str]] = []
     for repo in sorted(repositories):
         encoded = urllib.parse.quote(repo, safe="/")
-        status = request_status(f"https://huggingface.co/api/models/{encoded}")
-        if status != 200:
-            failures.append(f"repository `{repo}` returned HTTP {status or 'network error'}")
+        checks.append(
+            (f"repository `{repo}`", f"https://huggingface.co/api/models/{encoded}")
+        )
     for repo, filename in sorted(set(artifacts)):
         encoded_repo = urllib.parse.quote(repo, safe="/")
         encoded_file = urllib.parse.quote(filename, safe="/")
-        status = request_status(
-            f"https://huggingface.co/{encoded_repo}/resolve/main/{encoded_file}"
-        )
-        if status != 200:
-            failures.append(
-                f"artifact `{repo}/{filename}` returned HTTP {status or 'network error'}"
+        checks.append(
+            (
+                f"artifact `{repo}/{filename}`",
+                f"https://huggingface.co/{encoded_repo}/resolve/main/{encoded_file}",
             )
-    return failures
+        )
+
+    def check(item: tuple[str, str]) -> str | None:
+        label, url = item
+        status = request_status(url)
+        if status != 200:
+            return f"{label} returned HTTP {status or 'network error'}"
+        return None
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
+        results = executor.map(check, checks)
+    return [failure for failure in results if failure]
 
 
 def model_line(model: dict) -> str:

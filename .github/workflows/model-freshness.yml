@@ -18,11 +18,10 @@ jobs:
     name: Audit Hugging Face and AI Reddit communities
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
       - name: Validate the current catalog
         run: |
           go run ./cmd/catalog-manifest validate catalog/catalog.json
@@ -36,13 +35,13 @@ jobs:
         run: python3 scripts/model_watch.py --output model-watch-report.md
       - name: Add the report to the workflow summary
         run: cat model-watch-report.md >> "${GITHUB_STEP_SUMMARY}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: model-watch-report
           path: model-watch-report.md
           retention-days: 30
       - name: Create or refresh the model-watch issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           REPORT_PATH: model-watch-report.md
         with:

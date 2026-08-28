@@ -20,9 +20,8 @@ recommendations, research the current ecosystem on the day of the change.
 - Include the research date and the important Hugging Face, upstream, and
   Reddit links in the change summary so the decision can be audited later.
 
-The daily discovery workflow is `.github/workflows/model-freshness.yml`. Keep
-its source categories and compatibility checks aligned with this policy when
-the catalog or supported modality set changes. Preserve its separated primary
-and fallback schedules: GitHub scheduled workflows are best-effort, and the
-fallback prevents a delayed runner allocation from leaving a full day without
-a report. Do not add a shared concurrency group that can couple the two runs.
+Daily discovery is owned by the local Codex scheduled task so it can use web
+search and browser-assisted research. `.github/workflows/model-freshness.yml`
+is a manual-only validation and reporting fallback; do not add a GitHub cron
+schedule to it. Keep both paths' source categories and compatibility checks
+aligned with this policy when the catalog or supported modality set changes.

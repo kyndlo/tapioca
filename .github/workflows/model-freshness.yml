@@ -1,12 +1,6 @@
-name: Daily model freshness check
+name: Manual model freshness check
 
 on:
-  schedule:
-    # GitHub schedules are best-effort and can be delayed during busy periods.
-    # Use two separated, off-peak windows so one delayed allocation does not
-    # leave an entire day without a freshness report.
-    - cron: "37 14 * * *"
-    - cron: "17 23 * * *"
   workflow_dispatch:
 
 permissions:

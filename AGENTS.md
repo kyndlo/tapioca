@@ -22,4 +22,7 @@ recommendations, research the current ecosystem on the day of the change.
 
 The daily discovery workflow is `.github/workflows/model-freshness.yml`. Keep
 its source categories and compatibility checks aligned with this policy when
-the catalog or supported modality set changes.
+the catalog or supported modality set changes. Preserve its separated primary
+and fallback schedules: GitHub scheduled workflows are best-effort, and the
+fallback prevents a delayed runner allocation from leaving a full day without
+a report. Do not add a shared concurrency group that can couple the two runs.

@@ -2,21 +2,22 @@ name: Daily model freshness check
 
 on:
   schedule:
-    - cron: "15 14 * * *"
+    # GitHub schedules are best-effort and can be delayed during busy periods.
+    # Use two separated, off-peak windows so one delayed allocation does not
+    # leave an entire day without a freshness report.
+    - cron: "37 14 * * *"
+    - cron: "17 23 * * *"
   workflow_dispatch:
 
 permissions:
   contents: read
   issues: write
 
-concurrency:
-  group: daily-model-freshness
-  cancel-in-progress: true
-
 jobs:
   audit:
     name: Audit Hugging Face and AI Reddit communities
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7

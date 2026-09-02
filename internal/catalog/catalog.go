@@ -432,7 +432,7 @@ var builtInModels = map[string]Model{
 		Repo:    "ggml-org/GLM-4.7-Flash-GGUF",
 		Default: "q4_k_m",
 		Files: map[string]string{
-			"q4_k_m": "GLM-4.7-Flash-Q4_K_M.gguf",
+			"q4_k_m": "GLM-4.7-Flash-Q4_K.gguf",
 			"q8_0":   "GLM-4.7-Flash-Q8_0.gguf",
 		},
 		Sizes: map[string]string{
@@ -517,6 +517,46 @@ var builtInModels = map[string]Model{
 			"35b-mlx-4bit": "~20 GiB",
 			"35b-mlx-6bit": "~27 GiB",
 			"35b-mlx-8bit": "~36 GiB",
+		},
+	},
+	"qwen3.8": {
+		Name:    "qwen3.8",
+		Repo:    "unsloth/Qwen3.8-27B-GGUF",
+		Kind:    "text",
+		Default: "27b-q4_k_m",
+		Files: map[string]string{
+			"27b-q4_k_m": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+			"27b-q5_k_m": "Qwen3.8-27B-UD-Q5_K_M.gguf",
+			"27b-mlx":    "",
+		},
+		Backends: map[string]string{
+			"27b-mlx": "mlx-vlm",
+		},
+		Repos: map[string]string{
+			"27b-mlx": "mlx-community/Qwen3.8-27B-4bit",
+		},
+		PlatformDefaults: map[string]string{
+			"darwin/arm64": "27b-mlx",
+		},
+		Sizes: map[string]string{
+			"27b-q4_k_m": "~16 GiB",
+			"27b-q5_k_m": "~19 GiB",
+			"27b-mlx":    "~15 GiB",
+		},
+		Memory: map[string]string{
+			"27b-q4_k_m": "24 GiB min; 32 GiB recommended",
+			"27b-q5_k_m": "32 GiB min; 40 GiB recommended",
+			"27b-mlx":    "24 GiB min; 32 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"27b-q4_k_m": "Optional GPU acceleration",
+			"27b-q5_k_m": "Optional GPU acceleration",
+			"27b-mlx":    "Apple Silicon GPU",
+		},
+		Features: map[string]string{
+			"27b-q4_k_m": "agentic coding, tool use, long-horizon reasoning",
+			"27b-q5_k_m": "agentic coding, tool use, long-horizon reasoning",
+			"27b-mlx":    "agentic coding, tool use, Apple Silicon optimized",
 		},
 	},
 	"qwen3": {

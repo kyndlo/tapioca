@@ -18,18 +18,17 @@ permissions:
   contents: read
 
 env:
-  LLAMA_CPP_VERSION: b9637
+  LLAMA_CPP_VERSION: b10603
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
       - run: go vet ./...
       - run: go test ./...
       - name: Verify published catalog manifest
@@ -53,8 +52,8 @@ jobs:
     name: Website and agent docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -68,12 +67,11 @@ jobs:
     needs: [test, website]
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -119,7 +117,7 @@ jobs:
           cp "${desktop_zip}" tapioca-desktop-macos-arm64.zip
           shasum -a 256 tapioca-desktop-macos-arm64.zip > tapioca-desktop-macos-arm64.zip.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tapioca-darwin-arm64
           path: |
@@ -138,12 +136,11 @@ jobs:
     needs: [test, website]
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -188,7 +185,7 @@ jobs:
           (Get-FileHash tapioca-desktop-windows-amd64.exe -Algorithm SHA256).Hash.ToLower() + "  tapioca-desktop-windows-amd64.exe" |
             Set-Content tapioca-desktop-windows-amd64.exe.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tapioca-windows-amd64
           path: |
@@ -205,12 +202,11 @@ jobs:
     needs: [test, website]
     runs-on: windows-2025
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -258,7 +254,7 @@ jobs:
           (Get-FileHash tapioca-desktop-windows-arm64.exe -Algorithm SHA256).Hash.ToLower() + "  tapioca-desktop-windows-arm64.exe" |
             Set-Content tapioca-desktop-windows-arm64.exe.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tapioca-windows-arm64
           path: |
@@ -275,12 +271,11 @@ jobs:
     needs: [test, website]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -317,7 +312,7 @@ jobs:
           cp "${desktop_appimage}" tapioca-desktop-linux-amd64.AppImage
           sha256sum tapioca-desktop-linux-amd64.AppImage > tapioca-desktop-linux-amd64.AppImage.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tapioca-linux-amd64
           path: |
@@ -334,12 +329,11 @@ jobs:
     needs: [test, website]
     runs-on: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -376,7 +370,7 @@ jobs:
           cp "${desktop_appimage}" tapioca-desktop-linux-arm64.AppImage
           sha256sum tapioca-desktop-linux-arm64.AppImage > tapioca-desktop-linux-arm64.AppImage.sha256
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tapioca-linux-arm64
           path: |
@@ -404,7 +398,7 @@ jobs:
       contents: write
     steps:
       - name: Download platform bundles
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: tapioca-*
           path: release-assets

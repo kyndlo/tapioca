@@ -15,6 +15,16 @@ func TestResolveGLM(t *testing.T) {
 	}
 }
 
+func TestResolveGLMDefaultArtifact(t *testing.T) {
+	got, err := Resolve("glm-4.7-flash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Filename != "GLM-4.7-Flash-Q4_K.gguf" {
+		t.Fatalf("unexpected filename %q", got.Filename)
+	}
+}
+
 func TestResolveImageDefault(t *testing.T) {
 	got, err := ResolveFor("qwen-image-flash", "darwin")
 	if err != nil {
@@ -45,6 +55,29 @@ func TestResolveQwenMLXAlias(t *testing.T) {
 	if got.Repo != "mlx-community/Qwen3.6-35B-A3B-4bit" ||
 		got.Backend != "mlx-vlm" || got.Kind != "text" || got.Filename != "" {
 		t.Fatalf("unexpected Qwen MLX resolution: %#v", got)
+	}
+}
+
+func TestResolveQwen38PlatformDefaults(t *testing.T) {
+	mac, err := ResolveForPlatform("qwen3.8", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mac.Name != "qwen3.8:27b-mlx" ||
+		mac.Repo != "mlx-community/Qwen3.8-27B-4bit" ||
+		mac.Backend != "mlx-vlm" || mac.Size != "~15 GiB" {
+		t.Fatalf("unexpected Qwen3.8 macOS resolution: %#v", mac)
+	}
+
+	windows, err := ResolveForPlatform("qwen3.8", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windows.Name != "qwen3.8:27b-q4_k_m" ||
+		windows.Repo != "unsloth/Qwen3.8-27B-GGUF" ||
+		windows.Filename != "Qwen3.8-27B-UD-Q4_K_M.gguf" ||
+		windows.Backend != "" {
+		t.Fatalf("unexpected Qwen3.8 Windows resolution: %#v", windows)
 	}
 }
 

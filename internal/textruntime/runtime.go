@@ -25,7 +25,7 @@ func Command(
 	if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
 		return nil, errors.New("the MLX text backend requires macOS on Apple Silicon")
 	}
-	root := filepath.Join(cacheDir, "mlx-vlm", "cb2ca446")
+	root := filepath.Join(cacheDir, "mlx-vlm", "3ad401ae")
 	requirements, err := source.ReadFile("requirements.txt")
 	if err != nil {
 		return nil, err

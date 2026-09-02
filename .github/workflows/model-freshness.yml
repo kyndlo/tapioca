@@ -1,0 +1,83 @@
+name: Manual model freshness check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    name: Audit Hugging Face and AI Reddit communities
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: Validate the current catalog
+        run: |
+          go run ./cmd/catalog-manifest validate catalog/catalog.json
+          expected="$(awk '{print $1}' catalog/catalog.json.sha256)"
+          actual="$(sha256sum catalog/catalog.json | awk '{print $1}')"
+          test "${expected}" = "${actual}"
+          go test ./internal/catalog ./internal/adapter
+      - name: Test the model watch
+        run: python3 scripts/test-model-watch.py
+      - name: Build the daily report
+        run: python3 scripts/model_watch.py --output model-watch-report.md
+      - name: Add the report to the workflow summary
+        run: cat model-watch-report.md >> "${GITHUB_STEP_SUMMARY}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: model-watch-report
+          path: model-watch-report.md
+          retention-days: 30
+      - name: Create or refresh the model-watch issue
+        uses: actions/github-script@v9
+        env:
+          REPORT_PATH: model-watch-report.md
+        with:
+          script: |
+            const fs = require("fs");
+            const title = "Daily model freshness report";
+            const body = fs.readFileSync(process.env.REPORT_PATH, "utf8");
+            const { owner, repo } = context.repo;
+            try {
+              await github.rest.issues.getLabel({ owner, repo, name: "model-watch" });
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.issues.createLabel({
+                owner,
+                repo,
+                name: "model-watch",
+                color: "6f42c1",
+                description: "Daily model and runtime freshness audit",
+              });
+            }
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner,
+              repo,
+              state: "open",
+              labels: "model-watch",
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => issue.title === title && !issue.pull_request);
+            if (existing) {
+              await github.rest.issues.update({
+                owner,
+                repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title,
+                body,
+                labels: ["model-watch"],
+              });
+            }

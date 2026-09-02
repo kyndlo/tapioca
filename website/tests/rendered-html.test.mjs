@@ -40,7 +40,7 @@ test("renders the Tapioca documentation homepage", async () => {
   assert.match(html, /--random-seed/);
   assert.match(html, /--seed/);
   assert.match(html, /same generation settings again/i);
-  assert.match(html, /Tapioca Desktop 0\.10\.0/i);
+  assert.match(html, /Tapioca Desktop 0\.11\.0/i);
   assert.match(html, /property="og:image"/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Your site is taking shape/i);
 });

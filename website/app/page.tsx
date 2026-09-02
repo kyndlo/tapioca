@@ -1,4 +1,5 @@
 const repo = "https://github.com/kyndlo/tapioca";
+const discord = "https://discord.gg/vkFpNvY2ZY";
 
 const commands = [
   ["catalog update", "Refresh verified model recipes", "tapioca catalog update"],
@@ -63,6 +64,7 @@ export default function Home() {
           <a href="#commands">Commands</a>
           <a href="#experts">For experts</a>
           <a href="/llm">For agents</a>
+          <a href={discord}>Discord ↗</a>
           <a className="button small ghost" href={repo}>GitHub ↗</a>
         </div>
       </nav>
@@ -340,6 +342,24 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="section community" aria-labelledby="community-title">
+        <div className="communityCopy">
+          <p className="kicker light">The Tapioca community</p>
+          <h2 id="community-title">Questions are welcome.<br />So are weird creations.</h2>
+          <p>
+            Join us on Discord to get installation help, compare local model
+            setups, share what you make, and report issues with the people
+            building Tapioca.
+          </p>
+          <a className="button cream" href={discord}>Join us on Discord ↗</a>
+        </div>
+        <div className="communityRooms" aria-label="Discord community channels">
+          <article><span>#</span><div><b>help-and-support</b><p>Bring your OS, hardware, Tapioca version, and exact error.</p></div></article>
+          <article><span>#</span><div><b>showcase</b><p>Share images, videos, voices, agents, and useful model setups.</p></div></article>
+          <article><span>#</span><div><b>ideas-and-feedback</b><p>Shape the catalog, documentation, desktop app, and next features.</p></div></article>
+        </div>
+      </section>
+
       <section className="cta">
         <img src="/tapioca.png" alt="" />
         <p className="kicker light">Your machine has been waiting</p>
@@ -354,7 +374,7 @@ export default function Home() {
       <footer>
         <a className="brand" href="#top"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Local AI should feel like yours. Built in the open.</p>
-        <div><a href="/learn">For beginners</a><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
+        <div><a href="/learn">For beginners</a><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={discord}>Discord</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a><a href={`${repo}/blob/main/LICENSE`}>Apache-2.0</a></div>
       </footer>
     </main>
   );

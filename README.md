@@ -190,3 +190,15 @@ engine can load compatible adapters. Tapioca validates
 obvious model-family mismatches, but the upstream runtime remains the final
 authority for less common adapters. Windows x64 AMD/Intel GPUs use ONNX
 DirectML; Windows ARM64 uses native ONNX Runtime CPU inference.
+
+## License
+
+Tapioca's original code, documentation, and project assets are open source
+under the [Apache License 2.0](LICENSE). It permits commercial and private use,
+modification, and redistribution while preserving copyright, license, and
+notice requirements, and it includes an explicit patent grant.
+
+Bundled runtimes, installed dependencies, models, and LoRAs retain their own
+licenses. See [NOTICE](NOTICE) and
+[third-party software and model notices](THIRD_PARTY_NOTICES.md) before
+redistributing a binary bundle or model files.

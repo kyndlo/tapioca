@@ -42,6 +42,12 @@ jobs:
         run: |
           python3 scripts/validate-agent-contract.py
           python3 scripts/test-tapioca-agent-helper.py
+      - name: Verify open-source licensing
+        run: |
+          grep -q "Apache License" LICENSE
+          grep -q "Copyright 2026 Kyndlo" NOTICE
+          grep -q "third-party software and model notices" README.md
+          node -e "const fs=require('fs'); for (const file of ['desktop/package.json','website/package.json']) { const pkg=JSON.parse(fs.readFileSync(file)); if (pkg.license !== 'Apache-2.0') throw new Error(file + ' is missing Apache-2.0'); }"
 
   website:
     name: Website and agent docs
@@ -101,7 +107,8 @@ jobs:
 
       - name: Package
         run: |
-          tar -C dist -czf tapioca-darwin-arm64.tar.gz tapioca runtime
+          cp LICENSE NOTICE THIRD_PARTY_NOTICES.md dist/
+          tar -C dist -czf tapioca-darwin-arm64.tar.gz tapioca runtime LICENSE NOTICE THIRD_PARTY_NOTICES.md
           shasum -a 256 tapioca-darwin-arm64.tar.gz > tapioca-darwin-arm64.tar.gz.sha256
           desktop_dmg="$(find desktop/release -maxdepth 1 -name '*.dmg' -print -quit)"
           test -n "${desktop_dmg}"
@@ -171,7 +178,8 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/tapioca.exe,dist/runtime -DestinationPath tapioca-windows-amd64.zip
+          Copy-Item LICENSE,NOTICE,THIRD_PARTY_NOTICES.md dist/
+          Compress-Archive -Path dist/tapioca.exe,dist/runtime,dist/LICENSE,dist/NOTICE,dist/THIRD_PARTY_NOTICES.md -DestinationPath tapioca-windows-amd64.zip
           (Get-FileHash tapioca-windows-amd64.zip -Algorithm SHA256).Hash.ToLower() + "  tapioca-windows-amd64.zip" |
             Set-Content tapioca-windows-amd64.zip.sha256
           $desktopInstaller = Get-ChildItem desktop/release/*.exe | Select-Object -First 1
@@ -240,7 +248,8 @@ jobs:
       - name: Package
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/tapioca.exe,dist/runtime -DestinationPath tapioca-windows-arm64.zip
+          Copy-Item LICENSE,NOTICE,THIRD_PARTY_NOTICES.md dist/
+          Compress-Archive -Path dist/tapioca.exe,dist/runtime,dist/LICENSE,dist/NOTICE,dist/THIRD_PARTY_NOTICES.md -DestinationPath tapioca-windows-arm64.zip
           (Get-FileHash tapioca-windows-arm64.zip -Algorithm SHA256).Hash.ToLower() + "  tapioca-windows-arm64.zip" |
             Set-Content tapioca-windows-arm64.zip.sha256
           $desktopInstaller = Get-ChildItem desktop/release/*.exe | Select-Object -First 1
@@ -300,7 +309,8 @@ jobs:
 
       - name: Package
         run: |
-          tar -C dist -czf tapioca-linux-amd64.tar.gz tapioca runtime
+          cp LICENSE NOTICE THIRD_PARTY_NOTICES.md dist/
+          tar -C dist -czf tapioca-linux-amd64.tar.gz tapioca runtime LICENSE NOTICE THIRD_PARTY_NOTICES.md
           sha256sum tapioca-linux-amd64.tar.gz > tapioca-linux-amd64.tar.gz.sha256
           desktop_appimage="$(find desktop/release -maxdepth 1 -name '*.AppImage' -print -quit)"
           test -n "${desktop_appimage}"
@@ -358,7 +368,8 @@ jobs:
 
       - name: Package
         run: |
-          tar -C dist -czf tapioca-linux-arm64.tar.gz tapioca runtime
+          cp LICENSE NOTICE THIRD_PARTY_NOTICES.md dist/
+          tar -C dist -czf tapioca-linux-arm64.tar.gz tapioca runtime LICENSE NOTICE THIRD_PARTY_NOTICES.md
           sha256sum tapioca-linux-arm64.tar.gz > tapioca-linux-arm64.tar.gz.sha256
           desktop_appimage="$(find desktop/release -maxdepth 1 -name '*.AppImage' -print -quit)"
           test -n "${desktop_appimage}"

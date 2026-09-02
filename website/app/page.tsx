@@ -374,7 +374,7 @@ export default function Home() {
       <footer>
         <a className="brand" href="#top"><img src="/tapioca.png" alt="" /><span>tapioca</span></a>
         <p>Local AI should feel like yours. Built in the open.</p>
-        <div><a href="/learn">For beginners</a><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={discord}>Discord</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a></div>
+        <div><a href="/learn">For beginners</a><a href="/import">Import & transfer</a><a href="/llm">For agents</a><a href={discord}>Discord</a><a href={repo}>GitHub</a><a href={`${repo}/releases`}>Releases</a><a href={`${repo}/issues`}>Issues</a><a href={`${repo}/blob/main/LICENSE`}>Apache-2.0</a></div>
       </footer>
     </main>
   );

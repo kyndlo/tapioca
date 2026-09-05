@@ -192,10 +192,15 @@ func TestVideoGenerateValidatesAndPassesInputImage(t *testing.T) {
 			return os.WriteFile(request.Output, []byte("mp4"), 0o644)
 		},
 	})
+	params, marshalErr := json.Marshal(VideoGenerateParams{
+		Model: "ltx-video:2b-fp16", Prompt: "A fox runs", InputImage: input,
+		Width: 768, Height: 512, Frames: 25, Steps: 20, FPS: 8,
+	})
+	if marshalErr != nil {
+		t.Fatal(marshalErr)
+	}
 	result, err := handler.Handle(context.Background(), Request{
-		ID: "video-request", Method: "video.generate",
-		Params: []byte(`{"model":"ltx-video:2b-fp16","prompt":"A fox runs","input_image":"` +
-			input + `","width":768,"height":512,"frames":25,"steps":20,"fps":8}`),
+		ID: "video-request", Method: "video.generate", Params: params,
 	})
 	if err != nil {
 		t.Fatalf("video.generate error = %v", err)

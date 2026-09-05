@@ -3,6 +3,7 @@ package modellicense
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 )
 
@@ -22,7 +23,8 @@ func TestAcceptAndRequire(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if info.Mode().Perm()&0o077 != 0 {
+	// Windows exposes synthetic POSIX mode bits; these do not describe its ACL.
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		t.Fatalf("licenses.json permissions = %o", info.Mode().Perm())
 	}
 }

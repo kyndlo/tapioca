@@ -1,4 +1,5 @@
-import { createElement } from "react";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { CreatorScreen } from "./CreatorScreen";
@@ -19,6 +20,38 @@ function mockAdapter(): CreatorAdapter {
 }
 
 describe("CreatorScreen", () => {
+  it("requires voice permission again when the selected recording changes", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const adapter = mockAdapter();
+    vi.mocked(adapter.models).mockResolvedValue([{ id: "speech", name: "Speech", modes: ["speech"], ready: true }]);
+    vi.mocked(adapter.pickFile).mockResolvedValueOnce({ token: "voice-a", name: "a.wav", kind: "audio" }).mockResolvedValueOnce({ token: "voice-b", name: "b.wav", kind: "audio" });
+    const container = document.createElement("div"); document.body.append(container);
+    const root = createRoot(container);
+    const button = (label: string) => Array.from(container.querySelectorAll("button")).find((item) => item.textContent === label)!;
+    try {
+      await act(async () => root.render(createElement(CreatorScreen, { adapter, initialMode: "speech", modes: ["speech"] })));
+      await act(async () => button("Choose file").click());
+      await act(async () => button("Generate").click());
+      expect(container.textContent).toContain("Confirm that you have permission");
+      expect(adapter.generate).not.toHaveBeenCalled();
+      await act(() => container.querySelector<HTMLInputElement>(".creator-voice-consent input")!.click());
+      expect(container.querySelector<HTMLInputElement>(".creator-voice-consent input")!.checked).toBe(true);
+      await act(async () => button("Change").click());
+      expect(container.querySelector<HTMLInputElement>(".creator-voice-consent input")!.checked).toBe(false);
+      await act(() => {
+        const textarea = container.querySelector("textarea")!;
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(textarea, "Hello from my local voice.");
+        textarea.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await act(async () => button("Generate").click());
+      expect(adapter.generate).not.toHaveBeenCalled();
+      await act(() => container.querySelector<HTMLInputElement>(".creator-voice-consent input")!.click());
+      await act(async () => button("Generate").click());
+      expect(adapter.generate).toHaveBeenCalledWith(expect.objectContaining({ voiceReference: expect.objectContaining({ token: "voice-b" }), text: "Hello from my local voice." }), expect.any(Function));
+    } finally {
+      await act(() => root.unmount()); container.remove();
+    }
+  });
   it("renders every backend-neutral mode and local privacy promise", () => {
     const markup = renderToStaticMarkup(
       createElement(CreatorScreen, { adapter: mockAdapter() }),

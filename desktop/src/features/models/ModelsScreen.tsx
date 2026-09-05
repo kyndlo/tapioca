@@ -7,6 +7,7 @@ import {
 } from "react";
 import {
   estimatedDiskAfterInstall,
+  downloadPercent,
   formatModelBytes,
   modelCompatibility,
 } from "./model-utils";
@@ -44,10 +45,13 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
   const [kind, setKind] = useState<"all" | ModelKind>("all");
   const [platform, setPlatform] = useState<"all" | ModelPlatform>("all");
   const [compatibleOnly, setCompatibleOnly] = useState(false);
+  const [installedOnly, setInstalledOnly] = useState(false);
   const [selected, setSelected] = useState<ModelRecord>();
   const [removeTarget, setRemoveTarget] = useState<ModelRecord>();
   const [transfers, setTransfers] = useState<Record<string, TransferState>>({});
   const [error, setError] = useState<string>();
+  const [removeError, setRemoveError] = useState<string>();
+  const [removing, setRemoving] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const pullControllers = useRef(new Map<string, AbortController>());
 
@@ -80,6 +84,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
   const visibleModels = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     const filtered = (models ?? []).filter((model) => {
+      if (installedOnly && !model.installed) return false;
       if (kind !== "all" && model.kind !== kind) return false;
       if (
         platform !== "all" &&
@@ -112,7 +117,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
         (model.name.startsWith("minimax-h3") ? 10 : 0);
       return score(right) - score(left) || left.name.localeCompare(right.name);
     });
-  }, [compatibleOnly, kind, machine, models, platform, query]);
+  }, [compatibleOnly, installedOnly, kind, machine, models, platform, query]);
 
   const kindCounts = useMemo(() => {
     const counts: Record<"all" | ModelKind, number> = { all: 0, chat: 0, image: 0, video: 0, speech: 0 };
@@ -124,6 +129,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
   }, [models]);
 
 	const pull = async (model: ModelRecord, acceptLicense = false, accessToken?: string) => {
+    if (pullControllers.current.has(model.id)) return;
     const controller = new AbortController();
     pullControllers.current.set(model.id, controller);
     setTransfers((current) => ({
@@ -203,9 +209,10 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
   };
 
   const remove = async () => {
-    if (!removeTarget) return;
+    if (!removeTarget || removing) return;
     const target = removeTarget;
-    setError(undefined);
+    setRemoveError(undefined);
+    setRemoving(true);
     try {
       await adapter.removeModel(target.id);
       setModels((current) =>
@@ -222,7 +229,9 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
       );
       setRemoveTarget(undefined);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not remove the model.");
+      setRemoveError(cause instanceof Error ? cause.message : "Could not remove the model.");
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -235,8 +244,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
             Find your next <span>local model.</span>
           </h1>
           <p>
-            Compatibility is calculated from this machine’s platform, memory,
-            storage, and accelerator—not from marketing labels.
+            Find models for your machine, check what they need, and download them to run locally.
           </p>
         </div>
         <div className="models-machine" aria-label="Current machine profile">
@@ -252,6 +260,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
           <span aria-hidden="true">⌕</span>
           <input
             type="search"
+            aria-label="Search models"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search name, creator, backend, or tag"
@@ -296,6 +305,10 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
           </select>
         </label>
         <label className="models-check">
+          <input type="checkbox" checked={installedOnly} onChange={(event) => setInstalledOnly(event.target.checked)} />
+          <span>Installed only</span>
+        </label>
+        <label className="models-check">
           <input
             type="checkbox"
             checked={compatibleOnly}
@@ -309,6 +322,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
           <button
             type="button"
             key={item.value}
+            aria-pressed={kind === item.value}
             className={kind === item.value ? "models-kind-shortcut models-kind-shortcut--active" : "models-kind-shortcut"}
             onClick={() => setKind(item.value)}
           >
@@ -318,6 +332,12 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
         ))}
         <p>{kind === "video" ? "Every video variant is listed, including MiniMax-H3 when supported by the current platform." : "Choose a category to see every catalog entry."}</p>
       </div>
+
+      {models ? <div className="models-results" role="status" aria-live="polite">
+        <span>{visibleModels.length} of {models.length} models · {models.filter((item) => item.installed).length} installed</span>
+        {query || kind !== "all" || platform !== "all" || compatibleOnly || installedOnly ?
+          <button type="button" onClick={() => { setQuery(""); setKind("all"); setPlatform("all"); setCompatibleOnly(false); setInstalledOnly(false); }}>Reset filters</button> : null}
+      </div> : null}
 
       {error ? (
         <div className="models-state" role="alert">
@@ -356,6 +376,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
               setKind("all");
               setPlatform("all");
               setCompatibleOnly(false);
+              setInstalledOnly(false);
             }}
           >
             Clear filters
@@ -365,19 +386,22 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
 
       {selected ? (
         <ModelDetail
+          key={selected.id}
           machine={machine}
           model={selected}
           transfer={transfers[selected.id]}
           onCancel={() => void cancelPull(selected)}
           onClose={() => setSelected(undefined)}
 			onPull={(acceptLicense, accessToken) => void pull(selected, acceptLicense, accessToken)}
-          onRemove={() => setRemoveTarget(selected)}
+          onRemove={() => { setRemoveError(undefined); setRemoveTarget(selected); }}
         />
       ) : null}
       {removeTarget ? (
         <ConfirmRemove
           model={removeTarget}
-          onCancel={() => setRemoveTarget(undefined)}
+          error={removeError}
+          removing={removing}
+          onCancel={() => { if (!removing) setRemoveTarget(undefined); }}
           onConfirm={() => void remove()}
         />
       ) : null}
@@ -402,8 +426,8 @@ function ModelCard({
 }) {
   const compatibility = modelCompatibility(model, machine);
   const percent = transfer
-    ? Math.min(100, Math.round((transfer.receivedBytes / transfer.totalBytes) * 100))
-    : 0;
+    ? downloadPercent(transfer.receivedBytes, transfer.totalBytes)
+    : undefined;
   return (
     <article className="model-card">
       <button
@@ -453,11 +477,11 @@ function ModelCard({
                   ? transfer.message
                   : transfer.state === "cancelling"
                     ? "Cancelling…"
-                    : `Downloading ${percent}%`}
+                    : percent === undefined ? "Downloading…" : `Downloading ${percent}%`}
               </span>
               {transfer.state !== "error" ? (
-                <button type="button" onClick={onCancel}>
-                  Cancel
+                <button type="button" onClick={onCancel} disabled={transfer.state === "cancelling"}>
+                  {transfer.state === "cancelling" ? "Cancelling…" : "Cancel"}
                 </button>
               ) : (
                 <button type="button" onClick={onPull}>
@@ -473,7 +497,7 @@ function ModelCard({
               aria-valuemax={100}
               aria-valuenow={percent}
             >
-              <span style={{ width: `${percent}%` }} />
+              <span style={{ width: percent === undefined ? "30%" : `${percent}%` }} />
             </div>
           </div>
         ) : model.installed ? (
@@ -521,11 +545,12 @@ function ModelDetail({
   const estimate = estimatedDiskAfterInstall(model, machine);
 	const [licenseAccepted, setLicenseAccepted] = useState(false);
 	const [accessToken, setAccessToken] = useState("");
-  useDialogEscape(onClose);
+  const dialogRef = useModelDialog(onClose);
   return (
     <div className="model-modal-backdrop" role="presentation" onMouseDown={onClose}>
       <section
         className="model-detail"
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="model-detail-title"
@@ -536,7 +561,6 @@ function ModelDetail({
           type="button"
           onClick={onClose}
           aria-label="Close model details"
-          autoFocus
         >
           ×
         </button>
@@ -568,7 +592,7 @@ function ModelDetail({
             <dd>{estimate.required}</dd>
           </div>
           <div>
-            <dt>Disk after pull</dt>
+            <dt>{model.installed ? "Disk available" : "Disk after pull"}</dt>
             <dd>{estimate.remaining} free</dd>
           </div>
           <div>
@@ -585,7 +609,7 @@ function ModelDetail({
             <span key={tag}>{tag}</span>
           ))}
 		</div>
-		{model.gated ? (
+		{model.gated && !model.installed ? (
 			<div className="model-license">
 				<strong>{model.license ?? "Gated model license"}</strong>
 				<p>
@@ -613,9 +637,11 @@ function ModelDetail({
 			</div>
 		) : null}
         <div className="model-detail__actions">
-          {transfer ? (
-            <button className="model-secondary" type="button" onClick={onCancel}>
-              Cancel download
+          {transfer?.state === "error" ? (
+            <div role="alert"><p>{transfer.message}</p><button className="model-primary" type="button" onClick={() => onPull(licenseAccepted, accessToken)} disabled={Boolean(model.gated && (!licenseAccepted || !accessToken.trim()))}>Retry download</button></div>
+          ) : transfer ? (
+            <button className="model-secondary" type="button" onClick={onCancel} disabled={transfer.state === "cancelling"}>
+              {transfer.state === "cancelling" ? "Cancelling…" : "Cancel download"}
             </button>
           ) : model.installed ? (
             <>
@@ -642,18 +668,23 @@ function ModelDetail({
 
 function ConfirmRemove({
   model,
+  error,
+  removing,
   onCancel,
   onConfirm,
 }: {
   model: ModelRecord;
+  error?: string;
+  removing: boolean;
   onCancel(): void;
   onConfirm(): void;
 }) {
-  useDialogEscape(onCancel);
+  const dialogRef = useModelDialog(onCancel);
   return (
     <div className="model-modal-backdrop model-modal-backdrop--confirm">
       <section
         className="model-confirm"
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="remove-title"
@@ -665,13 +696,14 @@ function ConfirmRemove({
           later.
         </p>
         <div>
-          <button type="button" onClick={onCancel} autoFocus>
+          <button type="button" onClick={onCancel} disabled={removing}>
             Keep model
           </button>
-          <button className="model-danger" type="button" onClick={onConfirm}>
-            Remove local files
+          <button className="model-danger" type="button" onClick={onConfirm} disabled={removing}>
+            {removing ? "Removing…" : "Remove local files"}
           </button>
         </div>
+        {error ? <p role="alert">{error}</p> : null}
       </section>
     </div>
   );
@@ -687,14 +719,30 @@ function ModelSkeletons() {
   );
 }
 
-function useDialogEscape(onClose: () => void) {
+function useModelDialog(onClose: () => void) {
+  const dialogRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    dialogRef.current?.querySelector<HTMLElement>("button, input, select, textarea, [tabindex='0']")?.focus();
+    return () => { if (previous?.isConnected) previous.focus(); };
+  }, []);
   useEffect(() => {
     const handleKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      const dialogs = document.querySelectorAll('[aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== dialogRef.current) return;
+      if (event.key === "Escape") { event.preventDefault(); onClose(); }
+      if (event.key === "Tab") {
+        const elements = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex="0"]') ?? []);
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
+  return dialogRef;
 }
 
 export function activateCardFromKeyboard(

@@ -15,7 +15,7 @@ export function modelCompatibility(
   if (machine.memoryBytes < model.requirements.memoryBytes) {
     reasons.push("Not enough memory");
   }
-  if (machine.availableDiskBytes < model.requirements.diskBytes) {
+  if (!model.installed && machine.availableDiskBytes < model.requirements.diskBytes) {
     reasons.push("Not enough disk space");
   }
   if (
@@ -39,6 +39,11 @@ export function modelCompatibility(
   return { level: "compatible", reasons: ["Good fit for this machine"] };
 }
 
+export function downloadPercent(received: number, total: number): number | undefined {
+  if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(received)) return undefined;
+  return Math.max(0, Math.min(100, Math.round(received / total * 100)));
+}
+
 export function formatModelBytes(bytes: number): string {
   const gib = bytes / 1024 ** 3;
   return `${gib >= 10 ? Math.round(gib) : gib.toFixed(1)} GB`;
@@ -51,7 +56,7 @@ export function estimatedDiskAfterInstall(
   return {
     required: formatModelBytes(model.requirements.diskBytes),
     remaining: formatModelBytes(
-      Math.max(0, machine.availableDiskBytes - model.requirements.diskBytes),
+      Math.max(0, machine.availableDiskBytes - (model.installed ? 0 : model.requirements.diskBytes)),
     ),
   };
 }

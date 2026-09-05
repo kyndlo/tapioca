@@ -19,6 +19,7 @@ import (
 )
 
 type Model struct {
+	Context          int                   `json:"context,omitempty"`
 	Name             string                `json:"name"`
 	Repo             string                `json:"repo,omitempty"`
 	Files            map[string]string     `json:"files"`
@@ -39,6 +40,7 @@ type Model struct {
 	Languages        map[string]string     `json:"languages,omitempty"`
 	Features         map[string]string     `json:"features,omitempty"`
 	Artifacts        map[string][]Artifact `json:"artifacts,omitempty"`
+	Downloads        map[string]Download   `json:"downloads,omitempty"`
 	GuidanceScale    float64               `json:"guidance_scale,omitempty"`
 	GuidanceScaleSet bool                  `json:"guidance_scale_set,omitempty"`
 	Gated            bool                  `json:"gated,omitempty"`
@@ -52,6 +54,35 @@ type Artifact struct {
 	Repo     string `json:"repo"`
 	Filename string `json:"filename"`
 	Target   string `json:"target"`
+	Download
+}
+
+// Download pins an artifact to immutable upstream content. Empty metadata keeps
+// legacy catalogs working; new integrations should specify all three fields.
+type Download struct {
+	Revision  string `json:"revision,omitempty"`
+	SHA256    string `json:"sha256,omitempty"`
+	SizeBytes int64  `json:"size_bytes,omitempty"`
+}
+
+func (d Download) Ref() string {
+	if d.Revision != "" {
+		return d.Revision
+	}
+	return "main"
+}
+
+func (d Download) Validate() error {
+	if d.Revision != "" && !regexp.MustCompile(`^[a-f0-9]{40}$`).MatchString(d.Revision) {
+		return errors.New("revision must be a full lowercase Git commit SHA")
+	}
+	if d.SHA256 != "" && !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(d.SHA256) {
+		return errors.New("sha256 must contain 64 lowercase hexadecimal characters")
+	}
+	if d.SizeBytes < 0 {
+		return errors.New("size_bytes must not be negative")
+	}
+	return nil
 }
 
 const (
@@ -262,6 +293,9 @@ func decodeManifest(data []byte) (Manifest, error) {
 }
 
 func validateModel(name string, model Model) error {
+	if model.Context < 0 || model.Context > 1048576 {
+		return fmt.Errorf("catalog model %s has invalid context", name)
+	}
 	if !safeName.MatchString(name) || model.Name != name {
 		return fmt.Errorf("invalid catalog model name %q", name)
 	}
@@ -288,6 +322,7 @@ func validateModel(name string, model Model) error {
 		"diffusers-video": true, "onnx-directml": true, "onnx-cpu": true,
 		"comfy-h3-mps": true, "comfy-h3-cuda": true,
 		"speech-chatterbox": true, "speech-qwen": true, "speech-qwen-mlx": true,
+		"speech-audio8-onnx": true, "speech-pocket-tts": true,
 	}
 	for variant := range model.Files {
 		if !safeName.MatchString(variant) {
@@ -319,10 +354,21 @@ func validateModel(name string, model Model) error {
 			return fmt.Errorf("catalog model %s has artifacts for unknown variant %q", name, variant)
 		}
 		for _, artifact := range artifacts {
+			if err := artifact.Download.Validate(); err != nil {
+				return fmt.Errorf("catalog model %s artifact: %w", name, err)
+			}
 			if !validRepo(artifact.Repo) || !validRelativePath(artifact.Filename) ||
 				!validRelativePath(artifact.Target) {
 				return fmt.Errorf("catalog model %s has an unsafe artifact", name)
 			}
+		}
+	}
+	for variant, download := range model.Downloads {
+		if file, ok := model.Files[variant]; !ok || file == "" {
+			return fmt.Errorf("catalog model %s download requires a single-file variant %q", name, variant)
+		}
+		if err := download.Validate(); err != nil {
+			return fmt.Errorf("catalog model %s download: %w", name, err)
 		}
 	}
 	if model.Gated && (model.License == "" || !strings.HasPrefix(model.LicenseURL, "https://")) {
@@ -352,6 +398,7 @@ func validRelativePath(value string) bool {
 }
 
 var builtInModels = map[string]Model{
+	"granite-4.2": graniteModel(),
 	"chatterbox": {
 		Name:    "chatterbox",
 		Repo:    "ResembleAI/chatterbox",
@@ -901,6 +948,7 @@ var builtInModels = map[string]Model{
 }
 
 type Resolved struct {
+	Download
 	Name             string
 	Repo             string
 	Filename         string
@@ -928,6 +976,15 @@ type Resolved struct {
 
 func Resolve(ref string) (Resolved, error) {
 	return ResolveForPlatform(ref, runtime.GOOS, runtime.GOARCH)
+}
+
+// DefaultContext keeps new compact models within their qualified memory tier.
+func DefaultContext(ref string) int {
+	name, _, _ := strings.Cut(strings.ToLower(ref), ":")
+	if model, ok := activeModels()[name]; ok && model.Context > 0 {
+		return model.Context
+	}
+	return 65536
 }
 
 func ResolveFor(ref, goos string) (Resolved, error) {
@@ -994,8 +1051,9 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		repo = "nvidia/Qwen-Image-Flash"
 	}
 	url := ""
+	download := m.Downloads[strings.ToLower(tag)]
 	if filename != "" {
-		url = "https://huggingface.co/" + repo + "/resolve/main/" + filename
+		url = "https://huggingface.co/" + repo + "/resolve/" + download.Ref() + "/" + filename
 	}
 	backend := m.Backends[strings.ToLower(tag)]
 	platform := "Windows, macOS, Linux"
@@ -1012,6 +1070,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		platform = "Windows/Linux NVIDIA"
 	case "speech-chatterbox":
 		platform = "Windows, macOS, Linux"
+	case "speech-audio8-onnx", "speech-pocket-tts":
+		platform = "macOS Apple Silicon; Windows/Linux x64 CPU"
 	case "speech-qwen":
 		platform = "Windows/Linux NVIDIA or CPU"
 	case "onnx-directml":
@@ -1021,6 +1081,7 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{
+		Download:      download,
 		Name:          m.Name + ":" + strings.ToLower(tag),
 		Repo:          repo,
 		Filename:      filename,

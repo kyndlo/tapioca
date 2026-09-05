@@ -1,4 +1,6 @@
 import path from "node:path";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { describe, expect, it, vi } from "vitest";
 import { verifyBundledRuntime } from "./verify-runtime";
 
@@ -7,9 +9,14 @@ describe("packaged model runtime", () => {
     expect(() => verifyBundledRuntime("/missing", "darwin")).toThrow(
       "Missing",
     );
-    const desktopRoot = path.resolve(import.meta.dirname, "..");
-    expect(verifyBundledRuntime(desktopRoot, "darwin")).toBe(
-      path.join(desktopRoot, "runtime", "llama.cpp", "llama-server"),
-    );
+    const desktopRoot = mkdtempSync(path.join(tmpdir(), "tapioca-runtime-test-"));
+    try {
+      const runtime = path.join(desktopRoot, "runtime", "llama.cpp");
+      mkdirSync(runtime, { recursive: true });
+      for (const [platform, name] of [["darwin", "llama-server"], ["win32", "llama-server.exe"]] as const) {
+        writeFileSync(path.join(runtime, name), "test fixture");
+        expect(verifyBundledRuntime(desktopRoot, platform)).toBe(path.join(runtime, name));
+      }
+    } finally { rmSync(desktopRoot, { recursive: true, force: true }); }
   });
 });

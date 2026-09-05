@@ -14,18 +14,20 @@ import (
 	"github.com/carlos/tapioca/internal/pythonruntime"
 )
 
-//go:embed speech.py requirements-chatterbox.txt requirements-qwen.txt requirements-mlx.txt
+//go:embed speech.py cpu_speech.py pocket_qualification.py arktts_runtime requirements-*.txt
 var source embed.FS
 
 type Request struct {
-	ModelPath   string
-	ModelName   string
-	Text        string
-	Output      string
-	VoiceSample string
-	Transcript  string
-	Language    string
-	Backend     string
+	ModelPath    string
+	ModelName    string
+	Text         string
+	Output       string
+	VoiceSample  string
+	Transcript   string
+	Language     string
+	Backend      string
+	VoiceConsent bool
+	Seed         uint64
 }
 
 func Run(ctx context.Context, cacheDir string, request Request) error {
@@ -41,6 +43,17 @@ func RunWithWriters(
 ) error {
 	flavor := ""
 	switch request.Backend {
+	case "speech-audio8-onnx", "speech-pocket-tts":
+		if runtime.GOARCH != "amd64" && !(runtime.GOOS == "darwin" && runtime.GOARCH == "arm64") {
+			return errors.New("this CPU speech backend requires x64 Windows/Linux or Apple Silicon macOS")
+		}
+		if request.VoiceSample != "" && !request.VoiceConsent {
+			return errors.New("voice cloning requires explicit permission")
+		}
+		flavor = "audio8"
+		if request.Backend == "speech-pocket-tts" {
+			flavor = "pocket-qualification"
+		}
 	case "speech-chatterbox":
 		flavor = "chatterbox"
 	case "speech-qwen":
@@ -69,7 +82,19 @@ func runPython(
 ) error {
 	root := filepath.Join(cacheDir, "speech-runtime", "0.1.3-"+flavor)
 	requirementsName := "requirements-" + flavor + ".txt"
-	for _, name := range []string{"speech.py", requirementsName} {
+	names := []string{"speech.py", requirementsName, "cpu_speech.py", "pocket_qualification.py"}
+	if flavor == "audio8" {
+		entries, err := source.ReadDir("arktts_runtime")
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				names = append(names, "arktts_runtime/"+entry.Name())
+			}
+		}
+	}
+	for _, name := range names {
 		data, err := source.ReadFile(name)
 		if err != nil {
 			return err
@@ -141,5 +166,9 @@ func pythonArguments(root string, request Request) []string {
 	if request.Language != "" {
 		args = append(args, "--language", request.Language)
 	}
+	if request.VoiceConsent {
+		args = append(args, "--voice-consent")
+	}
+	args = append(args, "--seed", fmt.Sprint(request.Seed))
 	return args
 }

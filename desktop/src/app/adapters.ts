@@ -550,6 +550,8 @@ export function createRendererAdapters(
           text: request.text,
           inputImageToken: request.inputImage?.token,
           voiceReferenceToken: request.voiceReference?.token,
+          voiceConsent: request.voiceConsent,
+          transcript: request.transcript,
           loras: request.loras.map((lora) =>
             lora.source.type === "reference"
               ? { type: "reference" as const, reference: lora.source.reference, weight: lora.weight }

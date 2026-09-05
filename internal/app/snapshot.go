@@ -75,6 +75,9 @@ func pullArtifactsWithContext(
 		}
 		path := filepath.Join(destination, clean)
 		if _, err := os.Stat(path); err == nil && !force {
+			if err := verifyArtifact(path, artifact.Download); err != nil {
+				return fmt.Errorf("%s: %w", artifact.Target, err)
+			}
 			continue
 		}
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -85,9 +88,13 @@ func pullArtifactsWithContext(
 			Message: fmt.Sprintf("[%d/%d] %s", index+1, len(model.Artifacts), artifact.Target),
 		})
 		partial := path + ".partial"
-		url := "https://huggingface.co/" + artifact.Repo + "/resolve/main/" + artifact.Filename
+		url := "https://huggingface.co/" + artifact.Repo + "/resolve/" + artifact.Ref() + "/" + artifact.Filename
 		if err := downloadWithContext(ctx, url, partial, report); err != nil {
 			return fmt.Errorf("download %s from %s: %w", artifact.Filename, artifact.Repo, err)
+		}
+		if err := verifyArtifact(partial, artifact.Download); err != nil {
+			_ = os.Remove(partial)
+			return fmt.Errorf("%s: %w", artifact.Target, err)
 		}
 		if err := os.Rename(partial, path); err != nil {
 			return err

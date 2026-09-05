@@ -33,9 +33,25 @@ class ModelWatchTests(unittest.TestCase):
         self.assertEqual(
             repositories, {"owner/base", "owner/alternate", "owner/component"}
         )
-        self.assertIn(("owner/base", "base.gguf"), artifacts)
-        self.assertIn(("owner/alternate", "alt.gguf"), artifacts)
-        self.assertIn(("owner/component", "part.bin"), artifacts)
+        self.assertIn(("owner/base", "base.gguf", "main"), artifacts)
+        self.assertIn(("owner/alternate", "alt.gguf", "main"), artifacts)
+        self.assertIn(("owner/component", "part.bin", "main"), artifacts)
+
+    def test_health_uses_pinned_revision(self):
+        _, artifacts = model_watch.catalog_inventory({"models": {"test": {
+            "repo": "owner/model", "files": {"q4": "model.gguf"},
+            "downloads": {"q4": {"revision": "a" * 40}},
+            "artifacts": {"bundle": [{"repo": "owner/component", "filename": "part.bin", "revision": "b" * 40}]},
+        }}})
+        urls = []
+        original = model_watch.request_status
+        model_watch.request_status = lambda url: urls.append(url) or 200
+        try:
+            self.assertEqual(model_watch.catalog_health(set(), artifacts), [])
+        finally:
+            model_watch.request_status = original
+        self.assertIn("https://huggingface.co/owner/model/resolve/" + "a" * 40 + "/model.gguf", urls)
+        self.assertIn("https://huggingface.co/owner/component/resolve/" + "b" * 40 + "/part.bin", urls)
 
     def test_model_line_links_to_hugging_face(self):
         line = model_watch.model_line(
@@ -61,7 +77,7 @@ class ModelWatchTests(unittest.TestCase):
         try:
             failures = model_watch.catalog_health(
                 {"owner/present", "owner/missing"},
-                [("owner/present", "model.gguf")],
+                [("owner/present", "model.gguf", "main")],
             )
         finally:
             model_watch.request_status = original

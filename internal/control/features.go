@@ -453,7 +453,7 @@ func (m *ModelServerManager) Start(params ServerStartParams) (any, *ProtocolErro
 		params.UpstreamPort = params.Port + 1
 	}
 	if params.Context == 0 {
-		params.Context = 65536
+		params.Context = catalog.DefaultContext(params.Model)
 	}
 	if params.Host == "" {
 		params.Host = "127.0.0.1"

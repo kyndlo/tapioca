@@ -99,7 +99,7 @@ export interface SidecarLocationContext {
 export function resolveSidecarExecutable(
   context: SidecarLocationContext,
 ): string {
-  const pathApi = context.platform === "win32" ? path.win32 : path;
+  const pathApi = context.platform === "win32" ? path.win32 : path.posix;
   const executable =
     context.platform === "win32"
       ? "tapioca-control.exe"
@@ -110,7 +110,7 @@ export function resolveSidecarExecutable(
 }
 
 export function resolveCliExecutable(context: SidecarLocationContext): string {
-  const pathApi = context.platform === "win32" ? path.win32 : path;
+  const pathApi = context.platform === "win32" ? path.win32 : path.posix;
   const executable = context.platform === "win32" ? "tapioca.exe" : "tapioca";
   return context.isPackaged
     ? pathApi.resolve(context.resourcesPath, "sidecar", executable)

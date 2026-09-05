@@ -79,12 +79,14 @@ type VideoGenerateParams struct {
 }
 
 type SpeechGenerateParams struct {
-	Model       string `json:"model"`
-	Text        string `json:"text"`
-	VoiceSample string `json:"voice_sample,omitempty"`
-	Transcript  string `json:"transcript,omitempty"`
-	Language    string `json:"language,omitempty"`
-	OutputName  string `json:"output_name,omitempty"`
+	VoiceConsent bool   `json:"voice_consent,omitempty"`
+	Seed         uint64 `json:"seed,omitempty"`
+	Model        string `json:"model"`
+	Text         string `json:"text"`
+	VoiceSample  string `json:"voice_sample,omitempty"`
+	Transcript   string `json:"transcript,omitempty"`
+	Language     string `json:"language,omitempty"`
+	OutputName   string `json:"output_name,omitempty"`
 }
 
 func (h *Handler) handleCreator(
@@ -456,6 +458,7 @@ func (h *Handler) generateSpeech(
 		ModelPath: model.Path, ModelName: model.Name, Text: params.Text,
 		Output: output, VoiceSample: voiceSample, Transcript: params.Transcript,
 		Language: params.Language, Backend: model.Backend,
+		VoiceConsent: params.VoiceConsent, Seed: params.Seed,
 	}, logs, logs)
 	if runError != nil {
 		_ = os.Remove(output)

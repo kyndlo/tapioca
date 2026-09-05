@@ -42,6 +42,8 @@ export function CreatorScreen({
   const [text, setText] = useState("");
   const [inputImage, setInputImage] = useState<LocalFileSelection>();
   const [voiceReference, setVoiceReference] = useState<LocalFileSelection>();
+  const [consentedVoiceToken, setConsentedVoiceToken] = useState<string>();
+  const [referenceTranscript, setReferenceTranscript] = useState("");
   const [loras, setLoras] = useState<CreatorLora[]>([]);
   const [loraOptions, setLoraOptions] = useState<CreatorLoraOption[]>([]);
   const [selectedLoraReference, setSelectedLoraReference] = useState("");
@@ -222,6 +224,8 @@ export function CreatorScreen({
     text: text.trim() || undefined,
     inputImage,
     voiceReference,
+    voiceConsent: Boolean(voiceReference && consentedVoiceToken === voiceReference.token),
+    transcript: referenceTranscript.trim() || undefined,
     loras,
     settings,
   });
@@ -234,6 +238,9 @@ export function CreatorScreen({
     }
     if (selectedModel?.requiresVoiceReference && !generationRequest.voiceReference) {
       validation.push("This model requires a voice reference recording.");
+    }
+    if ((generationRequest.mode === "speech" || generationRequest.mode === "voice-clone") && generationRequest.voiceReference && consentedVoiceToken !== generationRequest.voiceReference.token) {
+      validation.push("Confirm that you have permission to use this voice recording.");
     }
     if (validation.length) {
       setError(validation.join(" "));
@@ -363,6 +370,11 @@ export function CreatorScreen({
               />
               <div className="creator-reference-divider"><span>or use an existing recording</span></div>
               <FilePicker title={selectedModel?.requiresVoiceReference ? "Voice reference (required)" : "Voice reference (optional)"} description="Choose a clear WAV, MP3, FLAC, M4A, or OGG recording." file={voiceReference} accept="audio" onPick={() => void pickFile("audio", setVoiceReference)} onClear={() => setVoiceReference(undefined)} />
+              {voiceReference ? <label className="creator-voice-consent">
+                <input type="checkbox" checked={consentedVoiceToken === voiceReference.token} disabled={generating} onChange={(event) => setConsentedVoiceToken(event.target.checked ? voiceReference.token : undefined)} />
+                <span>This is my voice, or I have permission to use it. I will identify generated audio as synthetic when sharing it.</span>
+              </label> : null}
+              {voiceReference ? <label className="creator-field"><span>Words spoken in the reference</span><textarea value={referenceTranscript} onChange={(event) => setReferenceTranscript(event.target.value)} disabled={generating} placeholder="Exact transcript (required for Audio8 voice cloning)" /></label> : null}
             </>}
           </section>
 

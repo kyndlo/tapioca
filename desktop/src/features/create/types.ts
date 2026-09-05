@@ -69,6 +69,8 @@ export interface CreatorRequest {
   text?: string;
   inputImage?: LocalFileSelection;
   voiceReference?: LocalFileSelection;
+  voiceConsent?: boolean;
+  transcript?: string;
   loras: CreatorLora[];
   settings: CreatorAdvancedSettings;
 }

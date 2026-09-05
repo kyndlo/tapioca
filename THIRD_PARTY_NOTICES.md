@@ -7,6 +7,13 @@ not replaced by Tapioca's license.
 
 ## Distributed runtime components
 
+The Audio8 CPU speech adapter includes Apache-2.0 source from
+`Audio8-AI/Audio8_TTS`, pinned to commit
+`07e40f5d0b03fc473635ef378654bfb581027ac3`. Its license and modification notice
+are retained in `internal/speechruntime/arktts_runtime/` and embedded in the
+managed runtime. The separate Pocket TTS runtime is MIT licensed; its gated
+weights are CC-BY-4.0 and require Kyutai attribution and accepted access terms.
+
 Release bundles include a pinned `llama.cpp` runtime for local text-model
 inference. `llama.cpp` is licensed under the MIT License:
 

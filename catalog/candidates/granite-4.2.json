@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "generated_at": "2026-09-05T00:00:00Z",
+  "models": {
+    "granite-4.2": {
+      "name": "granite-4.2",
+      "repo": "ibm-granite/granite-4.2-3b-GGUF",
+      "files": {"3b-q4_k_m": "granite-4.2-3b-Q4_K_M.gguf"},
+      "default": "3b-q4_k_m",
+      "sizes": {"3b-q4_k_m": "2.09 GiB"},
+      "memory": {"3b-q4_k_m": "8 GiB min; 16 GiB recommended; use 8K context initially"},
+      "gpus": {"3b-q4_k_m": "CPU; Metal and Vulkan require platform qualification"},
+      "languages": {"3b-q4_k_m": "English, German, Spanish, French, Japanese, Portuguese, Arabic, Czech, Italian, Korean, Dutch, Chinese"},
+      "features": {"3b-q4_k_m": "Experimental text chat; tool calling, FIM, and long context are not qualified"},
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/ibm-granite/granite-4.2-3b",
+      "downloads": {
+        "3b-q4_k_m": {
+          "revision": "47a3d9699d7539606c83943d717fcea7bd9f6a19",
+          "size_bytes": 2244012160,
+          "sha256": "20e436143017578687f7f848225cc6c6038126c84149192229c7dff6e4e0f427"
+        }
+      }
+    }
+  }
+}

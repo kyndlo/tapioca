@@ -194,6 +194,8 @@ def main():
     parser.add_argument("--voice-sample")
     parser.add_argument("--transcript", default="")
     parser.add_argument("--language", default="")
+    parser.add_argument("--voice-consent", action="store_true")
+    parser.add_argument("--seed", type=int, default=0)
     args = parser.parse_args()
 
     if os.path.splitext(args.output)[1].lower() != ".wav":
@@ -204,6 +206,13 @@ def main():
         qwen(args)
     elif args.backend == "speech-qwen-mlx":
         qwen_mlx(args)
+    elif args.backend == "speech-audio8-onnx":
+        from cpu_speech import audio8
+        audio8(args)
+    elif args.backend == "speech-pocket-tts":
+        from pocket_qualification import run
+        args.language = args.language or "en"
+        run(args)
     else:
         raise SystemExit(f"unsupported speech backend: {args.backend}")
 

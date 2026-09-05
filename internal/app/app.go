@@ -26,7 +26,7 @@ import (
 	"github.com/carlos/tapioca/internal/updater"
 )
 
-const Version = "0.11.0"
+const Version = "0.12.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {
@@ -262,6 +262,9 @@ func pullResolvedWithContext(
 	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !force {
+		if err := verifyArtifact(path, resolved.Download); err != nil {
+			return config.Model{}, err
+		}
 		reportPull(report, PullProgress{
 			Stage: "complete", Message: fmt.Sprintf("%s already exists at %s", resolved.Name, path),
 			Path: path,
@@ -280,6 +283,11 @@ func pullResolvedWithContext(
 		Path: path,
 	})
 	if err := downloadWithContext(ctx, resolved.URL, partial, report); err != nil {
+		return config.Model{}, err
+	}
+	if err := verifyArtifact(partial, resolved.Download); err != nil {
+		// A corrupt partial cannot be resumed into the expected artifact.
+		_ = os.Remove(partial)
 		return config.Model{}, err
 	}
 	if err := os.Rename(partial, path); err != nil {
@@ -420,7 +428,7 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 	fs.StringVar(&opts.host, "host", "127.0.0.1", "listen host")
 	fs.IntVar(&opts.port, "port", 11435, "Tapioca API port")
 	fs.IntVar(&opts.upstreamPort, "upstream-port", 11436, "private llama-server port")
-	fs.IntVar(&opts.context, "context", 65536, "context window")
+	fs.IntVar(&opts.context, "context", catalog.DefaultContext(ref), "context window")
 	fs.StringVar(&opts.llamaServer, "llama-server", "", "path to llama-server")
 	fs.BoolVar(&opts.verbose, "verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(args[1:]); err != nil {
@@ -451,7 +459,7 @@ func run(args []string) error {
 	ref := args[0]
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	port := fs.Int("port", 11435, "Tapioca API port")
-	contextSize := fs.Int("context", 65536, "context window")
+	contextSize := fs.Int("context", catalog.DefaultContext(ref), "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
 	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
 	showThinking := fs.Bool("show-thinking", true, "show the model's reasoning before its answer")
@@ -717,7 +725,7 @@ func launch(args []string) error {
 	options, clientArgs := splitClientArgs(args[2:])
 	fs := flag.NewFlagSet("launch", flag.ContinueOnError)
 	port := fs.Int("port", 11435, "Tapioca API port")
-	contextSize := fs.Int("context", 65536, "context window")
+	contextSize := fs.Int("context", catalog.DefaultContext(ref), "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
 	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(options); err != nil {

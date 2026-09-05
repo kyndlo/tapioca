@@ -46,6 +46,8 @@ func tts(args []string) error {
 	transcript := fs.String("transcript", "", "exact transcript of the reference audio")
 	transcriptFile := fs.String("transcript-file", "", "file containing the reference transcript")
 	language := fs.String("language", "", "language name or code")
+	voiceConsent := fs.Bool("voice-consent", false, "confirm permission to use the reference voice")
+	seed := fs.Uint64("seed", 0, "speech sampling seed (CPU backends)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -116,7 +118,8 @@ func tts(args []string) error {
 	if err := speechruntime.Run(ctx, filepath.Join(home, "runtime"), speechruntime.Request{
 		ModelPath: model.Path, ModelName: model.Name, Text: *text, Output: target,
 		VoiceSample: sample, Transcript: referenceText, Language: *language,
-		Backend: model.Backend,
+		Backend:      model.Backend,
+		VoiceConsent: *voiceConsent, Seed: *seed,
 	}); err != nil {
 		return err
 	}

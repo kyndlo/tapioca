@@ -1,0 +1,5 @@
+# Isolated qualification environment; not installed by production speech runtimes.
+pocket-tts @ git+https://github.com/kyutai-labs/pocket-tts.git@7809e76aa94d5e841a006a27c1b31f07c60d22d4
+torch==2.8.0
+PyYAML==6.0.2
+soundfile==0.13.1

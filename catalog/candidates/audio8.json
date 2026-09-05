@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "generated_at": "2026-09-05T21:25:22.928969Z",
+  "models": {
+    "audio8": {
+      "name": "audio8",
+      "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+      "files": {
+        "0.1b-int8": ""
+      },
+      "kind": "speech",
+      "backends": {
+        "0.1b-int8": "speech-audio8-onnx"
+      },
+      "default": "0.1b-int8",
+      "sizes": {
+        "0.1b-int8": "0.80 GiB"
+      },
+      "memory": {
+        "0.1b-int8": "4 GiB min; 8 GiB recommended"
+      },
+      "gpus": {
+        "0.1b-int8": "CPU (x64 Windows/Linux, Apple Silicon macOS)"
+      },
+      "languages": {
+        "0.1b-int8": "Multilingual text; automatic language inference"
+      },
+      "features": {
+        "0.1b-int8": "Local speech; reference cloning requires consent and transcript; WAV output"
+      },
+      "artifacts": {
+        "0.1b-int8": [
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "README.md",
+            "target": "README.md",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "1f1d54c7d8389b5681d44f35ac671811162e6640d1ad25328402e7a5cda45b5c",
+            "size_bytes": 9620
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "codec_decoder_fp16.onnx",
+            "target": "codec_decoder_fp16.onnx",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "25379b866ad555b9a55226c46325344d2ebfafea1b474c29de5223a9d01ea533",
+            "size_bytes": 594319
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "codec_decoder_fp16.onnx.data",
+            "target": "codec_decoder_fp16.onnx.data",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "b9bc968a84f41b86a9a3d19bc6c42b00b5de576512a87501d0c66ff7f896c954",
+            "size_bytes": 260741440
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "config.json",
+            "target": "config.json",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "65c299d24934dcb47c34cea10c39ad401a817fb785f041dde37b8dde65b77e4e",
+            "size_bytes": 2651
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "fast_ar_int8.onnx",
+            "target": "fast_ar_int8.onnx",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "6cfc5c8e85d83d27d508d11351d8ca7d2749d6ff2990dc9efd048f86c27ff371",
+            "size_bytes": 511306
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "fast_ar_int8.onnx.data",
+            "target": "fast_ar_int8.onnx.data",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "cef092e658d8daad329117f9e9c3b09730deb3e39ea6f6634cd4d1ec8426eb9d",
+            "size_bytes": 36718592
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "reference_codes.npy",
+            "target": "reference_codes.npy",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "7a4fbf777804d88df906982b2b055f579229b0a2044208a4c9bc7680948c4471",
+            "size_bytes": 8928
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "registration/codec_encoder_fp16.onnx",
+            "target": "registration/codec_encoder_fp16.onnx",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "f9c08ca7a3a428e2caf089a17e2179934e20ba5c7c8e5d5f9dbc8c89ebc0306b",
+            "size_bytes": 940787
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "registration/codec_encoder_fp16.onnx.data",
+            "target": "registration/codec_encoder_fp16.onnx.data",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "ca4af8d00784b557fc06c90e462de0ee36586f6ffca63f3ca24f3af121fbb300",
+            "size_bytes": 414425088
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "registration/registration_manifest.json",
+            "target": "registration/registration_manifest.json",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "df743225ea9697f9b96c2505b1ed2345eae371c87591e6dd4b2fad998845fe64",
+            "size_bytes": 179
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "runtime_manifest.json",
+            "target": "runtime_manifest.json",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "c7dc8c2490bcad21739ac01994f0ed2dfc71f76e8e9695239c9606eac03e6b62",
+            "size_bytes": 1424
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "slow_ar_int8.onnx",
+            "target": "slow_ar_int8.onnx",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "5aa5263d5c7e94cc58c81c969710045d313b4de87deae847f5388c126722bd3a",
+            "size_bytes": 4820700
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "slow_ar_int8.onnx.data",
+            "target": "slow_ar_int8.onnx.data",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "4cf0f7ee7d5a9e817caaed310cc2f62dc08ebd37a1b87300dd4255ff0c45dace",
+            "size_bytes": 133471232
+          },
+          {
+            "repo": "Audio8/audio8-TTS-0.1B-ONNX-INT8",
+            "filename": "tokenizer/tokenizer.json",
+            "target": "tokenizer/tokenizer.json",
+            "revision": "317c12d4e0da83847b594fcf8bd74bf2c76615ec",
+            "sha256": "f1c5ac4973f74a007635d81dafcb2cf0e5c4578c7426f48f53ab0ebf5b978bef",
+            "size_bytes": 5852397
+          }
+        ]
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/Audio8/audio8-TTS-0.1B-ONNX-INT8"
+    }
+  }
+}

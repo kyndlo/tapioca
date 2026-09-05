@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ModelsScreen } from "./ModelsScreen";
 import {
   estimatedDiskAfterInstall,
+  downloadPercent,
   modelCompatibility,
 } from "./model-utils";
 import type {
@@ -52,6 +53,20 @@ afterEach(async () => {
 });
 
 describe("model compatibility", () => {
+  it("does not reserve download space again for installed models", () => {
+    const installed = { ...model, installed: true };
+    const lowDisk = { ...machine, availableDiskBytes: 1 * gib };
+    expect(modelCompatibility(installed, lowDisk).level).toBe("compatible");
+    expect(estimatedDiskAfterInstall(installed, lowDisk).remaining).toBe("1.0 GB");
+    expect(modelCompatibility(model, lowDisk).reasons).toContain("Not enough disk space");
+  });
+
+  it("handles unknown download sizes and clamps progress", () => {
+    expect(downloadPercent(0, 0)).toBeUndefined();
+    expect(downloadPercent(10, Number.NaN)).toBeUndefined();
+    expect(downloadPercent(-10, 100)).toBe(0);
+    expect(downloadPercent(200, 100)).toBe(100);
+  });
   it("uses structured machine requirements and produces a disk estimate", () => {
     expect(modelCompatibility(model, machine)).toEqual({
       level: "compatible",
@@ -84,6 +99,60 @@ describe("model compatibility", () => {
 });
 
 describe("ModelsScreen", () => {
+  it("traps dialog focus and Escape closes only the top dialog", async () => {
+    const adapter: ModelHubAdapter = { listModels: vi.fn().mockResolvedValue([{ ...model, installed: true }]), pullModel: vi.fn(), cancelPull: vi.fn(), removeModel: vi.fn() };
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root?.render(createElement(ModelsScreen, { adapter, machine })));
+    const manage = container.querySelector<HTMLButtonElement>(".model-secondary")!;
+    manage.focus();
+    await act(() => manage.click());
+    const close = container.querySelector<HTMLButtonElement>(".model-modal-close")!;
+    expect(document.activeElement).toBe(close);
+    await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, cancelable: true })));
+    expect(document.activeElement?.textContent).toBe("Remove model");
+    await act(() => (document.activeElement as HTMLButtonElement).click());
+    expect(container.querySelector("[role=alertdialog]")).not.toBeNull();
+    await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(container.querySelector("[role=alertdialog]")).toBeNull();
+    expect(container.querySelector("[role=dialog]")).not.toBeNull();
+    await act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(container.querySelector("[role=dialog]")).toBeNull();
+    expect(document.activeElement).toBe(manage);
+  });
+  it("filters installed models and resets all filters", async () => {
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([model, { ...model, id: "installed", name: "Installed model", installed: true }]),
+      pullModel: vi.fn(), cancelPull: vi.fn(), removeModel: vi.fn(),
+    };
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(createElement(ModelsScreen, { adapter, machine })));
+    const checkbox = Array.from(container.querySelectorAll("label")).find((item) => item.textContent === "Installed only")?.querySelector("input");
+    await act(() => checkbox?.click());
+    expect(container.querySelectorAll(".model-card")).toHaveLength(1);
+    expect(container.textContent).toContain("1 of 2 models");
+    const reset = Array.from(container.querySelectorAll("button")).find((item) => item.textContent === "Reset filters");
+    await act(() => reset?.click());
+    expect(container.querySelectorAll(".model-card")).toHaveLength(2);
+  });
+
+  it("offers a retry inside the detail dialog after a failed pull", async () => {
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([model]),
+      pullModel: vi.fn().mockRejectedValue(new Error("Connection lost")),
+      cancelPull: vi.fn(), removeModel: vi.fn(),
+    };
+    container = document.createElement("div"); document.body.append(container);
+    root = createRoot(container);
+    await act(async () => root?.render(createElement(ModelsScreen, { adapter, machine })));
+    await act(() => container?.querySelector<HTMLButtonElement>(".model-card__body")?.click());
+    await act(async () => container?.querySelector<HTMLButtonElement>(".model-detail__actions button")?.click());
+    expect(container.querySelector("[role=dialog]")?.textContent).toContain("Connection lost");
+    expect(container.querySelector(".model-detail__actions button")?.textContent).toBe("Retry download");
+    await act(async () => container?.querySelector<HTMLButtonElement>(".model-detail__actions button")?.click());
+    expect(adapter.pullModel).toHaveBeenCalledTimes(2);
+  });
   it("loads real adapter records and starts a cancellable pull", async () => {
     let pullOptions: PullOptions | undefined;
     const adapter: ModelHubAdapter = {
@@ -174,6 +243,8 @@ describe("ModelsScreen", () => {
     );
     await act(async () => confirm?.click());
     expect(container.textContent).toContain("model is serving");
+    expect(container.querySelector("[role=alertdialog]")?.textContent).toContain("model is serving");
+    expect(container.textContent).not.toContain("Could not load the catalog");
     expect(container.textContent).toContain("Remove local files");
   });
 });

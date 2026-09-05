@@ -32,9 +32,9 @@ describe("sidecar build workflow", () => {
     buildSidecar(plan, run, vi.fn());
     expect(run).toHaveBeenCalledWith(
       "go",
-      ["build", "-o", "/repo/bin/tapioca-control", "./cmd/tapioca-control"],
+      ["build", "-o", path.resolve("/repo/bin/tapioca-control"), "./cmd/tapioca-control"],
       expect.objectContaining({
-        cwd: "/repo",
+        cwd: path.resolve("/repo"),
         shell: false,
         env: expect.objectContaining({ GOOS: "linux" }),
       }),

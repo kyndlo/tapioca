@@ -690,3 +690,20 @@
     animation: none;
   }
 }
+.models-results {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.85rem;
+}
+.models-results button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0.5rem;
+}

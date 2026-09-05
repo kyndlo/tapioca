@@ -584,6 +584,9 @@ function registerIpcHandlers(): void {
       ? {
           model: input.model,
           text: input.text?.trim() || input.prompt.trim(),
+          voice_consent: input.voiceConsent ?? false,
+          transcript: input.transcript,
+          seed: input.settings.seed ?? 0,
           voice_sample: input.voiceReferenceToken
             ? mediaRegistry.get(input.voiceReferenceToken, "audio").path
             : undefined,

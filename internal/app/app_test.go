@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -19,6 +20,9 @@ func TestLauncherConfigurations(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{"codex", "claude", "opencode", "openclaw", "hermes"} {
+		if runtime.GOOS == "windows" {
+			name += ".cmd"
+		}
 		path := filepath.Join(bin, name)
 		if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
 			t.Fatal(err)

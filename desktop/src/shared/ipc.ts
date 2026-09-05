@@ -301,6 +301,8 @@ export const creatorGenerateInputSchema = z
     text: z.string().max(20_000).optional(),
     inputImageToken: z.string().uuid().optional(),
     voiceReferenceToken: z.string().uuid().optional(),
+    voiceConsent: z.boolean().optional(),
+    transcript: z.string().max(20_000).optional(),
     loras: z.array(creatorLoraSchema).max(8),
     settings: z.object({
       width: z.number().int().min(64).max(4096),

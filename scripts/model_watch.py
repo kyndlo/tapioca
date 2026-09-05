@@ -76,9 +76,9 @@ def request_status(url: str) -> int:
         return 0
 
 
-def catalog_inventory(catalog: dict) -> tuple[set[str], list[tuple[str, str]]]:
+def catalog_inventory(catalog: dict) -> tuple[set[str], list[tuple[str, str, str]]]:
     repositories: set[str] = set()
-    artifacts: list[tuple[str, str]] = []
+    artifacts: list[tuple[str, str, str]] = []
     for model in catalog.get("models", {}).values():
         base_repo = model.get("repo", "")
         variant_repos = model.get("repos", {})
@@ -88,7 +88,8 @@ def catalog_inventory(catalog: dict) -> tuple[set[str], list[tuple[str, str]]]:
         for variant, filename in model.get("files", {}).items():
             repo = variant_repos.get(variant, base_repo)
             if repo and filename:
-                artifacts.append((repo, filename))
+                revision = model.get("downloads", {}).get(variant, {}).get("revision") or "main"
+                artifacts.append((repo, filename, revision))
         for bundle in model.get("artifacts", {}).values():
             for artifact in bundle:
                 repo = artifact.get("repo", "")
@@ -96,7 +97,7 @@ def catalog_inventory(catalog: dict) -> tuple[set[str], list[tuple[str, str]]]:
                 if repo:
                     repositories.add(repo)
                 if repo and filename:
-                    artifacts.append((repo, filename))
+                    artifacts.append((repo, filename, artifact.get("revision") or "main"))
     return repositories, artifacts
 
 
@@ -144,20 +145,21 @@ def reddit_posts(subreddits: tuple[str, ...] = SUBREDDITS) -> list[dict[str, str
     return posts
 
 
-def catalog_health(repositories: set[str], artifacts: list[tuple[str, str]]) -> list[str]:
+def catalog_health(repositories: set[str], artifacts: list[tuple[str, str, str]]) -> list[str]:
     checks: list[tuple[str, str]] = []
     for repo in sorted(repositories):
         encoded = urllib.parse.quote(repo, safe="/")
         checks.append(
             (f"repository `{repo}`", f"https://huggingface.co/api/models/{encoded}")
         )
-    for repo, filename in sorted(set(artifacts)):
+    for repo, filename, revision in sorted(set(artifacts)):
         encoded_repo = urllib.parse.quote(repo, safe="/")
         encoded_file = urllib.parse.quote(filename, safe="/")
+        encoded_revision = urllib.parse.quote(revision, safe="")
         checks.append(
             (
                 f"artifact `{repo}/{filename}`",
-                f"https://huggingface.co/{encoded_repo}/resolve/main/{encoded_file}",
+                f"https://huggingface.co/{encoded_repo}/resolve/{encoded_revision}/{encoded_file}",
             )
         )
 

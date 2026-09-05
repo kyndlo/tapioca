@@ -8,6 +8,14 @@ import { verifyBundledRuntime } from "./verify-runtime.ts";
 
 export const LLAMA_CPP_VERSION = "b10603";
 
+export function windowsExtraction(archive: string, destination: string) {
+  return {
+    args: ["-NoProfile", "-NonInteractive", "-Command",
+      "Expand-Archive -LiteralPath $env:TAPIOCA_RUNTIME_ARCHIVE -DestinationPath $env:TAPIOCA_RUNTIME_DESTINATION -Force"],
+    env: { ...process.env, TAPIOCA_RUNTIME_ARCHIVE: archive, TAPIOCA_RUNTIME_DESTINATION: destination },
+  };
+}
+
 export function llamaRuntimeAsset(
   platform: NodeJS.Platform,
   arch: NodeJS.Architecture,
@@ -54,18 +62,12 @@ export async function prepareRuntime(
   await mkdir(destination, { recursive: true });
   await writeFile(temporary, Buffer.from(await response.arrayBuffer()));
 
+  const windows = windowsExtraction(temporary, destination);
   const extraction = asset.zip
     ? spawnSync(
         "powershell.exe",
-        [
-          "-NoProfile",
-          "-NonInteractive",
-          "-Command",
-          "Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force",
-          temporary,
-          destination,
-        ],
-        { shell: false, stdio: "inherit" },
+        windows.args,
+        { shell: false, stdio: "inherit", env: windows.env },
       )
     : spawnSync(
         "tar",

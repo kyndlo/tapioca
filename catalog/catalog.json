@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-08-23T19:29:49.874922Z",
+  "generated_at": "2026-09-18T22:42:42.917442Z",
   "models": {
     "chatterbox": {
       "name": "chatterbox",
@@ -102,6 +102,36 @@
         "q8_0": "~30 GiB"
       }
     },
+    "granite-4.2": {
+      "context": 8192,
+      "name": "granite-4.2",
+      "repo": "ibm-granite/granite-4.2-3b-GGUF",
+      "files": {
+        "3b-q4_k_m": "granite-4.2-3b-Q4_K_M.gguf"
+      },
+      "default": "3b-q4_k_m",
+      "sizes": {
+        "3b-q4_k_m": "2.09 GiB"
+      },
+      "memory": {
+        "3b-q4_k_m": "8 GiB min; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "3b-q4_k_m": "CPU, Metal, Vulkan"
+      },
+      "features": {
+        "3b-q4_k_m": "Text chat; embedded thinking template; tool calling and FIM not qualified"
+      },
+      "downloads": {
+        "3b-q4_k_m": {
+          "revision": "47a3d9699d7539606c83943d717fcea7bd9f6a19",
+          "sha256": "20e436143017578687f7f848225cc6c6038126c84149192229c7dff6e4e0f427",
+          "size_bytes": 2244012160
+        }
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/ibm-granite/granite-4.2-3b"
+    },
     "krea-2-raw": {
       "name": "krea-2-raw",
       "repo": "krea/Krea-2-Raw",
@@ -201,6 +231,39 @@
       "gpus": {
         "2b-fp16": "NVIDIA CUDA, 8 GiB+ VRAM; CPU offload"
       }
+    },
+    "minicpm5-2b": {
+      "context": 8192,
+      "name": "minicpm5-2b",
+      "repo": "openbmb/MiniCPM5-2B-GGUF",
+      "files": {
+        "q4_k_m": "MiniCPM5-2B-Q4_K_M.gguf"
+      },
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~1.45 GiB"
+      },
+      "memory": {
+        "q4_k_m": "8 GiB test target; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"
+      },
+      "languages": {
+        "q4_k_m": "English and Chinese"
+      },
+      "features": {
+        "q4_k_m": "basic text chat; tools and long context not yet qualified"
+      },
+      "downloads": {
+        "q4_k_m": {
+          "revision": "2079a22f3beaa4e306449978533478fe0522f4b3",
+          "sha256": "ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd",
+          "size_bytes": 1561318368
+        }
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/openbmb/MiniCPM5-2B"
     },
     "minimax-h3": {
       "name": "minimax-h3",
@@ -545,6 +608,39 @@
       "gpus": {
         "fp16": "NVIDIA CUDA, 8 GiB+ VRAM"
       }
+    },
+    "spark-x2.5-4b": {
+      "context": 8192,
+      "name": "spark-x2.5-4b",
+      "repo": "XHToken/Spark-X2.5-4B-GGUF",
+      "files": {
+        "q4_k_m": "Spark-X2.5-4B-Q4_K_M.gguf"
+      },
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~2.42 GiB"
+      },
+      "memory": {
+        "q4_k_m": "8 GiB test target; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"
+      },
+      "languages": {
+        "q4_k_m": "multilingual"
+      },
+      "features": {
+        "q4_k_m": "basic text chat; tools and long context not yet qualified"
+      },
+      "downloads": {
+        "q4_k_m": {
+          "revision": "902d865994943ab9235670e24f01846ee06091f2",
+          "sha256": "adfcfa19a4ed6a5985da8bf565fe15f8e1a7e131d79bae2d19d48d1c40109428",
+          "size_bytes": 2600224352
+        }
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/XHToken/Spark-X2.5-4B"
     },
     "stable-video-diffusion": {
       "name": "stable-video-diffusion",

@@ -1,6 +1,52 @@
 package catalog
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+func TestPinnedArtifactMetadataValidation(t *testing.T) {
+	model := builtInModels["granite-4.2-3b"]
+	if err := validateModel(model.Name, model); err != nil {
+		t.Fatal(err)
+	}
+	model.Checksums = map[string]string{"q4_k_m": strings.Repeat("x", 64)}
+	if err := validateModel(model.Name, model); err == nil {
+		t.Fatal("invalid checksum was accepted")
+	}
+	model = builtInModels["granite-4.2-3b"]
+	model.Revisions = map[string]string{"q4_k_m": "main"}
+	if err := validateModel(model.Name, model); err == nil {
+		t.Fatal("unpinned revision was accepted")
+	}
+	model = builtInModels["granite-4.2-3b"]
+	model.Checksums = nil
+	if err := validateModel(model.Name, model); err == nil {
+		t.Fatal("revision without checksum was accepted")
+	}
+}
+
+func TestResolvePinnedCompactModels(t *testing.T) {
+	for _, tc := range []struct {
+		ref, repo, file, revision, checksum string
+		bytes                               int64
+	}{
+		{"granite-4.2-3b", "ibm-granite/granite-4.2-3b-GGUF", "granite-4.2-3b-Q4_K_M.gguf", "c40945d71cd90f249a56985e8155551a9188dc30", "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5", 2244011552},
+		{"minicpm5-2b", "openbmb/MiniCPM5-2B-GGUF", "MiniCPM5-2B-Q4_K_M.gguf", "2079a22f3beaa4e306449978533478fe0522f4b3", "ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd", 1561318368},
+	} {
+		t.Run(tc.ref, func(t *testing.T) {
+			got, err := ResolveFor(tc.ref, "darwin")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Kind != "text" || got.Repo != tc.repo || got.Filename != tc.file || got.Context != 8192 ||
+				got.SHA256 != tc.checksum || got.ByteSize != tc.bytes ||
+				got.URL != "https://huggingface.co/"+tc.repo+"/resolve/"+tc.revision+"/"+tc.file {
+				t.Fatalf("unexpected pinned model: %#v", got)
+			}
+		})
+	}
+}
 
 func TestResolveGLM(t *testing.T) {
 	got, err := Resolve("glm-4.7-flash:q8_0")

@@ -36,6 +36,25 @@ video frames, runtime libraries, and other applications consume more memory.
 
 Use an 8K–16K context instead of the model's maximum advertised context.
 
+### Compact GGUF models under qualification
+
+`granite-4.2-3b:q4_k_m` (~2.09 GiB) and `minicpm5-2b:q4_k_m`
+(~1.45 GiB) use pinned, SHA-256-checked official GGUF artifacts. Both default
+to an 8K context to avoid allocating their much larger advertised context
+windows on a small machine. The 8 GiB system-memory figure is a conservative
+test target, **not a measured minimum**; 16 GiB leaves more room for the OS and
+other apps. CPU and Apple Silicon Metal chat have been smoke-tested with the
+bundled llama.cpp b10603. Windows/Linux Vulkan, long-context behavior, and
+structured tool use are not yet qualified, so these are not replacements for
+the established starter models above.
+
+To try either model on a supported test machine, run
+`tapioca pull granite-4.2-3b` or `tapioca pull minicpm5-2b`, then
+`tapioca run MODEL`.
+Keep `--context 8192` when comparing memory use. The Q4 downloads are pinned
+to specific Hugging Face revisions; an invalid cached file is rejected rather
+than run.
+
 ### Apple Silicon
 
 | Model | Download | Best for |

@@ -22,6 +22,10 @@ type Model struct {
 	Name             string                `json:"name"`
 	Repo             string                `json:"repo,omitempty"`
 	Files            map[string]string     `json:"files"`
+	Revisions        map[string]string     `json:"revisions,omitempty"`
+	Checksums        map[string]string     `json:"checksums,omitempty"`
+	ByteSizes        map[string]int64      `json:"byte_sizes,omitempty"`
+	Contexts         map[string]int        `json:"contexts,omitempty"`
 	Template         string                `json:"template,omitempty"`
 	Kind             string                `json:"kind,omitempty"`
 	Backends         map[string]string     `json:"backends,omitempty"`
@@ -76,6 +80,8 @@ var cachedOverridePath string
 
 var safeName = regexp.MustCompile(`^[a-z0-9][a-z0-9._-]*$`)
 var safeRepoPart = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]*$`)
+var sha256Hex = regexp.MustCompile(`^[a-f0-9]{64}$`)
+var revisionHex = regexp.MustCompile(`^[a-f0-9]{40}$`)
 
 func SetOverridePathForTest(path string) func() {
 	previous := cachedOverridePath
@@ -306,12 +312,42 @@ func validateModel(name string, model Model) error {
 	for label, values := range map[string]map[string]string{
 		"backend": model.Backends, "repository": model.Repos, "size": model.Sizes,
 		"memory": model.Memory, "GPU": model.GPUs, "language": model.Languages,
-		"feature": model.Features,
+		"feature": model.Features, "revision": model.Revisions,
+		"checksum": model.Checksums,
 	} {
 		for variant := range values {
 			if _, ok := model.Files[variant]; !ok {
 				return fmt.Errorf("catalog model %s has %s metadata for unknown variant %q", name, label, variant)
 			}
+		}
+	}
+	for variant, revision := range model.Revisions {
+		if !revisionHex.MatchString(revision) || model.Files[variant] == "" {
+			return fmt.Errorf("catalog model %s has invalid revision for %s", name, variant)
+		}
+	}
+	for variant, checksum := range model.Checksums {
+		if !sha256Hex.MatchString(checksum) || model.Files[variant] == "" {
+			return fmt.Errorf("catalog model %s has invalid checksum for %s", name, variant)
+		}
+	}
+	for variant, size := range model.ByteSizes {
+		if _, ok := model.Files[variant]; !ok || size <= 0 || model.Files[variant] == "" {
+			return fmt.Errorf("catalog model %s has invalid byte size for %s", name, variant)
+		}
+	}
+	for variant, contextSize := range model.Contexts {
+		if _, ok := model.Files[variant]; !ok || contextSize < 512 || contextSize > 1048576 {
+			return fmt.Errorf("catalog model %s has invalid context size for %s", name, variant)
+		}
+	}
+	for variant := range model.Files {
+		hasRevision := model.Revisions[variant] != ""
+		hasChecksum := model.Checksums[variant] != ""
+		hasByteSize := model.ByteSizes[variant] > 0
+		if (hasRevision || hasChecksum || hasByteSize) &&
+			!(hasRevision && hasChecksum && hasByteSize) {
+			return fmt.Errorf("catalog model %s requires revision, checksum, and byte size together for %s", name, variant)
 		}
 	}
 	for variant, artifacts := range model.Artifacts {
@@ -602,6 +638,54 @@ var builtInModels = map[string]Model{
 			"q4_k_m": "~2.4 GiB",
 			"q5_k_m": "~2.7 GiB",
 		},
+	},
+	"granite-4.2-3b": {
+		Name:    "granite-4.2-3b",
+		Repo:    "ibm-granite/granite-4.2-3b-GGUF",
+		Kind:    "text",
+		Default: "q4_k_m",
+		Files: map[string]string{
+			"q4_k_m": "granite-4.2-3b-Q4_K_M.gguf",
+		},
+		Revisions: map[string]string{
+			"q4_k_m": "c40945d71cd90f249a56985e8155551a9188dc30",
+		},
+		Checksums: map[string]string{
+			"q4_k_m": "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5",
+		},
+		ByteSizes:  map[string]int64{"q4_k_m": 2244011552},
+		Contexts:   map[string]int{"q4_k_m": 8192},
+		Sizes:      map[string]string{"q4_k_m": "~2.09 GiB"},
+		Memory:     map[string]string{"q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"},
+		GPUs:       map[string]string{"q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"},
+		Languages:  map[string]string{"q4_k_m": "12 languages"},
+		Features:   map[string]string{"q4_k_m": "basic text chat; tools and long context not yet qualified"},
+		License:    "Apache-2.0",
+		LicenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
+	},
+	"minicpm5-2b": {
+		Name:    "minicpm5-2b",
+		Repo:    "openbmb/MiniCPM5-2B-GGUF",
+		Kind:    "text",
+		Default: "q4_k_m",
+		Files: map[string]string{
+			"q4_k_m": "MiniCPM5-2B-Q4_K_M.gguf",
+		},
+		Revisions: map[string]string{
+			"q4_k_m": "2079a22f3beaa4e306449978533478fe0522f4b3",
+		},
+		Checksums: map[string]string{
+			"q4_k_m": "ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd",
+		},
+		ByteSizes:  map[string]int64{"q4_k_m": 1561318368},
+		Contexts:   map[string]int{"q4_k_m": 8192},
+		Sizes:      map[string]string{"q4_k_m": "~1.45 GiB"},
+		Memory:     map[string]string{"q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"},
+		GPUs:       map[string]string{"q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"},
+		Languages:  map[string]string{"q4_k_m": "English and Chinese"},
+		Features:   map[string]string{"q4_k_m": "basic text chat; tools and long context not yet qualified"},
+		License:    "Apache-2.0",
+		LicenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
 	},
 	"gemma3": {
 		Name:    "gemma3",
@@ -905,6 +989,9 @@ type Resolved struct {
 	Repo             string
 	Filename         string
 	URL              string
+	SHA256           string
+	ByteSize         int64
+	Context          int
 	Kind             string
 	Backend          string
 	Width            int
@@ -995,7 +1082,11 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	url := ""
 	if filename != "" {
-		url = "https://huggingface.co/" + repo + "/resolve/main/" + filename
+		revision := m.Revisions[strings.ToLower(tag)]
+		if revision == "" {
+			revision = "main"
+		}
+		url = "https://huggingface.co/" + repo + "/resolve/" + revision + "/" + filename
 	}
 	backend := m.Backends[strings.ToLower(tag)]
 	platform := "Windows, macOS, Linux"
@@ -1025,6 +1116,9 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		Repo:          repo,
 		Filename:      filename,
 		URL:           url,
+		SHA256:        m.Checksums[strings.ToLower(tag)],
+		ByteSize:      m.ByteSizes[strings.ToLower(tag)],
+		Context:       m.Contexts[strings.ToLower(tag)],
 		Kind:          m.Kind,
 		Backend:       backend,
 		Width:         m.Width,

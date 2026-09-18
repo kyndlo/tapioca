@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -262,6 +264,9 @@ func pullResolvedWithContext(
 	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !force {
+		if err := verifyModelArtifact(path, resolved); err != nil {
+			return config.Model{}, fmt.Errorf("cached %s is invalid: %w; run `tapioca pull %s --force` to replace it", resolved.Name, err, resolved.Name)
+		}
 		reportPull(report, PullProgress{
 			Stage: "complete", Message: fmt.Sprintf("%s already exists at %s", resolved.Name, path),
 			Path: path,
@@ -282,6 +287,10 @@ func pullResolvedWithContext(
 	if err := downloadWithContext(ctx, resolved.URL, partial, report); err != nil {
 		return config.Model{}, err
 	}
+	if err := verifyModelArtifact(partial, resolved); err != nil {
+		_ = os.Remove(partial)
+		return config.Model{}, fmt.Errorf("downloaded %s failed integrity verification: %w", resolved.Name, err)
+	}
 	if err := os.Rename(partial, path); err != nil {
 		return config.Model{}, err
 	}
@@ -290,6 +299,35 @@ func pullResolvedWithContext(
 	}
 	reportPull(report, PullProgress{Stage: "complete", Message: "saved " + path, Path: path})
 	return modelFromResolved(resolved, path), nil
+}
+
+func verifyModelArtifact(path string, resolved catalog.Resolved) error {
+	if resolved.ByteSize == 0 && resolved.SHA256 == "" {
+		return nil
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil {
+		return err
+	}
+	if resolved.ByteSize > 0 && info.Size() != resolved.ByteSize {
+		return fmt.Errorf("size %d does not match expected %d bytes", info.Size(), resolved.ByteSize)
+	}
+	if resolved.SHA256 != "" {
+		hash := sha256.New()
+		if _, err := io.Copy(hash, file); err != nil {
+			return err
+		}
+		actual := hex.EncodeToString(hash.Sum(nil))
+		if actual != resolved.SHA256 {
+			return fmt.Errorf("SHA-256 %s does not match expected %s", actual, resolved.SHA256)
+		}
+	}
+	return nil
 }
 
 func modelFromResolved(resolved catalog.Resolved, path string) config.Model {
@@ -400,6 +438,14 @@ type serveOptions struct {
 	verbose      bool
 }
 
+func defaultContextSize(ref string) int {
+	resolved, err := catalog.Resolve(ref)
+	if err == nil && resolved.Context > 0 {
+		return resolved.Context
+	}
+	return 65536
+}
+
 func serve(args []string) error {
 	opts, model, err := parseServe(args)
 	if err != nil {
@@ -420,7 +466,7 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 	fs.StringVar(&opts.host, "host", "127.0.0.1", "listen host")
 	fs.IntVar(&opts.port, "port", 11435, "Tapioca API port")
 	fs.IntVar(&opts.upstreamPort, "upstream-port", 11436, "private llama-server port")
-	fs.IntVar(&opts.context, "context", 65536, "context window")
+	fs.IntVar(&opts.context, "context", defaultContextSize(ref), "context window")
 	fs.StringVar(&opts.llamaServer, "llama-server", "", "path to llama-server")
 	fs.BoolVar(&opts.verbose, "verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(args[1:]); err != nil {
@@ -451,7 +497,7 @@ func run(args []string) error {
 	ref := args[0]
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	port := fs.Int("port", 11435, "Tapioca API port")
-	contextSize := fs.Int("context", 65536, "context window")
+	contextSize := fs.Int("context", defaultContextSize(ref), "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
 	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
 	showThinking := fs.Bool("show-thinking", true, "show the model's reasoning before its answer")
@@ -717,7 +763,7 @@ func launch(args []string) error {
 	options, clientArgs := splitClientArgs(args[2:])
 	fs := flag.NewFlagSet("launch", flag.ContinueOnError)
 	port := fs.Int("port", 11435, "Tapioca API port")
-	contextSize := fs.Int("context", 65536, "context window")
+	contextSize := fs.Int("context", defaultContextSize(ref), "context window")
 	llamaServer := fs.String("llama-server", "", "path to llama-server")
 	verbose := fs.Bool("verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(options); err != nil {

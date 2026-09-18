@@ -14,6 +14,16 @@ import (
 	"github.com/carlos/tapioca/internal/adapter"
 )
 
+func TestDiffusersVideoUsesFixedShardLoader(t *testing.T) {
+	requirements, err := source.ReadFile("requirements-diffusers.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(requirements), "diffusers==0.40.0\n") {
+		t.Fatalf("video runtime must pin the fixed Diffusers loader: %s", requirements)
+	}
+}
+
 func TestH3GraphChainsAdaptersIntoSchedulerAndGuider(t *testing.T) {
 	python, err := exec.LookPath("python3")
 	if err != nil {

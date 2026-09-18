@@ -3,10 +3,21 @@ package imageruntime
 import (
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/carlos/tapioca/internal/adapter"
 )
+
+func TestDiffusersUsesFixedShardLoader(t *testing.T) {
+	requirements, err := source.ReadFile("requirements.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(requirements), "diffusers==0.40.0\n") {
+		t.Fatalf("image runtime must pin the fixed Diffusers loader: %s", requirements)
+	}
+}
 
 func TestMFluxArgumentsIncludeEditingAndAdapters(t *testing.T) {
 	command, args := mfluxArguments(Request{

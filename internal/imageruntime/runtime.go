@@ -377,7 +377,8 @@ func runDiffusers(ctx context.Context, cacheDir string, request Request) error {
 	if request.Backend == "diffusers" && runtime.GOOS != "windows" && runtime.GOOS != "linux" {
 		return errors.New("the CUDA image backend requires Windows or Linux")
 	}
-	root := filepath.Join(cacheDir, "diffusers-runtime", "0.2.0")
+	// A new directory forces pre-upgrade environments to reinstall the fixed loader.
+	root := filepath.Join(cacheDir, "diffusers-runtime", "0.3.0-diffusers040")
 	for _, name := range []string{"image_diffusion.py", "requirements.txt"} {
 		data, err := source.ReadFile(name)
 		if err != nil {

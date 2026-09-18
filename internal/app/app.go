@@ -701,6 +701,11 @@ func ensureModel(ref string) (config.Model, error) {
 	if model, ok := registry.Find(ref); ok {
 		registered = true
 		if _, err := os.Stat(model.Path); err == nil {
+			if resolved, err := catalog.Resolve(model.Name); err == nil {
+				if err := verifyModelArtifact(model.Path, resolved); err != nil {
+					return config.Model{}, fmt.Errorf("installed %s failed integrity verification: %w; run `tapioca pull %s --force`", model.Name, err, model.Name)
+				}
+			}
 			return model, nil
 		}
 		fmt.Printf("%s is registered but unavailable; pulling it again\n", model.Name)
@@ -722,6 +727,9 @@ func ensureResolvedModel(resolved catalog.Resolved) (config.Model, error) {
 	}
 	if model, ok := registry.Find(resolved.Name); ok {
 		if _, err := os.Stat(model.Path); err == nil {
+			if err := verifyModelArtifact(model.Path, resolved); err != nil {
+				return config.Model{}, fmt.Errorf("installed %s failed integrity verification: %w; run `tapioca pull %s --force`", model.Name, err, model.Name)
+			}
 			return model, nil
 		}
 		fmt.Printf("%s is registered but unavailable; pulling it again\n", model.Name)

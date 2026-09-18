@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/carlos/tapioca/internal/catalog"
+	"github.com/carlos/tapioca/internal/config"
 )
 
 func TestVerifyModelArtifact(t *testing.T) {
@@ -96,5 +97,24 @@ func TestPullRejectsCorruptPinnedArtifact(t *testing.T) {
 	}
 	if _, err := os.Stat(path + ".partial"); !os.IsNotExist(err) {
 		t.Fatalf("corrupt partial was retained: %v", err)
+	}
+}
+
+func TestInstalledPinnedModelRejectsCorruptionBeforeRun(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("TAPIOCA_HOME", home)
+	path := filepath.Join(home, "corrupt.gguf")
+	if err := os.WriteFile(path, []byte("not a pinned artifact"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	name := "granite-4.2-3b:q4_k_m"
+	registry := config.Registry{Models: map[string]config.Model{
+		name: {Name: name, Path: path, Kind: "text"},
+	}}
+	if err := registry.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ensureModel(name); err == nil || !strings.Contains(err.Error(), "integrity verification") {
+		t.Fatalf("expected integrity rejection before use, got %v", err)
 	}
 }

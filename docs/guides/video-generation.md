@@ -37,6 +37,8 @@ larger Macs.
 
 ## MiniMax-H3 with native audio
 
+Before using MiniMax-H3, review the [official community license](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE). Its stated territory excludes the United States, European Union, United Kingdom, and Republic of Korea. Use in an excluded territory requires separate authorization from MiniMax; availability of an ungated repack does not grant that authorization. Tapioca's current catalog does not enforce this eligibility decision, so do not treat a successful pull as confirmation of rights.
+
 MiniMax-H3 creates video and stereo audio together. Tapioca downloads only the
 four required files (about 41 GiB) and installs a private, pinned ComfyUI
 runtime on the first generation:

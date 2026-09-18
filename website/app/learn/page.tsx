@@ -103,7 +103,7 @@ export default function Learn() {
               <div><b>8–12 GiB memory</b><span><code>qwen3:4b-q4_k_m</code><br /><code>chatterbox:nano</code></span><span>Large image and video models</span></div>
               <div><b>16 GiB memory</b><span><code>qwen3:8b-q4_k_m</code><br />FLUX Klein on Mac<br />SD Turbo on Windows</span><span>30B+ LLMs and MiniMax-H3</span></div>
               <div><b>24–32 GiB memory</b><span>12B–35B quantized LLMs<br />SDXL or LTX Video</span><span>Models recommending 48 GiB+</span></div>
-              <div><b>48–96 GiB memory</b><span>Large MLX models<br />Qwen Image Flash<br />MiniMax-H3 on supported hardware</span><span>Anything above the catalog recommendation</span></div>
+              <div><b>48–96 GiB memory</b><span>Large MLX models<br />Qwen Image Flash<br />MiniMax-H3 only where licensed</span><span>Anything above the catalog recommendation</span></div>
             </div>
             <Command>{`tapioca catalog update
 tapioca catalog`}</Command>
@@ -156,6 +156,7 @@ tapioca image krea-2-turbo --prompt "A glass sculpture" --steps 8 --output art.p
           <section className="learnSection" id="video">
             <p className="lesson">Lesson 07</p><h2>Generate motion and video</h2>
             <p className="lessonIntro">Video needs much more memory and time than images. Start with a short low-memory clip. Add a starting image when identity or composition matters.</p>
+            <div className="safetyCallout"><span>H3 license</span><p>MiniMax-H3 is not unrestricted. Its <a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE">official community license</a> excludes the US, EU, UK, and Republic of Korea; use there requires separate authorization from MiniMax. The publicly downloadable repack and a local acknowledgement do not grant those rights. Check the current terms before downloading or generating.</p></div>
             <div className="platformRecipes">
               <article><span>Mac · 32 GiB+</span><h3>Wan 2.2</h3><Command>{`tapioca video wan2.2-video:5b-q8-mlx \\\n  --prompt "A fox running through snow" \\\n  --preset low-memory --output fox.mp4`}</Command></article>
               <article><span>Windows · NVIDIA 8 GiB+</span><h3>LTX Video</h3><Command>{`tapioca video ltx-video:2b-fp16 \\\n  --prompt "A fox running through snow" \\\n  --preset low-memory --output fox.mp4`}</Command></article>

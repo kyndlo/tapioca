@@ -13,6 +13,16 @@ SPEC.loader.exec_module(model_watch)
 
 
 class ModelWatchTests(unittest.TestCase):
+    def test_manual_workflow_cannot_mutate_issues_or_run_on_a_schedule(self):
+        workflow = (Path(__file__).parents[1] / ".github/workflows/model-freshness.yml").read_text()
+        self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn("contents: read", workflow)
+        self.assertIn("actions/upload-artifact@", workflow)
+        self.assertIn("GITHUB_STEP_SUMMARY", workflow)
+        self.assertNotIn("issues: write", workflow)
+        self.assertNotIn("schedule:", workflow)
+        self.assertNotIn("github.rest.issues.", workflow)
+
     def test_catalog_inventory_tracks_variant_and_bundle_artifacts(self):
         repositories, artifacts = model_watch.catalog_inventory(
             {

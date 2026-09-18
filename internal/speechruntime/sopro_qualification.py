@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import tempfile
 import time
+import wave
 
 
 ARTIFACTS = (
@@ -45,6 +46,31 @@ def validate_inputs(args):
     return root, sample, output
 
 
+def write_pcm_stream(chunks, output, sample_rate, started, clock=time.monotonic):
+    first_audio = None
+    samples = 0
+    with wave.open(str(output), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        for pcm in chunks:
+            if len(pcm) % 2:
+                raise ValueError("Sopro returned an incomplete PCM16 sample")
+            if not pcm:
+                continue
+            if first_audio is None:
+                first_audio = clock() - started
+            wav.writeframes(pcm)
+            samples += len(pcm) // 2
+    if not samples:
+        raise ValueError("Sopro produced no audio")
+    elapsed = clock() - started
+    duration = samples / sample_rate
+    return {"first_audio_seconds": first_audio, "elapsed_seconds": elapsed,
+            "audio_seconds": duration, "realtime_factor": elapsed / duration,
+            "sample_rate": sample_rate, "samples": samples}
+
+
 def run(args):
     root, sample, output = validate_inputs(args)
     os.environ["HF_HUB_OFFLINE"] = "1"
@@ -52,7 +78,6 @@ def run(args):
     import torch
     import soundfile
     from sopro import SoproTTS
-    from pocket_qualification import write_pcm_stream
 
     info = soundfile.info(str(sample))
     seconds = info.frames / info.samplerate

@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from types import SimpleNamespace
 
-from sopro_qualification import ARTIFACTS, validate_inputs
+from sopro_qualification import ARTIFACTS, validate_inputs, write_pcm_stream
 
 
 class SoproValidationTests(unittest.TestCase):
@@ -28,6 +28,16 @@ class SoproValidationTests(unittest.TestCase):
         args = SimpleNamespace(text="Hello", language="es")
         with self.assertRaisesRegex(ValueError, "language"):
             validate_inputs(args)
+
+    def test_stream_writes_complete_wav(self):
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "speech.wav"
+            result = write_pcm_stream([b"\x00\x00", b"\x01\x00"], output, 24000, 1.0,
+                                      clock=lambda: 2.0)
+            self.assertEqual(result["samples"], 2)
+            self.assertEqual(output.read_bytes()[:4], b"RIFF")
+            with self.assertRaisesRegex(ValueError, "incomplete PCM16"):
+                write_pcm_stream([b"\x01"], output, 24000, 1.0, clock=lambda: 2.0)
 
 
 if __name__ == "__main__":

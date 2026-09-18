@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   audit:
@@ -35,49 +34,3 @@ jobs:
           name: model-watch-report
           path: model-watch-report.md
           retention-days: 30
-      - name: Create or refresh the model-watch issue
-        uses: actions/github-script@v9
-        env:
-          REPORT_PATH: model-watch-report.md
-        with:
-          script: |
-            const fs = require("fs");
-            const title = "Daily model freshness report";
-            const body = fs.readFileSync(process.env.REPORT_PATH, "utf8");
-            const { owner, repo } = context.repo;
-            try {
-              await github.rest.issues.getLabel({ owner, repo, name: "model-watch" });
-            } catch (error) {
-              if (error.status !== 404) throw error;
-              await github.rest.issues.createLabel({
-                owner,
-                repo,
-                name: "model-watch",
-                color: "6f42c1",
-                description: "Daily model and runtime freshness audit",
-              });
-            }
-            const issues = await github.paginate(github.rest.issues.listForRepo, {
-              owner,
-              repo,
-              state: "open",
-              labels: "model-watch",
-              per_page: 100,
-            });
-            const existing = issues.find((issue) => issue.title === title && !issue.pull_request);
-            if (existing) {
-              await github.rest.issues.update({
-                owner,
-                repo,
-                issue_number: existing.number,
-                body,
-              });
-            } else {
-              await github.rest.issues.create({
-                owner,
-                repo,
-                title,
-                body,
-                labels: ["model-watch"],
-              });
-            }

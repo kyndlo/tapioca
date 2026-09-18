@@ -172,6 +172,11 @@ export default function LlmGuide() {
             engine graph, adapter ordering, and output path.
           </p>
           <p>
+            MiniMax-H3 is subject to its <a href="https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE">community license</a>,
+            which excludes the US, EU, UK, and Republic of Korea absent separate authorization.
+            An ungated download or local acknowledgement is not permission to use it there.
+          </p>
+          <p>
             LoRA automation uses the provider-neutral library: list installed
             references first, inspect or pull from Hugging Face, Civitai, or
             ModelScope, and import existing files into a managed local reference.

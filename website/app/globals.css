@@ -411,3 +411,69 @@ footer p { margin: 0; } footer > div { display: flex; gap: 20px; } footer a:hove
   .rule, .safetyCallout { grid-template-columns: 1fr; }.finishCard { align-items: flex-start; }.finishCard img { width: 60px; }
   .learnFooter { padding-left: 20px; padding-right: 20px; }
 }
+
+/* Homepage: a focused entry point; detailed instructions live in the guides. */
+.home { --home-ink: #1b1724; --home-muted: #5f5b68; --home-line: #e9e4eb; --home-purple: #653bd1; background: #fffefa; color: var(--home-ink); }
+.homeHeader { border-bottom: 1px solid var(--home-line); background: rgba(255,254,250,.96); }
+.homeNav { max-width: 1360px; min-height: 78px; margin: 0 auto; padding: 12px 32px; display: flex; align-items: center; gap: 36px; }
+.homeBrand { display: inline-flex; align-items: center; gap: 9px; flex: 0 0 auto; font-size: 23px; font-weight: 820; letter-spacing: -.06em; white-space: nowrap; }
+.homeBrand img { width: 41px; height: 41px; object-fit: contain; }
+.homeNavLinks { display: flex; align-items: center; justify-content: flex-end; flex: 1; gap: clamp(14px, 2.1vw, 29px); }
+.homeNavLinks a { color: #45404e; font-size: 14px; font-weight: 650; white-space: nowrap; }
+.homeNavLinks a:hover, .homeFooter a:hover, .homeInstallNote a:hover { color: var(--home-purple); }
+.homeButton { display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 48px; padding: 0 22px; border: 1px solid transparent; border-radius: 11px; font-size: 15px; font-weight: 730; white-space: nowrap; transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
+.homeButton:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(44,31,87,.11); }
+.homeButton:focus-visible, .home a:focus-visible { outline: 3px solid #a78bfa; outline-offset: 3px; }
+.homeButtonPrimary { background: var(--home-purple); color: white; }
+.homeButtonPrimary:hover { background: #5330bd; }
+.homeButtonOutline { border-color: #c7b8e9; color: #302551; background: white; }
+.homeNavDownload { min-height: 42px; padding: 0 18px; font-size: 14px; }
+.homeHero { max-width: 1360px; min-height: 650px; margin: auto; padding: 70px 32px 90px; display: grid; grid-template-columns: minmax(0, .86fr) minmax(0, 1.14fr); align-items: center; gap: clamp(35px, 4.2vw, 70px); }
+.homeHeroCopy { min-width: 0; }
+.homeEyebrow { margin: 0 0 23px; color: var(--home-purple); font-family: var(--font-mono), monospace; font-size: 11px; font-weight: 760; letter-spacing: .17em; line-height: 1.5; text-transform: uppercase; }
+.homeHero h1 { margin: 0 0 27px; font-size: clamp(55px, 5.1vw, 77px); line-height: 1.04; letter-spacing: -.065em; }
+.homeHero h1 span { color: var(--home-purple); }
+.homeLead { max-width: 570px; margin: 0; color: var(--home-muted); font-size: clamp(17px, 1.5vw, 20px); line-height: 1.65; }
+.homeActions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 31px; }
+.homeHeroNotes { display: flex; flex-wrap: wrap; gap: 19px; margin-top: 28px; color: #605a6a; font-size: 13px; font-weight: 600; }
+.homeHeroNotes span::before { content: "✓"; margin-right: 7px; color: var(--home-purple); font-weight: 800; }
+.homeProduct { min-width: 0; margin: 0; border: 1px solid #ded8e3; border-radius: 19px; background: #211a25; overflow: hidden; box-shadow: 0 28px 60px rgba(44,25,52,.16); }
+.homeWindowBar { height: 38px; padding: 0 14px; display: flex; align-items: center; gap: 14px; background: #f9f6fa; color: #423b48; font-size: 11px; }
+.homeWindowBar b { font-size: 11px; }.homeWindowBar > span:last-child { margin-left: auto; color: #77707b; }
+.homeDots { display: flex; gap: 5px; }.homeDots i { width: 8px; height: 8px; border-radius: 50%; background: #ff655d; }.homeDots i:nth-child(2) { background: #f5bd4f; }.homeDots i:nth-child(3) { background: #67c862; }
+.homeProduct img { display: block; width: 100%; height: auto; }
+.homeProduct figcaption { padding: 15px 19px; color: #e8dce9; font-size: 12px; line-height: 1.4; }
+.homePaths, .homeInstall, .homeDeepDive, .homeCommunity { padding: 100px max(32px, calc((100vw - 1296px) / 2)); }
+.homePaths { background: #f7f4fa; }
+.homeSectionTitle { max-width: 760px; margin-bottom: 38px; }
+.homeSectionTitle h2, .homeDeepDive h2, .homeCommunity h2 { margin: 0 0 16px; font-size: clamp(39px, 4vw, 58px); line-height: 1.07; letter-spacing: -.055em; }
+.homeSectionTitle > p:last-child, .homeDeepDive > div > p:not(.homeEyebrow), .homeCommunity > div > p:not(.homeEyebrow) { margin: 0; color: var(--home-muted); font-size: 17px; line-height: 1.6; }
+.homePathGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.homePath { min-width: 0; min-height: 232px; position: relative; display: flex; flex-direction: column; padding: 27px 28px; border: 1px solid #e5deea; border-radius: 17px; background: white; transition: transform .18s ease, border-color .18s ease; }
+.homePath:hover { transform: translateY(-3px); border-color: #baa5ed; }
+.homePathNumber { color: var(--home-purple); font: 750 12px var(--font-mono), monospace; }
+.homePathArrow { position: absolute; top: 21px; right: 26px; color: var(--home-purple); font-size: 24px; }
+.homePath h3 { margin: 22px 0 7px; font-size: 23px; letter-spacing: -.035em; }
+.homePath p { max-width: 480px; margin: 0 0 22px; color: var(--home-muted); font-size: 15px; line-height: 1.5; }
+.homePath code { margin-top: auto; padding: 11px 13px; border-radius: 8px; background: #f5f1f9; color: #473362; font-size: 11px; overflow-wrap: anywhere; }
+.homeInstall { background: #fffefa; }
+.homePlatformGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
+.homePlatformGrid a { padding: 27px; border: 1px solid var(--home-line); border-radius: 15px; background: white; }
+.homePlatformGrid a:hover { border-color: #baa5ed; }
+.homePlatformGrid h3 { margin: 0 0 9px; font-size: 24px; }.homePlatformGrid p { min-height: 47px; margin: 0 0 19px; color: var(--home-muted); font-size: 14px; line-height: 1.5; }
+.homePlatformGrid a > span { color: var(--home-purple); font-size: 13px; font-weight: 750; }
+.homeInstallCommands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 16px; }
+.homeInstallCommands div { min-width: 0; display: grid; gap: 10px; padding: 20px; border-radius: 12px; background: #211b28; color: white; }
+.homeInstallCommands span { color: #bdb1c5; font-size: 12px; font-weight: 700; }.homeInstallCommands code { font-size: 12px; line-height: 1.5; white-space: normal; overflow-wrap: anywhere; }
+.homeInstallNote { color: var(--home-muted); font-size: 13px; line-height: 1.6; }.homeInstallNote a { color: var(--home-purple); font-weight: 750; }
+.homeDeepDive { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .86fr); gap: 70px; align-items: center; background: #eee8f7; }
+.homeDeepDive > div:first-child { max-width: 650px; }
+.homeCommandPanel { padding: 25px; border: 1px solid #3b3048; border-radius: 16px; background: #211b28; color: white; }
+.homeCommandPanel > div { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid #42364c; }.homeCommandPanel > div:first-child { padding-top: 0; }
+.homeCommandPanel span { color: #bbb0c2; font-size: 12px; }.homeCommandPanel code { font-size: 14px; overflow-wrap: anywhere; }.homeCommandPanel p { margin: 18px 0 0; color: #bcb1c4; font-size: 12px; line-height: 1.55; }
+.homeCommunity { display: flex; align-items: end; justify-content: space-between; gap: 40px; background: #fffefa; }.homeCommunity > div:first-child { max-width: 700px; }.homeCommunity .homeActions { flex: 0 0 auto; }
+.homeFooter { max-width: none; min-height: 100px; padding: 24px max(32px, calc((100vw - 1296px) / 2)); display: flex; align-items: center; gap: 30px; border-top: 1px solid var(--home-line); color: var(--home-muted); }
+.homeFooter .homeBrand { color: var(--home-ink); font-size: 19px; }.homeFooter .homeBrand img { width: 31px; height: 31px; }.homeFooter p { margin: 0; font-size: 12px; }.homeFooter > div { display: flex; flex-wrap: wrap; gap: 16px; margin-left: auto; font-size: 12px; font-weight: 650; }
+@media (max-width: 1050px) { .homeNav { gap: 20px; }.homeNavLinks { gap: 13px; }.homeNavLinks a { font-size: 12px; }.homeHero { grid-template-columns: 1fr; padding-top: 70px; }.homeHeroCopy { max-width: 720px; }.homeProduct { max-width: 820px; }.homeCommunity { display: block; }.homeCommunity .homeActions { margin-top: 30px; } }
+@media (max-width: 700px) { .homeNav { padding: 12px 20px; }.homeNavLinks { display: none; }.homeNavDownload { margin-left: auto; }.homeHero, .homePaths, .homeInstall, .homeDeepDive, .homeCommunity { padding: 64px 20px; }.homeHero { gap: 45px; }.homeHero h1 { font-size: clamp(47px, 10vw, 64px); letter-spacing: -.06em; }.homePathGrid, .homePlatformGrid, .homeInstallCommands, .homeDeepDive { grid-template-columns: 1fr; }.homePath { min-height: 210px; }.homePlatformGrid p { min-height: 0; }.homeFooter { padding: 30px 20px; display: grid; gap: 12px; }.homeFooter > div { margin-left: 0; } }
+@media (max-width: 390px) { .homeBrand { font-size: 20px; }.homeBrand img { width: 34px; height: 34px; }.homeNavDownload { padding: 0 12px; }.homeActions .homeButton { width: 100%; }.homeHeroNotes { gap: 8px 12px; } }

@@ -1,6 +1,6 @@
 # Model integration qualification
 
-Research/validation: 2026-09-05. Addresses [#30](https://github.com/kyndlo/tapioca/issues/30), [#31](https://github.com/kyndlo/tapioca/issues/31), and [#32](https://github.com/kyndlo/tapioca/issues/32). Issue #29 stays historical. Daily discovery remains local Codex scheduling, not GitHub cron.
+Research/validation: 2026-09-05 and 2026-09-18. Addresses [#30](https://github.com/kyndlo/tapioca/issues/30), [#31](https://github.com/kyndlo/tapioca/issues/31), [#32](https://github.com/kyndlo/tapioca/issues/32), and [#36](https://github.com/kyndlo/tapioca/issues/36). Issue #29 stays historical. Daily discovery remains local Codex scheduling, not GitHub cron.
 
 ## Release scope and downloads
 
@@ -48,6 +48,36 @@ Actual download returned **401 GatedRepoError**. User must accept [access terms]
 Runner rewrites the pinned English configuration to local paths, sets offline flags before imports, selects local Alba and incrementally writes PCM to a temporary WAV before atomic publication. Reference consent is enforced in the Python runner and Go CPU-backend contract; desktop acknowledgement follows the reference token through IPC/control. An acknowledgement is not proof of rights. Helpers test PCM, empty/malformed chunks, missing files and consent without loading weights. Remaining: authenticated provenance, checkpoint compatibility, intelligibility, reference decoding, long text, memory/platform tests and live playback.
 
 Sources: [runtime](https://github.com/kyutai-labs/pocket-tts/tree/7809e76aa94d5e841a006a27c1b31f07c60d22d4), [release](https://kyutai.org/blog/2026-01-13-pocket-tts), [non-authoritative CPU discussion](https://www.reddit.com/r/LocalLLaMA/comments/1vzyuyv/local_tts_models_not_sure_if_this_is_the_place/).
+
+## Sopro V2 Turbo — #36
+
+Research and Apple Silicon CPU smoke date: 2026-09-18. The public, ungated
+Apache-2.0 checkpoint is pinned to `f747f9edfb7b0233a3b7105af3a75603a7213d26`.
+All six artifacts (~605 MiB total) were downloaded and matched the SHA-256
+values in `catalog/candidates/sopro-v2-turbo.json`. The isolated
+`speech-sopro` candidate uses `sopro==2.2.0`, CPU inference, offline local paths,
+incremental 24 kHz mono PCM16 WAV writing, an explicit 5–20-second reference,
+and `--voice-consent`. It is **not in the public picker** and currently gates to
+Apple Silicon macOS; Windows/Linux have not been qualified.
+
+The official runtime generated a 3.23-second valid WAV from a locally
+synthesized 11.99-second reference in 1.67 seconds total on this Mac. The
+Tapioca CLI pulled/verified the cached bundle and generated a valid 3.10-second
+WAV with 1.13 seconds to first audio and 1.78 seconds of model load/inference
+after dependency installation. The first run separately created its Python
+environment. These are one short fixture, not a throughput or voice-quality
+guarantee. An opt-in Tapioca hardware test exercises the packaged speech
+adapter with a local model and reference. Remaining: assess intelligibility
+and voice similarity in all four languages, reference formats/quality,
+long-text chunk ordering, cancellation,
+peak memory, and Windows/Linux CPU behavior before public catalog activation.
+Users should clone only voices they have permission to use; the model does not
+watermark output.
+
+Sources: [official model card](https://huggingface.co/samuel-vitorino/sopro-v2-turbo),
+[official runtime at the pinned commit](https://github.com/samuel-vitorino/sopro/tree/7bfcf9a0539d274f6593959a21da948f506ceee1),
+[PyPI 2.2.0](https://pypi.org/project/sopro/2.2.0/), and
+[non-authoritative r/LocalLLaMA discussion](https://www.reddit.com/r/LocalLLaMA/comments/1vzvtgv/sopro_v2_sotalevel_voice_cloning_tts_at_120m/).
 
 ## Repeat validation
 

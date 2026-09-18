@@ -13,6 +13,10 @@ The Audio8 CPU speech adapter includes Apache-2.0 source from
 are retained in `internal/speechruntime/arktts_runtime/` and embedded in the
 managed runtime. The separate Pocket TTS runtime is MIT licensed; its gated
 weights are CC-BY-4.0 and require Kyutai attribution and accepted access terms.
+The experimental Sopro CPU speech adapter installs `sopro==2.2.0` on demand;
+its runtime and separately downloaded model weights are Apache-2.0 licensed.
+Voice references must be used with permission. The public catalog does not yet
+activate this candidate.
 
 Release bundles include a pinned `llama.cpp` runtime for local text-model
 inference. `llama.cpp` is licensed under the MIT License:

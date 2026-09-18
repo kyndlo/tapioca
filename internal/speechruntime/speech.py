@@ -213,6 +213,9 @@ def main():
         from pocket_qualification import run
         args.language = args.language or "en"
         run(args)
+    elif args.backend == "speech-sopro":
+        from sopro_qualification import run
+        run(args)
     else:
         raise SystemExit(f"unsupported speech backend: {args.backend}")
 

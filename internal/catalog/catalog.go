@@ -322,7 +322,7 @@ func validateModel(name string, model Model) error {
 		"diffusers-video": true, "onnx-directml": true, "onnx-cpu": true,
 		"comfy-h3-mps": true, "comfy-h3-cuda": true,
 		"speech-chatterbox": true, "speech-qwen": true, "speech-qwen-mlx": true,
-		"speech-audio8-onnx": true, "speech-pocket-tts": true,
+		"speech-audio8-onnx": true, "speech-pocket-tts": true, "speech-sopro": true,
 	}
 	for variant := range model.Files {
 		if !safeName.MatchString(variant) {
@@ -1072,6 +1072,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		platform = "Windows, macOS, Linux"
 	case "speech-audio8-onnx", "speech-pocket-tts":
 		platform = "macOS Apple Silicon; Windows/Linux x64 CPU"
+	case "speech-sopro":
+		platform = "macOS Apple Silicon CPU (experimental)"
 	case "speech-qwen":
 		platform = "Windows/Linux NVIDIA or CPU"
 	case "onnx-directml":

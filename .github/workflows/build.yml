@@ -18,7 +18,12 @@ permissions:
   contents: read
 
 env:
-  LLAMA_CPP_VERSION: b10603
+  LLAMA_CPP_VERSION: b10964
+  LLAMA_CPP_MACOS_ARM64_SHA256: 033c845c1df9bf945ff37bb193238b40910b2244be3e1e637b2ceb5878f1a6f5
+  LLAMA_CPP_WIN_VULKAN_X64_SHA256: 1ee3ad952f4ba71f438bd6d7bebef19e1c7af04adcaa35d08b4ddabb27d4c642
+  LLAMA_CPP_WIN_CPU_ARM64_SHA256: 4b6a004b076eea47c318bea35cf1db2ff2bf037738b04645646ae8d7c3159478
+  LLAMA_CPP_UBUNTU_VULKAN_X64_SHA256: 55d1e58e14c11eedea090bf088fdeefbfe7b4b09ee03bf6dba9834651769afcf
+  LLAMA_CPP_UBUNTU_VULKAN_ARM64_SHA256: f7864baa0edf5a059fb42c5efb5aceb96075aa1f41e6c3142b71ca69286cb0bb
 
 jobs:
   test:
@@ -90,6 +95,7 @@ jobs:
           curl -fL \
             "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-macos-arm64.tar.gz" \
             -o llama.cpp.tar.gz
+          printf '%s  %s\n' "$LLAMA_CPP_MACOS_ARM64_SHA256" llama.cpp.tar.gz | shasum -a 256 -c -
           mkdir -p dist/runtime/llama.cpp
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
@@ -158,6 +164,9 @@ jobs:
         run: |
           $url = "https://github.com/ggml-org/llama.cpp/releases/download/$env:LLAMA_CPP_VERSION/llama-$env:LLAMA_CPP_VERSION-bin-win-vulkan-x64.zip"
           Invoke-WebRequest -Uri $url -OutFile llama.cpp.zip
+          if ((Get-FileHash -Algorithm SHA256 llama.cpp.zip).Hash.ToLowerInvariant() -ne $env:LLAMA_CPP_WIN_VULKAN_X64_SHA256) {
+            throw "llama.cpp archive checksum mismatch"
+          }
           New-Item -ItemType Directory -Force dist/runtime/llama.cpp | Out-Null
           Expand-Archive llama.cpp.zip -DestinationPath dist/runtime/llama.cpp
           if (-not (Test-Path dist/runtime/llama.cpp/llama-server.exe)) {
@@ -226,6 +235,9 @@ jobs:
         run: |
           $url = "https://github.com/ggml-org/llama.cpp/releases/download/$env:LLAMA_CPP_VERSION/llama-$env:LLAMA_CPP_VERSION-bin-win-cpu-arm64.zip"
           Invoke-WebRequest -Uri $url -OutFile llama.cpp.zip
+          if ((Get-FileHash -Algorithm SHA256 llama.cpp.zip).Hash.ToLowerInvariant() -ne $env:LLAMA_CPP_WIN_CPU_ARM64_SHA256) {
+            throw "llama.cpp archive checksum mismatch"
+          }
           New-Item -ItemType Directory -Force dist/runtime/llama.cpp | Out-Null
           Expand-Archive llama.cpp.zip -DestinationPath dist/runtime/llama.cpp
           if (-not (Test-Path dist/runtime/llama.cpp/llama-server.exe)) {
@@ -291,6 +303,7 @@ jobs:
           curl -fL \
             "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-vulkan-x64.tar.gz" \
             -o llama.cpp.tar.gz
+          printf '%s  %s\n' "$LLAMA_CPP_UBUNTU_VULKAN_X64_SHA256" llama.cpp.tar.gz | sha256sum -c -
           mkdir -p dist/runtime/llama.cpp
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
@@ -349,6 +362,7 @@ jobs:
           curl -fL \
             "https://github.com/ggml-org/llama.cpp/releases/download/${LLAMA_CPP_VERSION}/llama-${LLAMA_CPP_VERSION}-bin-ubuntu-vulkan-arm64.tar.gz" \
             -o llama.cpp.tar.gz
+          printf '%s  %s\n' "$LLAMA_CPP_UBUNTU_VULKAN_ARM64_SHA256" llama.cpp.tar.gz | sha256sum -c -
           mkdir -p dist/runtime/llama.cpp
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server

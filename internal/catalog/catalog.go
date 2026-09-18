@@ -687,6 +687,30 @@ var builtInModels = map[string]Model{
 		License:    "Apache-2.0",
 		LicenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
 	},
+	"spark-x2.5-4b": {
+		Name:    "spark-x2.5-4b",
+		Repo:    "XHToken/Spark-X2.5-4B-GGUF",
+		Kind:    "text",
+		Default: "q4_k_m",
+		Files: map[string]string{
+			"q4_k_m": "Spark-X2.5-4B-Q4_K_M.gguf",
+		},
+		Revisions: map[string]string{
+			"q4_k_m": "902d865994943ab9235670e24f01846ee06091f2",
+		},
+		Checksums: map[string]string{
+			"q4_k_m": "adfcfa19a4ed6a5985da8bf565fe15f8e1a7e131d79bae2d19d48d1c40109428",
+		},
+		ByteSizes:  map[string]int64{"q4_k_m": 2600224352},
+		Contexts:   map[string]int{"q4_k_m": 8192},
+		Sizes:      map[string]string{"q4_k_m": "~2.42 GiB"},
+		Memory:     map[string]string{"q4_k_m": "8 GiB test target; 16 GiB recommended at 8K context"},
+		GPUs:       map[string]string{"q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"},
+		Languages:  map[string]string{"q4_k_m": "multilingual"},
+		Features:   map[string]string{"q4_k_m": "basic text chat; tools and long context not yet qualified"},
+		License:    "Apache-2.0",
+		LicenseURL: "https://www.apache.org/licenses/LICENSE-2.0",
+	},
 	"gemma3": {
 		Name:    "gemma3",
 		Repo:    "ggml-org/gemma-3-4b-it-GGUF",

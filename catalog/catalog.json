@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-18T22:13:36Z",
+  "generated_at": "2026-09-18T22:37:04.990204Z",
   "models": {
     "chatterbox": {
       "name": "chatterbox",
@@ -102,6 +102,44 @@
         "q8_0": "~30 GiB"
       }
     },
+    "granite-4.2-3b": {
+      "name": "granite-4.2-3b",
+      "repo": "ibm-granite/granite-4.2-3b-GGUF",
+      "files": {
+        "q4_k_m": "granite-4.2-3b-Q4_K_M.gguf"
+      },
+      "revisions": {
+        "q4_k_m": "c40945d71cd90f249a56985e8155551a9188dc30"
+      },
+      "checksums": {
+        "q4_k_m": "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5"
+      },
+      "byte_sizes": {
+        "q4_k_m": 2244011552
+      },
+      "contexts": {
+        "q4_k_m": 8192
+      },
+      "kind": "text",
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~2.09 GiB"
+      },
+      "memory": {
+        "q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"
+      },
+      "languages": {
+        "q4_k_m": "12 languages"
+      },
+      "features": {
+        "q4_k_m": "basic text chat; tools and long context not yet qualified"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
     "krea-2-raw": {
       "name": "krea-2-raw",
       "repo": "krea/Krea-2-Raw",
@@ -202,6 +240,44 @@
         "2b-fp16": "NVIDIA CUDA, 8 GiB+ VRAM; CPU offload"
       }
     },
+    "minicpm5-2b": {
+      "name": "minicpm5-2b",
+      "repo": "openbmb/MiniCPM5-2B-GGUF",
+      "files": {
+        "q4_k_m": "MiniCPM5-2B-Q4_K_M.gguf"
+      },
+      "revisions": {
+        "q4_k_m": "2079a22f3beaa4e306449978533478fe0522f4b3"
+      },
+      "checksums": {
+        "q4_k_m": "ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd"
+      },
+      "byte_sizes": {
+        "q4_k_m": 1561318368
+      },
+      "contexts": {
+        "q4_k_m": 8192
+      },
+      "kind": "text",
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~1.45 GiB"
+      },
+      "memory": {
+        "q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"
+      },
+      "languages": {
+        "q4_k_m": "English and Chinese"
+      },
+      "features": {
+        "q4_k_m": "basic text chat; tools and long context not yet qualified"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
+    },
     "minimax-h3": {
       "name": "minimax-h3",
       "repo": "Comfy-Org/MiniMax-H3",
@@ -282,42 +358,6 @@
           }
         ]
       }
-    },
-    "granite-4.2-3b": {
-      "name": "granite-4.2-3b",
-      "repo": "ibm-granite/granite-4.2-3b-GGUF",
-      "files": {"q4_k_m": "granite-4.2-3b-Q4_K_M.gguf"},
-      "revisions": {"q4_k_m": "c40945d71cd90f249a56985e8155551a9188dc30"},
-      "checksums": {"q4_k_m": "e0406663965846ae22a403456eb826ccce5f450840491f71952f18a7cb78e7d5"},
-      "byte_sizes": {"q4_k_m": 2244011552},
-      "contexts": {"q4_k_m": 8192},
-      "kind": "text",
-      "default": "q4_k_m",
-      "sizes": {"q4_k_m": "~2.09 GiB"},
-      "memory": {"q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"},
-      "gpus": {"q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"},
-      "languages": {"q4_k_m": "12 languages"},
-      "features": {"q4_k_m": "basic text chat; tools and long context not yet qualified"},
-      "license": "Apache-2.0",
-      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
-    },
-    "minicpm5-2b": {
-      "name": "minicpm5-2b",
-      "repo": "openbmb/MiniCPM5-2B-GGUF",
-      "files": {"q4_k_m": "MiniCPM5-2B-Q4_K_M.gguf"},
-      "revisions": {"q4_k_m": "2079a22f3beaa4e306449978533478fe0522f4b3"},
-      "checksums": {"q4_k_m": "ec2d5801640099e97d8d7e8003ad4d81f336e757811f03a26173dddf386602fd"},
-      "byte_sizes": {"q4_k_m": 1561318368},
-      "contexts": {"q4_k_m": 8192},
-      "kind": "text",
-      "default": "q4_k_m",
-      "sizes": {"q4_k_m": "~1.45 GiB"},
-      "memory": {"q4_k_m": "8 GiB minimum; 16 GiB recommended at 8K context"},
-      "gpus": {"q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"},
-      "languages": {"q4_k_m": "English and Chinese"},
-      "features": {"q4_k_m": "basic text chat; tools and long context not yet qualified"},
-      "license": "Apache-2.0",
-      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
     },
     "phi4-mini": {
       "name": "phi4-mini",
@@ -581,6 +621,44 @@
       "gpus": {
         "fp16": "NVIDIA CUDA, 8 GiB+ VRAM"
       }
+    },
+    "spark-x2.5-4b": {
+      "name": "spark-x2.5-4b",
+      "repo": "XHToken/Spark-X2.5-4B-GGUF",
+      "files": {
+        "q4_k_m": "Spark-X2.5-4B-Q4_K_M.gguf"
+      },
+      "revisions": {
+        "q4_k_m": "902d865994943ab9235670e24f01846ee06091f2"
+      },
+      "checksums": {
+        "q4_k_m": "adfcfa19a4ed6a5985da8bf565fe15f8e1a7e131d79bae2d19d48d1c40109428"
+      },
+      "byte_sizes": {
+        "q4_k_m": 2600224352
+      },
+      "contexts": {
+        "q4_k_m": 8192
+      },
+      "kind": "text",
+      "default": "q4_k_m",
+      "sizes": {
+        "q4_k_m": "~2.42 GiB"
+      },
+      "memory": {
+        "q4_k_m": "8 GiB test target; 16 GiB recommended at 8K context"
+      },
+      "gpus": {
+        "q4_k_m": "CPU or Apple Metal; Vulkan pending qualification"
+      },
+      "languages": {
+        "q4_k_m": "multilingual"
+      },
+      "features": {
+        "q4_k_m": "basic text chat; tools and long context not yet qualified"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://www.apache.org/licenses/LICENSE-2.0"
     },
     "stable-video-diffusion": {
       "name": "stable-video-diffusion",

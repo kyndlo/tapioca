@@ -624,7 +624,12 @@ func waitForServer(ctx context.Context, base string, timeout time.Duration) erro
 }
 
 func runPython(ctx context.Context, cacheDir string, request Request, flavor string) error {
-	root := filepath.Join(cacheDir, "video-runtime", "0.1.1-"+flavor)
+	version := "0.1.1"
+	if flavor == "diffusers" {
+		// Do not reuse an environment with the vulnerable pre-0.40 shard loader.
+		version = "0.1.2-diffusers040"
+	}
+	root := filepath.Join(cacheDir, "video-runtime", version+"-"+flavor)
 	script := flavor + "_video.py"
 	requirements := "requirements-" + flavor + ".txt"
 	for _, name := range []string{script, requirements} {

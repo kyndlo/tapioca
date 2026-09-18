@@ -36,6 +36,17 @@ video frames, runtime libraries, and other applications consume more memory.
 
 Use an 8K–16K context instead of the model's maximum advertised context.
 
+### Compact models under qualification
+
+`minicpm5-2b:q4_k_m` (~1.45 GiB) and `spark-x2.5-4b:q4_k_m`
+(~2.42 GiB) use pinned, SHA-256-checked official GGUF files and default to an
+8K context. The 8 GiB memory figure is a test target, **not a measured
+minimum**; 16 GiB leaves room for the operating system and other apps.
+Both passed basic CPU and Apple Silicon Metal chat tests with bundled
+llama.cpp b10964. Windows/Linux Vulkan, long context, and structured tool use
+are not yet qualified. Try `tapioca pull minicpm5-2b` or
+`tapioca pull spark-x2.5-4b`, then `tapioca run MODEL`.
+
 ### Apple Silicon
 
 | Model | Download | Best for |

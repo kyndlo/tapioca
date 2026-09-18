@@ -399,6 +399,8 @@ func validRelativePath(value string) bool {
 
 var builtInModels = map[string]Model{
 	"granite-4.2": graniteModel(),
+	"minicpm5-2b": miniCPM5Model(),
+	"spark-x2.5-4b": sparkX25Model(),
 	"chatterbox": {
 		Name:    "chatterbox",
 		Repo:    "ResembleAI/chatterbox",

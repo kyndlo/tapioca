@@ -14,7 +14,7 @@ import (
 	"github.com/carlos/tapioca/internal/pythonruntime"
 )
 
-//go:embed speech.py cpu_speech.py pocket_qualification.py arktts_runtime requirements-*.txt
+//go:embed speech.py cpu_speech.py pocket_qualification.py sopro_qualification.py arktts_runtime requirements-*.txt
 var source embed.FS
 
 type Request struct {
@@ -43,6 +43,14 @@ func RunWithWriters(
 ) error {
 	flavor := ""
 	switch request.Backend {
+	case "speech-sopro":
+		if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+			return errors.New("experimental Sopro CPU speech currently requires Apple Silicon macOS")
+		}
+		if request.VoiceSample == "" || !request.VoiceConsent {
+			return errors.New("Sopro requires a reference recording and explicit voice-use permission")
+		}
+		flavor = "sopro-qualification"
 	case "speech-audio8-onnx", "speech-pocket-tts":
 		if runtime.GOARCH != "amd64" && !(runtime.GOOS == "darwin" && runtime.GOARCH == "arm64") {
 			return errors.New("this CPU speech backend requires x64 Windows/Linux or Apple Silicon macOS")
@@ -82,7 +90,7 @@ func runPython(
 ) error {
 	root := filepath.Join(cacheDir, "speech-runtime", "0.1.3-"+flavor)
 	requirementsName := "requirements-" + flavor + ".txt"
-	names := []string{"speech.py", requirementsName, "cpu_speech.py", "pocket_qualification.py"}
+	names := []string{"speech.py", requirementsName, "cpu_speech.py", "pocket_qualification.py", "sopro_qualification.py"}
 	if flavor == "audio8" {
 		entries, err := source.ReadDir("arktts_runtime")
 		if err != nil {

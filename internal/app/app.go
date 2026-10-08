@@ -26,7 +26,7 @@ import (
 	"github.com/carlos/tapioca/internal/updater"
 )
 
-const Version = "0.12.0"
+const Version = "0.13.0"
 
 func Run(args []string) error {
 	if len(args) == 0 {

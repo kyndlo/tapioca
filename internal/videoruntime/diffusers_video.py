@@ -33,9 +33,9 @@ def main():
     if is_ltx2 and sys.version_info < (3, 12):
         raise SystemExit("LTX-2.5 requires Python 3.12 or newer")
     if is_ltx2:
-        from diffusers import LTX2Pipeline
+        from diffusers import LTX2ImageToVideoPipeline, LTX2Pipeline
 
-        pipeline_class = LTX2Pipeline
+        pipeline_class = LTX2ImageToVideoPipeline if args.image else LTX2Pipeline
     else:
         pipeline_class = StableVideoDiffusionPipeline if is_svd else DiffusionPipeline
     load_options = {

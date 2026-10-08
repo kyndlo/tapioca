@@ -24,6 +24,20 @@ func TestDiffusersVideoUsesFixedShardLoader(t *testing.T) {
 	}
 }
 
+func TestLTX2SelectsImageConditionedPipeline(t *testing.T) {
+	script, err := source.ReadFile("diffusers_video.py")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{
+		"LTX2ImageToVideoPipeline", "if args.image else LTX2Pipeline",
+	} {
+		if !strings.Contains(string(script), required) {
+			t.Fatalf("LTX-2.5 image conditioning is not wired through: %s", script)
+		}
+	}
+}
+
 func TestH3GraphChainsAdaptersIntoSchedulerAndGuider(t *testing.T) {
 	python, err := exec.LookPath("python3")
 	if err != nil {

@@ -363,6 +363,9 @@ func (h *Handler) generateVideo(
 	if err := validateVideo(params); err != nil {
 		return nil, err
 	}
+	if protocolError := validateVideoModelFrames(model.Name, params.Frames); protocolError != nil {
+		return nil, protocolError
+	}
 	if (model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda") &&
 		(params.Frames < 5 || (params.Frames-5)%17 != 0) {
 		return nil, invalidParams("MiniMax-H3 frames must have the form 17n+5", nil)
@@ -403,6 +406,17 @@ func (h *Handler) generateVideo(
 		return nil, operationError(ctx, "video_generation_failed", runError)
 	}
 	return creatorOutput(output, "video", model.Name, h.dependencies.Now())
+}
+
+func validateVideoModelFrames(modelName string, frames int) *ProtocolError {
+	if (modelName == "ltx-video:2b-fp16" || modelName == "ltx-2.5:22b-bf16-cuda") &&
+		(frames-1)%8 != 0 {
+		return invalidParams(
+			"LTX video frames must have the form 8n+1 (for example 17, 49, or 121)",
+			nil,
+		)
+	}
+	return nil
 }
 
 func runImage(

@@ -23,3 +23,14 @@ func TestPythonArguments(t *testing.T) {
 		t.Fatalf("unexpected runtime script: %v", args)
 	}
 }
+
+func TestCUDAWheelSelectionExcludesARM64(t *testing.T) {
+	if !usesCUDATorch("windows", "amd64") || !usesCUDATorch("linux", "amd64") {
+		t.Fatal("x64 NVIDIA platforms must install the CUDA wheel")
+	}
+	for _, goos := range []string{"windows", "linux", "darwin"} {
+		if usesCUDATorch(goos, "arm64") {
+			t.Fatalf("%s/arm64 must use the default CPU-compatible dependency", goos)
+		}
+	}
+}

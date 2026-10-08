@@ -82,7 +82,7 @@ func RunWithWriters(
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("upgrade pip: %w", err)
 		}
-		if runtime.GOOS == "windows" || runtime.GOOS == "linux" {
+		if usesCUDATorch(runtime.GOOS, runtime.GOARCH) {
 			cmd = exec.CommandContext(ctx, python, "-m", "pip", "install",
 				"torch==2.7.1", "torchaudio==2.7.1",
 				"--index-url", "https://download.pytorch.org/whl/cu128")
@@ -107,6 +107,10 @@ func RunWithWriters(
 		return fmt.Errorf("Stable Audio 3 generation failed: %w", err)
 	}
 	return nil
+}
+
+func usesCUDATorch(goos, goarch string) bool {
+	return (goos == "windows" || goos == "linux") && goarch == "amd64"
 }
 
 func pythonArguments(root string, request Request) []string {

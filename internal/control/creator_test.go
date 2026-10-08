@@ -302,6 +302,17 @@ func TestValidateVideoUsesRuntimeFrameLimit(t *testing.T) {
 	}
 }
 
+func TestValidateLTXVideoFrameShape(t *testing.T) {
+	for _, model := range []string{"ltx-video:2b-fp16", "ltx-2.5:22b-bf16-cuda"} {
+		if err := validateVideoModelFrames(model, 49); err != nil {
+			t.Fatalf("%s rejected valid frame count: %v", model, err)
+		}
+		if err := validateVideoModelFrames(model, 13); err == nil || err.Code != "invalid_params" {
+			t.Fatalf("%s accepted invalid frame count: %#v", model, err)
+		}
+	}
+}
+
 func TestSpeechGenerateUsesRuntimeAdapterAndManagedOutput(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("TAPIOCA_HOME", home)

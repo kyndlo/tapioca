@@ -56,11 +56,12 @@ the registry is updated.
 | `chat.describe` | `model`; optional port | local chat endpoint descriptor |
 | `agent.describe` | `agent`, `model`; optional port and args | non-executing launch descriptor |
 | `creator.capabilities` | none | protocol-safe creator feature availability |
-| `creator.catalog` | none | image, video, and speech-compatible catalog variants |
+| `creator.catalog` | none | image, video, audio, and speech-compatible catalog variants |
 | `image.generate` | `model`, `prompt`; optional dimensions, inputs, LoRAs | local image file metadata |
 | `video.generate` | `model`, `prompt`; optional image, dimensions, LoRAs | local MP4 file metadata |
-| `speech.generate` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
-| `voice.clone` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
+| `speech.generate` | `model`, `text`; optional voice, language, speaker, instruction | local WAV file metadata |
+| `voice.clone` | `model`, `text`, `voice_sample`; optional transcript and language | local WAV file metadata |
+| `audio.generate` | `model`, `prompt`; optional duration, steps, seed | local WAV file metadata |
 | `lora.list` | none | installed `.safetensors` metadata |
 | `lora.inspect` | `reference` | provider-neutral LoRA metadata |
 | `lora.pull` | `reference`; optional `file`, `force` | installed provider LoRA record |

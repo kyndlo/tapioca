@@ -1,7 +1,8 @@
 diffusers==0.40.0
-transformers>=4.51
-accelerate>=1.6
-safetensors>=0.5
-sentencepiece>=0.2
+transformers==5.15.1
+accelerate==1.14.0
+safetensors==0.8.0
+sentencepiece==0.2.2
 imageio>=2.37
 imageio-ffmpeg>=0.6
+av>=14

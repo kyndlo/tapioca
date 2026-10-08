@@ -48,6 +48,8 @@ func Run(args []string) error {
 		return edit(args[1:])
 	case "video":
 		return video(args[1:])
+	case "audio":
+		return audio(args[1:])
 	case "tts":
 		return tts(args[1:])
 	case "voice":
@@ -74,7 +76,7 @@ func Run(args []string) error {
 }
 
 func usage(w io.Writer) {
-	fmt.Fprintln(w, `Tapioca runs local language, speech, image, and video models.
+	fmt.Fprintln(w, `Tapioca runs local language, speech, image, video, and audio models.
 
 Usage:
   tapioca pull MODEL[:QUANT] [--accept-license]
@@ -83,6 +85,7 @@ Usage:
   tapioca image MODEL --prompt TEXT [--seed NUMBER | --random-seed] [--output image.png]
   tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT [--seed NUMBER | --random-seed]
   tapioca video MODEL --prompt TEXT [--image start.png] [--seconds N | --frames N] [--seed NUMBER | --random-seed] [--output video.mp4]
+  tapioca audio MODEL --prompt TEXT [--seconds N] [--seed NUMBER | --random-seed] [--output audio.wav]
   tapioca tts MODEL --text TEXT [--voice NAME | --voice-sample FILE] [--output speech.wav]
   tapioca voice (create|list|inspect|remove) [NAME]
   tapioca adapter (inspect|pull|import|list) [REFERENCE]
@@ -99,6 +102,7 @@ Examples:
   tapioca pull qwen-image-flash:int8
   tapioca image qwen-image-flash:int8 --prompt "A red fox in snow"
   tapioca video wan2.2-video:5b-q8-mlx --prompt "A red fox running in snow" --seconds 5 --random-seed
+  tapioca audio stable-audio-3:small-sfx --prompt "A wooden door closing in a stone hall" --seconds 8
   tapioca voice create narrator --model chatterbox:nano --audio voice.wav
   tapioca tts chatterbox:nano --voice narrator --text "Hello from Tapioca"
   tapioca adapter inspect hf://Alissonerdx/BFS-Best-Face-Swap
@@ -242,7 +246,7 @@ func pullResolvedWithContext(
 		}
 	}
 	dir := filepath.Join(home, "models", strings.ReplaceAll(resolved.Name, ":", "-"))
-	if resolved.Kind == "image" || resolved.Kind == "video" || resolved.Kind == "speech" {
+	if resolved.Kind == "image" || resolved.Kind == "video" || resolved.Kind == "speech" || resolved.Kind == "audio" {
 		if err := pullSnapshotWithContext(ctx, resolved, dir, force, report); err != nil {
 			return config.Model{}, err
 		}

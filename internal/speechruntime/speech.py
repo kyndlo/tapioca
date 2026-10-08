@@ -133,10 +133,6 @@ def qwen(args):
     import torch
     from qwen_tts import Qwen3TTSModel
 
-    if not args.voice_sample:
-        raise SystemExit(
-            "qwen3-tts Base requires --voice-sample or --voice for voice cloning"
-        )
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float32
     model = Qwen3TTSModel.from_pretrained(
@@ -146,21 +142,123 @@ def qwen(args):
         attn_implementation="sdpa",
         local_files_only=True,
     )
-    wavs, sample_rate = model.generate_voice_clone(
-        text=args.text,
-        language=args.language or "Auto",
-        ref_audio=args.voice_sample,
-        ref_text=args.transcript or None,
-        x_vector_only_mode=not bool(args.transcript),
-    )
+    variant = args.model_name.lower()
+    common = {"text": args.text, "language": args.language or "Auto"}
+    if "custom-voice" in variant:
+        if not args.speaker:
+            raise SystemExit("Qwen3-TTS CustomVoice requires --speaker")
+        wavs, sample_rate = model.generate_custom_voice(
+            **common, speaker=args.speaker, instruct=args.instruct or None
+        )
+    elif "voice-design" in variant:
+        if not args.instruct:
+            raise SystemExit("Qwen3-TTS VoiceDesign requires --instruct")
+        wavs, sample_rate = model.generate_voice_design(
+            **common, instruct=args.instruct
+        )
+    else:
+        if not args.voice_sample:
+            raise SystemExit(
+                "Qwen3-TTS Base requires --voice-sample or --voice for voice cloning"
+            )
+        wavs, sample_rate = model.generate_voice_clone(
+            **common,
+            ref_audio=args.voice_sample,
+            ref_text=args.transcript or None,
+            x_vector_only_mode=not bool(args.transcript),
+        )
     sf.write(args.output, wavs[0], sample_rate)
 
 
 def qwen_mlx(args):
-    if not args.voice_sample:
-        raise SystemExit(
-            "qwen3-tts Base requires --voice-sample or --voice for voice cloning"
+    from mlx_audio.tts.generate import generate_audio
+    from mlx_audio.tts.utils import load_model
+
+    model = load_model(args.model)
+    with tempfile.TemporaryDirectory(prefix="tapioca-speech-") as output_dir:
+        options = dict(
+            model=model,
+            text=args.text,
+            output_path=output_dir,
+            file_prefix="speech",
+            audio_format="wav",
+            join_audio=True,
+            lang_code=args.language or "auto",
+            play=False,
+            verbose=False,
         )
+        variant = args.model_name.lower()
+        if "custom-voice" in variant:
+            if not args.speaker:
+                raise SystemExit("Qwen3-TTS CustomVoice requires --speaker")
+            options.update(voice=args.speaker, instruct=args.instruct or None)
+        elif "voice-design" in variant:
+            if not args.instruct:
+                raise SystemExit("Qwen3-TTS VoiceDesign requires --instruct")
+            options.update(voice=None, instruct=args.instruct)
+        else:
+            if not args.voice_sample:
+                raise SystemExit(
+                    "Qwen3-TTS Base requires --voice-sample or --voice for voice cloning"
+                )
+            options.update(
+                voice=None,
+                ref_audio=args.voice_sample,
+                ref_text=args.transcript or None,
+            )
+        generate_audio(**options)
+        candidates = glob.glob(os.path.join(output_dir, "*.wav"))
+        if not candidates:
+            raise SystemExit("MLX Audio did not produce a WAV file")
+        shutil.move(candidates[0], args.output)
+
+
+def audio8(args):
+    import soundfile as sf
+    import torch
+    from transformers import AutoModel, AutoProcessor
+
+    if args.voice_sample and not args.transcript:
+        raise SystemExit("Audio8 voice cloning requires --transcript")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    processor = AutoProcessor.from_pretrained(
+        args.model, trust_remote_code=True, local_files_only=True
+    )
+    model = AutoModel.from_pretrained(
+        args.model,
+        trust_remote_code=True,
+        local_files_only=True,
+        dtype=dtype,
+    ).eval().to(device)
+    processor_options = {"text": [args.text], "return_tensors": "pt"}
+    if args.voice_sample:
+        processor_options.update(
+            reference_audio=[args.voice_sample], reference_text=[args.transcript]
+        )
+    inputs = processor(**processor_options)
+    inputs = {
+        name: value.to(device) if hasattr(value, "to") else value
+        for name, value in inputs.items()
+    }
+    with torch.inference_mode():
+        generated = model.generate(
+            **inputs,
+            max_new_tokens=1024,
+            temperature=0.8,
+            top_p=0.95,
+            top_k=50,
+            do_sample=True,
+            return_dict_in_generate=True,
+        )
+        waveforms, lengths = model.decode_audio(generated.codes)
+    audio = waveforms[0, : int(lengths[0])].float().cpu().numpy()
+    sf.write(args.output, audio, model.config.codec_sample_rate)
+
+
+def audio8_mlx(args):
+    if args.voice_sample and not args.transcript:
+        raise SystemExit("Audio8 voice cloning requires --transcript")
     from mlx_audio.tts.generate import generate_audio
     from mlx_audio.tts.utils import load_model
 
@@ -169,7 +267,8 @@ def qwen_mlx(args):
         generate_audio(
             model=model,
             text=args.text,
-            ref_audio=args.voice_sample,
+            voice=None,
+            ref_audio=args.voice_sample or None,
             ref_text=args.transcript or None,
             output_path=output_dir,
             file_prefix="speech",
@@ -196,6 +295,8 @@ def main():
     parser.add_argument("--language", default="")
     parser.add_argument("--voice-consent", action="store_true")
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--speaker", default="")
+    parser.add_argument("--instruct", default="")
     args = parser.parse_args()
 
     if os.path.splitext(args.output)[1].lower() != ".wav":
@@ -216,6 +317,10 @@ def main():
     elif args.backend == "speech-sopro":
         from sopro_qualification import run
         run(args)
+    elif args.backend == "speech-audio8":
+        audio8(args)
+    elif args.backend == "speech-audio8-mlx":
+        audio8_mlx(args)
     else:
         raise SystemExit(f"unsupported speech backend: {args.backend}")
 

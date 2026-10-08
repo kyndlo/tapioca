@@ -14,24 +14,27 @@ import (
 )
 
 type CatalogModel struct {
-	Name       string   `json:"name"`
-	Kind       string   `json:"kind"`
-	Backend    string   `json:"backend"`
-	Repo       string   `json:"repo"`
-	Size       string   `json:"size,omitempty"`
-	Memory     string   `json:"memory,omitempty"`
-	GPU        string   `json:"gpu,omitempty"`
-	Platforms  []string `json:"platforms"`
-	Languages  string   `json:"languages,omitempty"`
-	Features   string   `json:"features,omitempty"`
-	Width      int      `json:"width,omitempty"`
-	Height     int      `json:"height,omitempty"`
-	Steps      int      `json:"steps,omitempty"`
-	Frames     int      `json:"frames,omitempty"`
-	FPS        int      `json:"fps,omitempty"`
-	Gated      bool     `json:"gated,omitempty"`
-	License    string   `json:"license,omitempty"`
-	LicenseURL string   `json:"license_url,omitempty"`
+	Name               string   `json:"name"`
+	Kind               string   `json:"kind"`
+	Backend            string   `json:"backend"`
+	Repo               string   `json:"repo"`
+	Size               string   `json:"size,omitempty"`
+	Memory             string   `json:"memory,omitempty"`
+	GPU                string   `json:"gpu,omitempty"`
+	Platforms          []string `json:"platforms"`
+	Languages          string   `json:"languages,omitempty"`
+	Features           string   `json:"features,omitempty"`
+	Width              int      `json:"width,omitempty"`
+	Height             int      `json:"height,omitempty"`
+	Steps              int      `json:"steps,omitempty"`
+	Frames             int      `json:"frames,omitempty"`
+	FPS                int      `json:"fps,omitempty"`
+	DurationSeconds    int      `json:"duration_seconds,omitempty"`
+	MaxDurationSeconds int      `json:"max_duration_seconds,omitempty"`
+	SampleRate         int      `json:"sample_rate,omitempty"`
+	Gated              bool     `json:"gated,omitempty"`
+	License            string   `json:"license,omitempty"`
+	LicenseURL         string   `json:"license_url,omitempty"`
 }
 
 type InstalledModel struct {
@@ -53,6 +56,7 @@ type Dependencies struct {
 	Image          ImageRunFunc
 	Video          VideoRunFunc
 	Speech         SpeechRunFunc
+	Audio          AudioRunFunc
 	Now            func() time.Time
 }
 
@@ -94,6 +98,9 @@ func NewHandler(dependencies Dependencies) *Handler {
 	}
 	if dependencies.Speech == nil {
 		dependencies.Speech = runSpeech
+	}
+	if dependencies.Audio == nil {
+		dependencies.Audio = runAudio
 	}
 	return &Handler{
 		dependencies:  dependencies,
@@ -211,6 +218,7 @@ func capabilities() map[string]any {
 			"image.generate",
 			"video.generate",
 			"speech.generate",
+			"audio.generate",
 			"voice.clone",
 			"lora.list",
 			"lora.inspect",
@@ -289,24 +297,27 @@ func loadCatalog(ctx context.Context) ([]CatalogModel, error) {
 			backend = "llama.cpp"
 		}
 		models = append(models, CatalogModel{
-			Name:       resolved.Name,
-			Kind:       kind,
-			Backend:    backend,
-			Repo:       resolved.Repo,
-			Size:       resolved.Size,
-			Memory:     resolved.Memory,
-			GPU:        resolved.GPU,
-			Platforms:  normalizePlatforms(resolved.Platform),
-			Languages:  resolved.Languages,
-			Features:   resolved.Features,
-			Width:      resolved.Width,
-			Height:     resolved.Height,
-			Steps:      resolved.Steps,
-			Frames:     resolved.Frames,
-			FPS:        resolved.FPS,
-			Gated:      resolved.Gated,
-			License:    resolved.License,
-			LicenseURL: resolved.LicenseURL,
+			Name:               resolved.Name,
+			Kind:               kind,
+			Backend:            backend,
+			Repo:               resolved.Repo,
+			Size:               resolved.Size,
+			Memory:             resolved.Memory,
+			GPU:                resolved.GPU,
+			Platforms:          normalizePlatforms(resolved.Platform),
+			Languages:          resolved.Languages,
+			Features:           resolved.Features,
+			Width:              resolved.Width,
+			Height:             resolved.Height,
+			Steps:              resolved.Steps,
+			Frames:             resolved.Frames,
+			FPS:                resolved.FPS,
+			DurationSeconds:    resolved.DurationSeconds,
+			MaxDurationSeconds: resolved.MaxDuration,
+			SampleRate:         resolved.SampleRate,
+			Gated:              resolved.Gated,
+			License:            resolved.License,
+			LicenseURL:         resolved.LicenseURL,
 		})
 	}
 	return models, nil

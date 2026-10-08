@@ -13,6 +13,7 @@ describe("desktop navigation", () => {
       "Chat",
       "Images",
       "Video",
+      "Audio",
       "Voice",
       "Agents",
       "Models",

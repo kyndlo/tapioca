@@ -224,7 +224,7 @@ func (s *Server) markRequestSeen(id string) bool {
 func isMutating(method string) bool {
 	switch method {
 	case "model.pull", "model.remove", "server.start", "server.stop",
-		"image.generate", "video.generate", "speech.generate", "voice.clone":
+		"image.generate", "video.generate", "speech.generate", "audio.generate", "voice.clone":
 		return true
 	default:
 		return false

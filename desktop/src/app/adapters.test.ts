@@ -40,6 +40,7 @@ function apiFixture(overrides: Partial<TapiocaDesktopApi> = {}) {
       image: { available: true, method: "image.generate" },
       video: { available: true, method: "video.generate" },
       speech: { available: false, method: "speech.generate", error_code: "runtime_adapter_required" },
+      audio: { available: true, method: "audio.generate" },
       voice_clone: { available: false, method: "voice.clone", error_code: "runtime_adapter_required" },
       outputs: { binary_in_protocol: false, managed_local_paths: true },
     }),
@@ -83,6 +84,45 @@ describe("renderer adapters", () => {
       expect.objectContaining({
         ready: false,
         detail: "Unavailable: runtime_adapter_required",
+      }),
+    ]);
+  });
+
+  it("exposes standalone audio models with duration defaults", async () => {
+    const audio = {
+      name: "stable-audio-3:small-music",
+      repo: "stabilityai/stable-audio-3-small-music",
+      kind: "audio",
+      backend: "stable-audio3",
+      platforms: ["windows", "linux", "macos"],
+      operation: "audio.generate",
+      supports_input_image: false,
+      requires_input_image: false,
+      supports_lora: false,
+      available: true,
+      steps: 8,
+      duration_seconds: 30,
+      max_duration_seconds: 120,
+      sample_rate: 44_100,
+    };
+    const adapters = createRendererAdapters(apiFixture({
+      creatorCatalog: vi.fn().mockResolvedValue([audio]),
+      models: vi.fn().mockResolvedValue({
+        catalog: [audio],
+        installed: [{
+          name: audio.name,
+          repo: audio.repo,
+          kind: audio.kind,
+          backend: audio.backend,
+        }],
+      }),
+    }), vi.fn());
+    await expect(adapters.creator.models("audio")).resolves.toEqual([
+      expect.objectContaining({
+        id: audio.name,
+        ready: true,
+        defaults: expect.objectContaining({ durationSeconds: 30, steps: 8 }),
+        limits: expect.objectContaining({ maxDurationSeconds: 120 }),
       }),
     ]);
   });

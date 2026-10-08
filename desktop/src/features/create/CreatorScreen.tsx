@@ -24,6 +24,10 @@ import { creatorModes } from "./types";
 import { VoiceRecorder } from "./VoiceRecorder";
 import "./create.css";
 
+const qwenSpeakerOptions = [
+  "Vivian", "Serena", "Uncle_Fu", "Dylan", "Eric", "Ryan", "Aiden", "Ono_Anna", "Sohee",
+] as const;
+
 export interface CreatorScreenProps {
   adapter: CreatorAdapter;
   initialMode?: CreatorMode;
@@ -40,6 +44,9 @@ export function CreatorScreen({
   const [modelId, setModelId] = useState("");
   const [prompt, setPrompt] = useState("");
   const [text, setText] = useState("");
+  const [language, setLanguage] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [instruct, setInstruct] = useState("");
   const [inputImage, setInputImage] = useState<LocalFileSelection>();
   const [voiceReference, setVoiceReference] = useState<LocalFileSelection>();
   const [consentedVoiceToken, setConsentedVoiceToken] = useState<string>();
@@ -222,6 +229,9 @@ export function CreatorScreen({
     modelId,
     prompt: prompt.trim(),
     text: text.trim() || undefined,
+    language: language.trim() || undefined,
+    speaker: speaker.trim() || undefined,
+    instruct: instruct.trim() || undefined,
     inputImage,
     voiceReference,
     voiceConsent: Boolean(voiceReference && consentedVoiceToken === voiceReference.token),
@@ -346,16 +356,38 @@ export function CreatorScreen({
               <small>{selectedModel?.detail ?? "Only models compatible with this workflow are shown."}</small>
             </label>
 
-            {(mode === "image" || mode === "video") && (
+            {(mode === "image" || mode === "video" || mode === "audio") && (
               <label className="creator-field">
                 <span>Prompt</span>
-                <textarea rows={4} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={mode === "image" ? "Describe the image you want to create…" : "Describe the subject, motion, camera, and scene…"} disabled={generating} />
+                <textarea rows={4} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={mode === "image" ? "Describe the image you want to create…" : mode === "audio" ? "Describe the music, sound effect, instruments, mood, and pacing…" : "Describe the subject, motion, camera, and scene…"} disabled={generating} />
               </label>
             )}
             {(mode === "speech" || mode === "voice-clone") && (
               <label className="creator-field">
                 <span>Text to speak</span>
                 <textarea rows={4} value={text} onChange={(event) => setText(event.target.value)} placeholder="Type what the local voice should say…" disabled={generating} />
+              </label>
+            )}
+
+            {(mode === "speech" || mode === "voice-clone") && selectedModel?.id.includes("custom-voice") && (
+              <label className="creator-field">
+                <span>Speaker</span>
+                <select value={speaker} onChange={(event) => setSpeaker(event.target.value)} disabled={generating}>
+                  <option value="">Choose a built-in speaker…</option>
+                  {qwenSpeakerOptions.map((name) => <option key={name} value={name}>{name}</option>)}
+                </select>
+              </label>
+            )}
+            {(mode === "speech" || mode === "voice-clone") && selectedModel?.id.includes("voice-design") && (
+              <label className="creator-field">
+                <span>Voice design</span>
+                <textarea rows={3} value={instruct} onChange={(event) => setInstruct(event.target.value)} placeholder="Describe the desired voice, age, tone, accent, and delivery…" disabled={generating} />
+              </label>
+            )}
+            {(mode === "speech" || mode === "voice-clone") && (
+              <label className="creator-field">
+                <span>Language (optional)</span>
+                <input value={language} onChange={(event) => setLanguage(event.target.value)} placeholder="Auto-detect" disabled={generating} />
               </label>
             )}
 
@@ -396,6 +428,15 @@ export function CreatorScreen({
             />
           )}
 
+          {mode === "audio" && (
+            <AudioSetup
+              model={selectedModel}
+              settings={settings}
+              disabled={generating}
+              onChange={setSettings}
+            />
+          )}
+
           {(mode === "image" || mode === "video") && selectedModel?.supportsLoRA !== false && (
             <LoraEditor
               loras={loras}
@@ -416,7 +457,7 @@ export function CreatorScreen({
             />
           )}
 
-          {(mode === "image" || mode === "video") && <AdvancedSettings mode={mode} settings={settings} disabled={generating} onChange={setSettings} />}
+          {(mode === "image" || mode === "video" || mode === "audio") && <AdvancedSettings mode={mode} settings={settings} disabled={generating} onChange={setSettings} />}
 
           <div className="creator-generate">
             <div>
@@ -428,6 +469,10 @@ export function CreatorScreen({
               ) : mode === "image" ? (
                 <span className="creator-generate__summary">
                   {settings.width}×{settings.height} · {formatMegapixels(settings.width, settings.height)} · {settings.steps} steps
+                </span>
+              ) : mode === "audio" ? (
+                <span className="creator-generate__summary">
+                  {settings.durationSeconds}s · WAV · {settings.steps} steps
                 </span>
               ) : null}
               <span>No prompt, reference, or output is uploaded by Tapioca.</span>
@@ -456,6 +501,43 @@ export function CreatorScreen({
 
 function FilePicker(props: { title: string; description: string; file?: LocalFileSelection; accept: "image" | "audio"; onPick(): void; onClear(): void }) {
   return <div className="creator-file"><div>{props.file?.previewUrl && props.accept === "image" ? <img src={props.file.previewUrl} alt="Selected reference" /> : <span aria-hidden="true">{props.accept === "image" ? "▧" : "≋"}</span>}<div><strong>{props.file?.name ?? props.title}</strong><small>{props.file ? "Selected from this computer" : props.description}</small></div></div><div><button type="button" onClick={props.onPick}>{props.file ? "Change" : "Choose file"}</button>{props.file && <button type="button" onClick={props.onClear}>Remove</button>}</div></div>;
+}
+
+function AudioSetup({
+  model,
+  settings,
+  disabled,
+  onChange,
+}: {
+  model?: CreatorModel;
+  settings: CreatorAdvancedSettings;
+  disabled: boolean;
+  onChange(value: CreatorAdvancedSettings): void;
+}) {
+  const maxDuration = model?.limits?.maxDurationSeconds ?? 120;
+  return (
+    <section className="creator-card video-setup" aria-labelledby="audio-setup-title">
+      <div className="creator-card__heading">
+        <div><h2 id="audio-setup-title">Audio setup</h2><p>Choose the length and generation quality of the WAV output.</p></div>
+        <span>{settings.durationSeconds}s</span>
+      </div>
+      <fieldset className="video-choice">
+        <legend>Duration</legend>
+        <p>Longer generations use proportionally more memory and time.</p>
+        <div className="video-choice__buttons">
+          {[10, 30, 60, 120].filter((seconds) => seconds <= maxDuration).map((seconds) => (
+            <button type="button" key={seconds} className={settings.durationSeconds === seconds ? "is-selected" : ""} onClick={() => onChange({ ...settings, durationSeconds: seconds })} disabled={disabled}>
+              <strong>{seconds} seconds</strong><span>{seconds === 30 ? "Model default" : "WAV output"}</span>
+            </button>
+          ))}
+        </div>
+        <label className="video-duration-slider">
+          <span>Custom duration <output>{settings.durationSeconds}s</output></span>
+          <input type="range" min={1} max={maxDuration} step={1} value={settings.durationSeconds} onChange={(event) => onChange({ ...settings, durationSeconds: Number(event.target.value) })} disabled={disabled} />
+        </label>
+      </fieldset>
+    </section>
+  );
 }
 
 function LoraEditor(props: {
@@ -906,7 +988,7 @@ function formatMegapixels(width: number, height: number): string {
 function AdvancedSettings({ mode, settings, disabled, onChange }: { mode: CreatorMode; settings: CreatorAdvancedSettings; disabled: boolean; onChange(value: CreatorAdvancedSettings): void }) {
   const number = (key: keyof CreatorAdvancedSettings, value: string) => onChange({ ...settings, [key]: value === "" && key === "seed" ? undefined : Number(value) });
   const dimensionStep = mode === "video" ? 32 : 8;
-  return <details className="creator-card creator-advanced"><summary>{mode === "video" ? "Expert overrides" : "Advanced settings"} <span>{mode === "video" ? "Exact dimensions, frames, playback, and seed" : "Only runtime-supported controls are shown"}</span></summary><div className="creator-settings">{(mode === "image" || mode === "video") && <><label>Width<input type="number" min={256} max={2048} step={dimensionStep} value={settings.width} onChange={(event) => number("width", event.target.value)} disabled={disabled} /></label><label>Height<input type="number" min={256} max={2048} step={dimensionStep} value={settings.height} onChange={(event) => number("height", event.target.value)} disabled={disabled} /></label><label>Steps<input type="number" min={1} max={100} value={settings.steps} onChange={(event) => number("steps", event.target.value)} disabled={disabled} /></label></>}{mode === "video" && <><label>Frames<input type="number" min={1} max={513} value={settings.frames} onChange={(event) => number("frames", event.target.value)} disabled={disabled} /></label><label>FPS<input type="number" min={1} max={60} value={settings.fps} onChange={(event) => number("fps", event.target.value)} disabled={disabled} /></label></>}<label>Seed<input type="number" min={0} placeholder="Random" value={settings.seed ?? ""} onChange={(event) => number("seed", event.target.value)} disabled={disabled} /></label></div>{mode === "video" ? <p className="creator-advanced__hint">Changing frames or FPS updates the duration summary. MiniMax-H3 uses 17n+5 frames; other models may require 4n+1 or 8n+1.</p> : null}</details>;
+  return <details className="creator-card creator-advanced"><summary>{mode === "video" ? "Expert overrides" : "Advanced settings"} <span>{mode === "video" ? "Exact dimensions, frames, playback, and seed" : "Only runtime-supported controls are shown"}</span></summary><div className="creator-settings">{(mode === "image" || mode === "video") && <><label>Width<input type="number" min={256} max={2048} step={dimensionStep} value={settings.width} onChange={(event) => number("width", event.target.value)} disabled={disabled} /></label><label>Height<input type="number" min={256} max={2048} step={dimensionStep} value={settings.height} onChange={(event) => number("height", event.target.value)} disabled={disabled} /></label></>}{(mode === "image" || mode === "video" || mode === "audio") && <label>Steps<input type="number" min={1} max={100} value={settings.steps} onChange={(event) => number("steps", event.target.value)} disabled={disabled} /></label>}{mode === "video" && <><label>Frames<input type="number" min={1} max={513} value={settings.frames} onChange={(event) => number("frames", event.target.value)} disabled={disabled} /></label><label>FPS<input type="number" min={1} max={60} value={settings.fps} onChange={(event) => number("fps", event.target.value)} disabled={disabled} /></label></>}<label>Seed<input type="number" min={0} placeholder="Random" value={settings.seed ?? ""} onChange={(event) => number("seed", event.target.value)} disabled={disabled} /></label></div>{mode === "video" ? <p className="creator-advanced__hint">Changing frames or FPS updates the duration summary. MiniMax-H3 uses 17n+5 frames; other models may require 4n+1 or 8n+1.</p> : null}</details>;
 }
 
 function OutputCard({ output, onReveal, onMetadata }: { output: CreatorOutput; onReveal(): Promise<void>; onMetadata(): Promise<void> }) {
@@ -914,7 +996,7 @@ function OutputCard({ output, onReveal, onMetadata }: { output: CreatorOutput; o
 }
 
 function ModeGlyph({ mode }: { mode: CreatorMode }) {
-  return <span aria-hidden="true">{{ image: "◇", video: "▷", speech: "≋", "voice-clone": "◉" }[mode]}</span>;
+  return <span aria-hidden="true">{{ image: "◇", video: "▷", audio: "♫", speech: "≋", "voice-clone": "◉" }[mode]}</span>;
 }
 
 function formatElapsed(seconds: number): string {
@@ -938,6 +1020,7 @@ function readDurationEstimate(request: CreatorRequest): number {
     if (Number.isFinite(saved) && saved >= 1_000) return saved;
   }
   if (request.mode === "speech" || request.mode === "voice-clone") return 45_000;
+  if (request.mode === "audio") return Math.max(60_000, request.settings.durationSeconds * 8_000);
   const pixels = request.settings.width * request.settings.height;
   if (request.mode === "image") {
     return Math.max(20_000, 90_000 * (pixels / (512 * 512)) * (request.settings.steps / 4));

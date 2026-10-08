@@ -172,7 +172,8 @@ func TestExtractZipRejectsParentTraversal(t *testing.T) {
 func TestEngineForKeepsBackendDetailsBehindStableBoundary(t *testing.T) {
 	tests := map[string]string{
 		"mlx-video": "mlx", "diffusers-video": "diffusers",
-		"comfy-h3-mps": "comfy-h3", "comfy-h3-cuda": "comfy-h3",
+		"diffusers-ltx2": "diffusers",
+		"comfy-h3-mps":   "comfy-h3", "comfy-h3-cuda": "comfy-h3",
 	}
 	for backend, want := range tests {
 		engine, err := engineFor(backend)

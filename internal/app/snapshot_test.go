@@ -76,6 +76,23 @@ func TestLicensedImageSnapshotIncludesTermsButNotDuplicateWeights(t *testing.T) 
 	}
 }
 
+func TestGatedAudioSnapshotKeepsWeightsAndLocalTextEncoder(t *testing.T) {
+	filter := snapshotFileFilter(catalog.Resolved{Kind: "audio", Gated: true})
+	for _, name := range []string{
+		"model_config.json",
+		"model.safetensors",
+		"t5gemma-b-b-ul2/model-00001-of-00002.safetensors",
+		"t5gemma-b-b-ul2/tokenizer.json",
+	} {
+		if !filter(name) {
+			t.Errorf("gated audio filter excluded %q", name)
+		}
+	}
+	if filter("Stable_Audio_3.0_Thumbnail_1x1.png") {
+		t.Fatal("gated audio filter included a preview image")
+	}
+}
+
 func TestPullArtifactsRejectsEscapingTarget(t *testing.T) {
 	err := pullArtifactsWithContext(
 		context.Background(),

@@ -37,6 +37,7 @@ const kinds: Array<{ value: "all" | ModelKind; label: string }> = [
   { value: "image", label: "Images" },
   { value: "video", label: "Video" },
   { value: "speech", label: "Voice" },
+  { value: "audio", label: "Audio / Music" },
 ];
 
 export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
@@ -120,7 +121,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
   }, [compatibleOnly, installedOnly, kind, machine, models, platform, query]);
 
   const kindCounts = useMemo(() => {
-    const counts: Record<"all" | ModelKind, number> = { all: 0, chat: 0, image: 0, video: 0, speech: 0 };
+    const counts: Record<"all" | ModelKind, number> = { all: 0, chat: 0, image: 0, video: 0, speech: 0, audio: 0 };
     for (const model of models ?? []) {
       counts.all += 1;
       counts[model.kind] += 1;

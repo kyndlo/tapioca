@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/carlos/tapioca/internal/adapter"
+	"github.com/carlos/tapioca/internal/audioruntime"
 	"github.com/carlos/tapioca/internal/config"
 	"github.com/carlos/tapioca/internal/imageruntime"
 	"github.com/carlos/tapioca/internal/speechruntime"
@@ -26,6 +27,9 @@ func TestCreatorCapabilitiesReportProtocolSafeAvailability(t *testing.T) {
 	}
 	if capabilities["video"].(map[string]any)["available"] != true {
 		t.Fatal("video capability is not available")
+	}
+	if capabilities["audio"].(map[string]any)["available"] != true {
+		t.Fatal("audio capability is not available")
 	}
 	speech := capabilities["speech"].(map[string]any)
 	if speech["available"] != true || speech["supports_voice_reference"] != true {
@@ -52,7 +56,7 @@ func TestCreatorCatalogContainsCompatibilityMetadata(t *testing.T) {
 	if len(models) == 0 {
 		t.Fatal("creator catalog is empty")
 	}
-	var foundSpeech bool
+	var foundSpeech, foundAudio bool
 	for _, model := range models {
 		if model.Kind == "speech" {
 			foundSpeech = true
@@ -60,9 +64,18 @@ func TestCreatorCatalogContainsCompatibilityMetadata(t *testing.T) {
 				t.Fatalf("speech compatibility = %#v", model)
 			}
 		}
+		if model.Kind == "audio" {
+			foundAudio = true
+			if !model.Available || model.Operation != "audio.generate" || model.MaxDurationSeconds != 120 {
+				t.Fatalf("audio compatibility = %#v", model)
+			}
+		}
 	}
 	if !foundSpeech {
 		t.Fatal("creator catalog did not include speech compatibility records")
+	}
+	if !foundAudio {
+		t.Fatal("creator catalog did not include audio compatibility records")
 	}
 }
 
@@ -320,6 +333,40 @@ func TestSpeechGenerateUsesRuntimeAdapterAndManagedOutput(t *testing.T) {
 	}
 	if output.Kind != "audio" || !withinRoot(filepath.Join(home, "outputs", "audio"), output.Path) {
 		t.Fatalf("speech output = %#v", output)
+	}
+}
+
+func TestAudioGenerateUsesRuntimeAdapterAndCatalogDefaults(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("TAPIOCA_HOME", home)
+	modelPath := filepath.Join(home, "models", "stable-audio-3-small-music")
+	if err := os.MkdirAll(modelPath, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	saveCreatorModel(t, config.Model{
+		Name: "stable-audio-3:small-music", Path: modelPath,
+		Kind: "audio", Backend: "stable-audio3",
+	})
+	var received audioruntime.Request
+	handler := NewHandler(Dependencies{
+		Audio: func(_ context.Context, _ string, request audioruntime.Request, _, _ io.Writer) error {
+			received = request
+			return os.WriteFile(request.Output, []byte("RIFF-test"), 0o600)
+		},
+	})
+	result, err := handler.Handle(context.Background(), Request{
+		ID: "audio-request", Method: "audio.generate",
+		Params: []byte(`{"model":"stable-audio-3:small-music","prompt":"warm ambient synth"}`),
+	})
+	if err != nil {
+		t.Fatalf("audio.generate error = %v", err)
+	}
+	output := result.(CreatorOutput)
+	if received.Prompt != "warm ambient synth" || received.Duration != 30 || received.Steps != 8 {
+		t.Fatalf("audio request = %#v", received)
+	}
+	if output.Kind != "audio" || !withinRoot(filepath.Join(home, "outputs", "audio"), output.Path) {
+		t.Fatalf("audio output = %#v", output)
 	}
 }
 

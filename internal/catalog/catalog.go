@@ -34,6 +34,9 @@ type Model struct {
 	Steps            int                   `json:"steps,omitempty"`
 	Frames           int                   `json:"frames,omitempty"`
 	FPS              int                   `json:"fps,omitempty"`
+	DurationSeconds  int                   `json:"duration_seconds,omitempty"`
+	MaxDuration      int                   `json:"max_duration_seconds,omitempty"`
+	SampleRate       int                   `json:"sample_rate,omitempty"`
 	Sizes            map[string]string     `json:"sizes"`
 	Memory           map[string]string     `json:"memory,omitempty"`
 	GPUs             map[string]string     `json:"gpus,omitempty"`
@@ -319,10 +322,13 @@ func validateModel(name string, model Model) error {
 	allowedBackends := map[string]bool{
 		"": true, "mlx": true, "mlx-vlm": true, "mlx-video": true,
 		"mflux": true, "diffusers": true, "diffusers-mps": true,
-		"diffusers-video": true, "onnx-directml": true, "onnx-cpu": true,
+		"diffusers-video": true, "diffusers-ltx2": true,
+		"onnx-directml": true, "onnx-cpu": true,
 		"comfy-h3-mps": true, "comfy-h3-cuda": true,
 		"speech-chatterbox": true, "speech-qwen": true, "speech-qwen-mlx": true,
 		"speech-audio8-onnx": true, "speech-pocket-tts": true, "speech-sopro": true,
+		"speech-audio8": true, "speech-audio8-mlx": true,
+		"stable-audio3": true,
 	}
 	for variant := range model.Files {
 		if !safeName.MatchString(variant) {
@@ -397,9 +403,86 @@ func validRelativePath(value string) bool {
 		!strings.HasPrefix(clean, ".."+string(filepath.Separator))
 }
 
+func flux2KleinFP8Artifacts() []Artifact {
+	const base = "black-forest-labs/FLUX.2-klein-4B"
+	artifacts := []Artifact{
+		{Repo: base, Filename: "model_index.json", Target: "model_index.json"},
+		{Repo: base, Filename: "scheduler/scheduler_config.json", Target: "scheduler/scheduler_config.json"},
+		{Repo: base, Filename: "text_encoder/config.json", Target: "text_encoder/config.json"},
+		{Repo: base, Filename: "text_encoder/generation_config.json", Target: "text_encoder/generation_config.json"},
+		{Repo: base, Filename: "text_encoder/model-00001-of-00002.safetensors", Target: "text_encoder/model-00001-of-00002.safetensors"},
+		{Repo: base, Filename: "text_encoder/model-00002-of-00002.safetensors", Target: "text_encoder/model-00002-of-00002.safetensors"},
+		{Repo: base, Filename: "text_encoder/model.safetensors.index.json", Target: "text_encoder/model.safetensors.index.json"},
+		{Repo: base, Filename: "tokenizer/added_tokens.json", Target: "tokenizer/added_tokens.json"},
+		{Repo: base, Filename: "tokenizer/chat_template.jinja", Target: "tokenizer/chat_template.jinja"},
+		{Repo: base, Filename: "tokenizer/merges.txt", Target: "tokenizer/merges.txt"},
+		{Repo: base, Filename: "tokenizer/special_tokens_map.json", Target: "tokenizer/special_tokens_map.json"},
+		{Repo: base, Filename: "tokenizer/tokenizer.json", Target: "tokenizer/tokenizer.json"},
+		{Repo: base, Filename: "tokenizer/tokenizer_config.json", Target: "tokenizer/tokenizer_config.json"},
+		{Repo: base, Filename: "tokenizer/vocab.json", Target: "tokenizer/vocab.json"},
+		{Repo: base, Filename: "transformer/config.json", Target: "transformer/config.json"},
+		{Repo: base, Filename: "vae/config.json", Target: "vae/config.json"},
+		{Repo: base, Filename: "vae/diffusion_pytorch_model.safetensors", Target: "vae/diffusion_pytorch_model.safetensors"},
+		{
+			Repo: "black-forest-labs/FLUX.2-klein-4b-fp8", Filename: "flux-2-klein-4b-fp8.safetensors",
+			Target: "transformer/diffusion_pytorch_model.safetensors",
+		},
+	}
+	return artifacts
+}
+
+func ltx25DiffusersArtifacts() []Artifact {
+	const repo = "Lightricks/LTX-2.5-Diffusers"
+	files := []string{
+		"model_index.json",
+		"modular_model_index.json",
+		"audio_vae/config.json",
+		"audio_vae/diffusion_pytorch_model.safetensors",
+		"connectors/config.json",
+		"connectors/diffusion_pytorch_model.safetensors",
+		"diffusion_decoder/config.json",
+		"diffusion_decoder/diffusion_pytorch_model.safetensors",
+		"duration_head/config.json",
+		"duration_head/diffusion_pytorch_model.safetensors",
+		"latent_upsampler/config.json",
+		"latent_upsampler/diffusion_pytorch_model.safetensors",
+		"scheduler/scheduler_config.json",
+		"temporal_latent_upsampler/config.json",
+		"temporal_latent_upsampler/diffusion_pytorch_model.safetensors",
+		"text_encoder/config.json",
+		"text_encoder/generation_config.json",
+		"text_encoder/model-00001-of-00005.safetensors",
+		"text_encoder/model-00002-of-00005.safetensors",
+		"text_encoder/model-00003-of-00005.safetensors",
+		"text_encoder/model-00004-of-00005.safetensors",
+		"text_encoder/model-00005-of-00005.safetensors",
+		"text_encoder/model.safetensors.index.json",
+		"tokenizer/chat_template.jinja",
+		"tokenizer/tokenizer.json",
+		"tokenizer/tokenizer_config.json",
+		"vae/config.json",
+		"vae/diffusion_pytorch_model.safetensors",
+		"vocoder/config.json",
+		"vocoder/diffusion_pytorch_model.safetensors",
+	}
+	artifacts := make([]Artifact, 0, len(files)+6)
+	for _, filename := range files {
+		artifacts = append(artifacts, Artifact{Repo: repo, Filename: filename, Target: filename})
+	}
+	artifacts = append(artifacts,
+		Artifact{Repo: repo, Filename: "transformer_full/config.json", Target: "transformer/config.json"},
+		Artifact{Repo: repo, Filename: "transformer_full/diffusion_pytorch_model-00001-of-00004.safetensors", Target: "transformer/diffusion_pytorch_model-00001-of-00004.safetensors"},
+		Artifact{Repo: repo, Filename: "transformer_full/diffusion_pytorch_model-00002-of-00004.safetensors", Target: "transformer/diffusion_pytorch_model-00002-of-00004.safetensors"},
+		Artifact{Repo: repo, Filename: "transformer_full/diffusion_pytorch_model-00003-of-00004.safetensors", Target: "transformer/diffusion_pytorch_model-00003-of-00004.safetensors"},
+		Artifact{Repo: repo, Filename: "transformer_full/diffusion_pytorch_model-00004-of-00004.safetensors", Target: "transformer/diffusion_pytorch_model-00004-of-00004.safetensors"},
+		Artifact{Repo: repo, Filename: "transformer_full/diffusion_pytorch_model.safetensors.index.json", Target: "transformer/diffusion_pytorch_model.safetensors.index.json"},
+	)
+	return artifacts
+}
+
 var builtInModels = map[string]Model{
-	"granite-4.2": graniteModel(),
-	"minicpm5-2b": miniCPM5Model(),
+	"granite-4.2":   graniteModel(),
+	"minicpm5-2b":   miniCPM5Model(),
 	"spark-x2.5-4b": sparkX25Model(),
 	"chatterbox": {
 		Name:    "chatterbox",
@@ -444,36 +527,172 @@ var builtInModels = map[string]Model{
 		Kind:    "speech",
 		Default: "0.6b",
 		Files: map[string]string{
+			"0.6b":                  "",
+			"0.6b-mlx":              "",
+			"1.7b-base":             "",
+			"1.7b-base-mlx":         "",
+			"1.7b-custom-voice":     "",
+			"1.7b-custom-voice-mlx": "",
+			"1.7b-voice-design":     "",
+			"1.7b-voice-design-mlx": "",
+		},
+		Backends: map[string]string{
+			"0.6b":                  "speech-qwen",
+			"0.6b-mlx":              "speech-qwen-mlx",
+			"1.7b-base":             "speech-qwen",
+			"1.7b-base-mlx":         "speech-qwen-mlx",
+			"1.7b-custom-voice":     "speech-qwen",
+			"1.7b-custom-voice-mlx": "speech-qwen-mlx",
+			"1.7b-voice-design":     "speech-qwen",
+			"1.7b-voice-design-mlx": "speech-qwen-mlx",
+		},
+		Repos: map[string]string{
+			"0.6b":                  "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+			"0.6b-mlx":              "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
+			"1.7b-base":             "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+			"1.7b-base-mlx":         "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+			"1.7b-custom-voice":     "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+			"1.7b-custom-voice-mlx": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16",
+			"1.7b-voice-design":     "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+			"1.7b-voice-design-mlx": "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16",
+		},
+		Sizes: map[string]string{
+			"0.6b":                  "~2.5 GiB",
+			"0.6b-mlx":              "~2.5 GiB",
+			"1.7b-base":             "~4.3 GiB",
+			"1.7b-base-mlx":         "~4.3 GiB",
+			"1.7b-custom-voice":     "~4.3 GiB",
+			"1.7b-custom-voice-mlx": "~4.3 GiB",
+			"1.7b-voice-design":     "~4.3 GiB",
+			"1.7b-voice-design-mlx": "~4.3 GiB",
+		},
+		Memory: map[string]string{
+			"0.6b":                  "12 GiB min; 16 GiB recommended",
+			"0.6b-mlx":              "12 GiB min; 16 GiB recommended",
+			"1.7b-base":             "16 GiB min; 24 GiB recommended",
+			"1.7b-base-mlx":         "16 GiB min; 24 GiB recommended",
+			"1.7b-custom-voice":     "16 GiB min; 24 GiB recommended",
+			"1.7b-custom-voice-mlx": "16 GiB min; 24 GiB recommended",
+			"1.7b-voice-design":     "16 GiB min; 24 GiB recommended",
+			"1.7b-voice-design-mlx": "16 GiB min; 24 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"0.6b":                  "NVIDIA CUDA recommended; CPU supported",
+			"0.6b-mlx":              "Apple Silicon GPU",
+			"1.7b-base":             "NVIDIA CUDA recommended; CPU supported",
+			"1.7b-base-mlx":         "Apple Silicon GPU",
+			"1.7b-custom-voice":     "NVIDIA CUDA recommended; CPU supported",
+			"1.7b-custom-voice-mlx": "Apple Silicon GPU",
+			"1.7b-voice-design":     "NVIDIA CUDA recommended; CPU supported",
+			"1.7b-voice-design-mlx": "Apple Silicon GPU",
+		},
+		Languages: map[string]string{
+			"0.6b":                  "10 languages",
+			"0.6b-mlx":              "10 languages",
+			"1.7b-base":             "10 languages",
+			"1.7b-base-mlx":         "10 languages",
+			"1.7b-custom-voice":     "10 languages",
+			"1.7b-custom-voice-mlx": "10 languages",
+			"1.7b-voice-design":     "10 languages",
+			"1.7b-voice-design-mlx": "10 languages",
+		},
+		Features: map[string]string{
+			"0.6b":                  "3-second voice cloning, streaming architecture",
+			"0.6b-mlx":              "3-second voice cloning, Apple Silicon optimized",
+			"1.7b-base":             "higher-quality 3-second voice cloning, streaming architecture",
+			"1.7b-base-mlx":         "higher-quality voice cloning, Apple Silicon optimized",
+			"1.7b-custom-voice":     "9 built-in speakers, instruction-based emotion and style",
+			"1.7b-custom-voice-mlx": "9 built-in speakers, instruction-based emotion and style, Apple Silicon optimized",
+			"1.7b-voice-design":     "natural-language voice design without a reference recording",
+			"1.7b-voice-design-mlx": "natural-language voice design without a reference recording, Apple Silicon optimized",
+		},
+		License:    "Apache-2.0",
+		LicenseURL: "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+	},
+	"audio8-tts": {
+		Name:    "audio8-tts",
+		Kind:    "speech",
+		Default: "0.6b",
+		PlatformDefaults: map[string]string{
+			"darwin/arm64": "0.6b-mlx",
+		},
+		Files: map[string]string{
 			"0.6b":     "",
 			"0.6b-mlx": "",
 		},
 		Backends: map[string]string{
-			"0.6b":     "speech-qwen",
-			"0.6b-mlx": "speech-qwen-mlx",
+			"0.6b":     "speech-audio8",
+			"0.6b-mlx": "speech-audio8-mlx",
 		},
 		Repos: map[string]string{
-			"0.6b":     "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
-			"0.6b-mlx": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
+			"0.6b":     "Audio8/Audio8-TTS-Preview-0.6b",
+			"0.6b-mlx": "mlx-community/Audio8-TTS-Preview-0.6b-bf16",
 		},
 		Sizes: map[string]string{
-			"0.6b":     "~2.5 GiB",
-			"0.6b-mlx": "~2.5 GiB",
+			"0.6b":     "~2.4 GiB",
+			"0.6b-mlx": "~2.4 GiB",
 		},
 		Memory: map[string]string{
-			"0.6b":     "12 GiB min; 16 GiB recommended",
-			"0.6b-mlx": "12 GiB min; 16 GiB recommended",
+			"0.6b":     "8 GiB min; 12 GiB recommended",
+			"0.6b-mlx": "8 GiB min; 12 GiB recommended",
 		},
 		GPUs: map[string]string{
 			"0.6b":     "NVIDIA CUDA recommended; CPU supported",
 			"0.6b-mlx": "Apple Silicon GPU",
 		},
 		Languages: map[string]string{
-			"0.6b":     "10 languages",
-			"0.6b-mlx": "10 languages",
+			"0.6b":     "11 languages",
+			"0.6b-mlx": "11 languages",
 		},
 		Features: map[string]string{
-			"0.6b":     "3-second voice cloning, streaming architecture",
-			"0.6b-mlx": "3-second voice cloning, Apple Silicon optimized",
+			"0.6b":     "preview, 44.1 kHz speech, zero-shot voice cloning, default voice",
+			"0.6b-mlx": "preview, 44.1 kHz speech, zero-shot voice cloning, Apple Silicon optimized",
+		},
+		License:    "Apache-2.0",
+		LicenseURL: "https://huggingface.co/Audio8/Audio8-TTS-Preview-0.6b",
+	},
+	"stable-audio-3": {
+		Name:            "stable-audio-3",
+		Kind:            "audio",
+		Default:         "small-music",
+		DurationSeconds: 30,
+		MaxDuration:     120,
+		SampleRate:      44100,
+		Steps:           8,
+		Gated:           true,
+		License:         "Stability AI Community License",
+		LicenseURL:      "https://huggingface.co/collections/stabilityai/stable-audio-3",
+		Files: map[string]string{
+			"small-music": "",
+			"small-sfx":   "",
+		},
+		Backends: map[string]string{
+			"small-music": "stable-audio3",
+			"small-sfx":   "stable-audio3",
+		},
+		Repos: map[string]string{
+			"small-music": "stabilityai/stable-audio-3-small-music",
+			"small-sfx":   "stabilityai/stable-audio-3-small-sfx",
+		},
+		Sizes: map[string]string{
+			"small-music": "~3.3 GiB",
+			"small-sfx":   "~3.3 GiB",
+		},
+		Memory: map[string]string{
+			"small-music": "16 GiB min; 24 GiB recommended",
+			"small-sfx":   "16 GiB min; 24 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"small-music": "Apple Silicon MPS, NVIDIA CUDA, or CPU",
+			"small-sfx":   "Apple Silicon MPS, NVIDIA CUDA, or CPU",
+		},
+		Languages: map[string]string{
+			"small-music": "English prompts",
+			"small-sfx":   "English prompts",
+		},
+		Features: map[string]string{
+			"small-music": "text-to-music, 44.1 kHz stereo, variable duration up to 120 seconds",
+			"small-sfx":   "text-to-sound-effects, 44.1 kHz stereo, variable duration up to 120 seconds",
 		},
 	},
 	"glm-4.7-flash": {
@@ -524,26 +743,73 @@ var builtInModels = map[string]Model{
 		},
 	},
 	"flux2-klein": {
-		Name:    "flux2-klein",
-		Repo:    "mlx-community/flux2-klein-4b-4bit",
-		Kind:    "image",
-		Default: "4b-q4-mlx",
-		Width:   1024,
-		Height:  1024,
-		Steps:   4,
-		Files:   map[string]string{"4b-q4-mlx": ""},
-		Backends: map[string]string{
-			"4b-q4-mlx": "mflux",
+		Name:             "flux2-klein",
+		Repo:             "mlx-community/flux2-klein-4b-4bit",
+		Kind:             "image",
+		Default:          "4b-q4-mlx",
+		Width:            1024,
+		Height:           1024,
+		Steps:            4,
+		GuidanceScale:    1.0,
+		GuidanceScaleSet: true,
+		PlatformDefaults: map[string]string{
+			"windows":      "4b-bf16-cuda",
+			"linux":        "4b-bf16-cuda",
+			"darwin/arm64": "4b-q4-mlx",
 		},
-		Sizes:  map[string]string{"4b-q4-mlx": "~4.6 GiB"},
-		Memory: map[string]string{"4b-q4-mlx": "16 GiB min; 24 GiB recommended"},
-		GPUs:   map[string]string{"4b-q4-mlx": "Apple Silicon GPU"},
+		Files: map[string]string{
+			"4b-q4-mlx":    "",
+			"4b-bf16-cuda": "",
+			"4b-fp8-cuda":  "",
+		},
+		Backends: map[string]string{
+			"4b-q4-mlx":    "mflux",
+			"4b-bf16-cuda": "diffusers",
+			"4b-fp8-cuda":  "diffusers",
+		},
+		Repos: map[string]string{
+			"4b-q4-mlx":    "mlx-community/flux2-klein-4b-4bit",
+			"4b-bf16-cuda": "black-forest-labs/FLUX.2-klein-4B",
+			"4b-fp8-cuda":  "black-forest-labs/FLUX.2-klein-4b-fp8",
+		},
+		Sizes: map[string]string{
+			"4b-q4-mlx":    "~4.6 GiB",
+			"4b-bf16-cuda": "~15 GiB",
+			"4b-fp8-cuda":  "~11 GiB",
+		},
+		Memory: map[string]string{
+			"4b-q4-mlx":    "16 GiB min; 24 GiB recommended",
+			"4b-bf16-cuda": "24 GiB system RAM; 13 GiB VRAM min",
+			"4b-fp8-cuda":  "24 GiB system RAM; 12 GiB VRAM recommended",
+		},
+		GPUs: map[string]string{
+			"4b-q4-mlx":    "Apple Silicon GPU",
+			"4b-bf16-cuda": "NVIDIA RTX 3090/4070 or newer",
+			"4b-fp8-cuda":  "NVIDIA Ada or newer recommended; Ampere supported with reduced benefit",
+		},
+		Features: map[string]string{
+			"4b-q4-mlx":    "4-step generation, image editing, multi-reference editing",
+			"4b-bf16-cuda": "4-step generation, image editing, multi-reference editing, Apache-2.0",
+			"4b-fp8-cuda":  "reduced-storage CUDA bundle, image editing, multi-reference editing, Apache-2.0",
+		},
+		Artifacts: map[string][]Artifact{
+			"4b-fp8-cuda": flux2KleinFP8Artifacts(),
+		},
+		License:    "Apache-2.0",
+		LicenseURL: "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B",
 	},
 	"qwen3.6": {
 		Name:    "qwen3.6",
 		Kind:    "text",
 		Default: "35b-mlx",
+		PlatformDefaults: map[string]string{
+			"windows":      "27b-q4_k_m",
+			"linux":        "27b-q4_k_m",
+			"darwin/arm64": "35b-mlx",
+		},
 		Files: map[string]string{
+			"27b-q4_k_m":   "Qwen3.6-27B-Q4_K_M.gguf",
+			"27b-q8_0":     "Qwen3.6-27B-Q8_0.gguf",
 			"35b-mlx":      "",
 			"35b-mlx-4bit": "",
 			"35b-mlx-6bit": "",
@@ -556,17 +822,71 @@ var builtInModels = map[string]Model{
 			"35b-mlx-8bit": "mlx-vlm",
 		},
 		Repos: map[string]string{
+			"27b-q4_k_m":   "ggml-org/Qwen3.6-27B-GGUF",
+			"27b-q8_0":     "ggml-org/Qwen3.6-27B-GGUF",
 			"35b-mlx":      "mlx-community/Qwen3.6-35B-A3B-4bit",
 			"35b-mlx-4bit": "mlx-community/Qwen3.6-35B-A3B-4bit",
 			"35b-mlx-6bit": "mlx-community/Qwen3.6-35B-A3B-6bit",
 			"35b-mlx-8bit": "mlx-community/Qwen3.6-35B-A3B-8bit",
 		},
 		Sizes: map[string]string{
+			"27b-q4_k_m":   "~19.1 GiB",
+			"27b-q8_0":     "~28.6 GiB",
 			"35b-mlx":      "~20 GiB",
 			"35b-mlx-4bit": "~20 GiB",
 			"35b-mlx-6bit": "~27 GiB",
 			"35b-mlx-8bit": "~36 GiB",
 		},
+		Memory: map[string]string{
+			"27b-q4_k_m": "24 GiB min; 32 GiB recommended",
+			"27b-q8_0":   "40 GiB min; 48 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"27b-q4_k_m": "Optional Metal, CUDA, Vulkan, or ROCm acceleration",
+			"27b-q8_0":   "Optional Metal, CUDA, Vulkan, or ROCm acceleration",
+		},
+		Features: map[string]string{
+			"27b-q4_k_m": "reasoning, coding, tool use, image understanding with optional mmproj",
+			"27b-q8_0":   "higher-fidelity reasoning, coding, tool use, image understanding with optional mmproj",
+		},
+	},
+	"gemma4": {
+		Name:    "gemma4",
+		Repo:    "ggml-org/gemma-4-E2B-it-GGUF",
+		Kind:    "text",
+		Default: "e2b-q4_0",
+		PlatformDefaults: map[string]string{
+			"darwin/arm64": "e2b-mlx-4bit",
+		},
+		Files: map[string]string{
+			"e2b-q4_0":     "gemma-4-E2B-it-Q4_0.gguf",
+			"e2b-mlx-4bit": "",
+		},
+		Backends: map[string]string{
+			"e2b-mlx-4bit": "mlx-vlm",
+		},
+		Repos: map[string]string{
+			"e2b-q4_0":     "ggml-org/gemma-4-E2B-it-GGUF",
+			"e2b-mlx-4bit": "mlx-community/gemma-4-e2b-it-4bit",
+		},
+		Sizes: map[string]string{
+			"e2b-q4_0":     "~2.8 GiB",
+			"e2b-mlx-4bit": "~3.6 GiB",
+		},
+		Memory: map[string]string{
+			"e2b-q4_0":     "8 GiB min; 12 GiB recommended",
+			"e2b-mlx-4bit": "12 GiB min; 16 GiB recommended",
+		},
+		GPUs: map[string]string{
+			"e2b-q4_0":     "Optional Metal, CUDA, Vulkan, or ROCm acceleration",
+			"e2b-mlx-4bit": "Apple Silicon GPU",
+		},
+		Features: map[string]string{
+			"e2b-q4_0":     "reasoning, system prompts, function calling, 128K context",
+			"e2b-mlx-4bit": "reasoning, system prompts, function calling, image understanding",
+		},
+		License:    "Apache-2.0",
+		LicenseURL: "https://huggingface.co/google/gemma-4-E2B-it",
 	},
 	"qwen3.8": {
 		Name:    "qwen3.8",
@@ -929,6 +1249,41 @@ var builtInModels = map[string]Model{
 		Memory: map[string]string{"2b-fp16": "24 GiB min; 32 GiB recommended"},
 		GPUs:   map[string]string{"2b-fp16": "NVIDIA CUDA, 8 GiB+ VRAM; CPU offload"},
 	},
+	"ltx-2.5": {
+		Name:       "ltx-2.5",
+		Repo:       "Lightricks/LTX-2.5-Diffusers",
+		Kind:       "video",
+		Default:    "22b-bf16-cuda",
+		Width:      768,
+		Height:     512,
+		Steps:      30,
+		Frames:     121,
+		FPS:        24,
+		Gated:      true,
+		License:    "LTX-2 Community License",
+		LicenseURL: "https://huggingface.co/Lightricks/LTX-2.5-Diffusers",
+		Files: map[string]string{
+			"22b-bf16-cuda": "",
+		},
+		Backends: map[string]string{
+			"22b-bf16-cuda": "diffusers-ltx2",
+		},
+		Sizes: map[string]string{
+			"22b-bf16-cuda": "~68 GiB",
+		},
+		Memory: map[string]string{
+			"22b-bf16-cuda": "96 GiB system RAM recommended; sequential CPU offload enabled",
+		},
+		GPUs: map[string]string{
+			"22b-bf16-cuda": "NVIDIA CUDA, 24 GiB VRAM minimum; 48 GiB recommended",
+		},
+		Features: map[string]string{
+			"22b-bf16-cuda": "text-to-video, synchronized stereo audio, multishot prompting, 1-20 second clips",
+		},
+		Artifacts: map[string][]Artifact{
+			"22b-bf16-cuda": ltx25DiffusersArtifacts(),
+		},
+	},
 	"stable-video-diffusion": {
 		Name:    "stable-video-diffusion",
 		Repo:    "stabilityai/stable-video-diffusion-img2vid-xt",
@@ -962,6 +1317,9 @@ type Resolved struct {
 	Steps            int
 	Frames           int
 	FPS              int
+	DurationSeconds  int
+	MaxDuration      int
+	SampleRate       int
 	Size             string
 	Platform         string
 	Memory           string
@@ -1060,9 +1418,9 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	backend := m.Backends[strings.ToLower(tag)]
 	platform := "Windows, macOS, Linux"
 	switch backend {
-	case "mlx", "mlx-vlm", "mlx-video", "mflux", "speech-qwen-mlx":
+	case "mlx", "mlx-vlm", "mlx-video", "mflux", "speech-qwen-mlx", "speech-audio8-mlx":
 		platform = "macOS Apple Silicon"
-	case "diffusers", "diffusers-video":
+	case "diffusers", "diffusers-video", "diffusers-ltx2":
 		platform = "Windows/Linux NVIDIA"
 	case "diffusers-mps":
 		platform = "macOS Apple Silicon"
@@ -1078,6 +1436,10 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		platform = "macOS Apple Silicon CPU (experimental)"
 	case "speech-qwen":
 		platform = "Windows/Linux NVIDIA or CPU"
+	case "speech-audio8":
+		platform = "Windows, macOS, Linux; CUDA recommended"
+	case "stable-audio3":
+		platform = "Windows, macOS, Linux"
 	case "onnx-directml":
 		platform = "Windows x64 AMD/Intel/NVIDIA"
 	case "onnx-cpu":
@@ -1085,26 +1447,29 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{
-		Download:      download,
-		Name:          m.Name + ":" + strings.ToLower(tag),
-		Repo:          repo,
-		Filename:      filename,
-		URL:           url,
-		Kind:          m.Kind,
-		Backend:       backend,
-		Width:         m.Width,
-		Height:        m.Height,
-		Steps:         m.Steps,
-		Frames:        m.Frames,
-		FPS:           m.FPS,
-		Size:          m.Sizes[strings.ToLower(tag)],
-		Platform:      platform,
-		Memory:        memory,
-		GPU:           gpu,
-		Languages:     m.Languages[strings.ToLower(tag)],
-		Features:      m.Features[strings.ToLower(tag)],
-		Artifacts:     append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
-		GuidanceScale: m.GuidanceScale, GuidanceScaleSet: m.GuidanceScaleSet,
+		Download:        download,
+		Name:            m.Name + ":" + strings.ToLower(tag),
+		Repo:            repo,
+		Filename:        filename,
+		URL:             url,
+		Kind:            m.Kind,
+		Backend:         backend,
+		Width:           m.Width,
+		Height:          m.Height,
+		Steps:           m.Steps,
+		Frames:          m.Frames,
+		FPS:             m.FPS,
+		DurationSeconds: m.DurationSeconds,
+		MaxDuration:     m.MaxDuration,
+		SampleRate:      m.SampleRate,
+		Size:            m.Sizes[strings.ToLower(tag)],
+		Platform:        platform,
+		Memory:          memory,
+		GPU:             gpu,
+		Languages:       m.Languages[strings.ToLower(tag)],
+		Features:        m.Features[strings.ToLower(tag)],
+		Artifacts:       append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
+		GuidanceScale:   m.GuidanceScale, GuidanceScaleSet: m.GuidanceScaleSet,
 		Gated: m.Gated, License: m.License, LicenseURL: m.LicenseURL,
 	}, nil
 }
@@ -1115,7 +1480,7 @@ func requirements(model Model, variant, backend string) (string, string) {
 	}
 	size := model.Sizes[variant]
 	switch backend {
-	case "mlx", "mlx-vlm", "mflux", "speech-qwen-mlx":
+	case "mlx", "mlx-vlm", "mflux", "speech-qwen-mlx", "speech-audio8-mlx":
 		switch {
 		case strings.Contains(size, "~36"):
 			return "48 GiB min; 64 GiB recommended", "Apple Silicon GPU"

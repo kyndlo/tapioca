@@ -59,6 +59,10 @@ Or make an image:
 tapioca image sd-turbo --prompt "A friendly pearl astronaut"
 ```
 
+Standalone music and sound effects are covered in the
+[audio generation guide](../guides/audio-generation.md); those models are
+larger and gated, so they are better as a next step than a first-run smoke test.
+
 See [Choosing models](../guides/choosing-models.md) before downloading a large
 model and [Storage](../reference/storage.md) to find the downloaded files.
 

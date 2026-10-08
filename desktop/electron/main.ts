@@ -585,12 +585,23 @@ function registerIpcHandlers(): void {
           model: input.model,
           text: input.text?.trim() || input.prompt.trim(),
           voice_consent: input.voiceConsent ?? false,
-          transcript: input.transcript,
+          transcript: input.transcript?.trim() || undefined,
+          language: input.language?.trim() || undefined,
+          speaker: input.speaker?.trim() || undefined,
+          instruct: input.instruct?.trim() || undefined,
           seed: input.settings.seed ?? 0,
           voice_sample: input.voiceReferenceToken
             ? mediaRegistry.get(input.voiceReferenceToken, "audio").path
             : undefined,
         }
+      : input.mode === "audio"
+        ? {
+            model: input.model,
+            prompt: input.prompt,
+            steps: input.settings.steps,
+            duration_seconds: input.settings.durationSeconds,
+            ...(input.settings.seed === undefined ? {} : { seed: input.settings.seed }),
+          }
       : input.mode === "image"
         ? {
             ...common,
@@ -612,6 +623,8 @@ function registerIpcHandlers(): void {
           ? "image.generate"
           : input.mode === "video"
             ? "video.generate"
+            : input.mode === "audio"
+              ? "audio.generate"
             : input.mode === "voice-clone"
               ? "voice.clone"
               : "speech.generate",
@@ -637,13 +650,15 @@ function registerIpcHandlers(): void {
     const id = mediaRegistry.add(outputPath, mediaType, {
       model: output.model,
       prompt: isSpeech ? input.text ?? input.prompt : input.prompt,
-      ...(isSpeech ? {} : {
+      ...(isSpeech || input.mode === "audio" ? {} : {
         width: input.settings.width,
         height: input.settings.height,
       }),
       ...(input.mode === "video"
         ? { frames: input.settings.frames, fps: input.settings.fps }
-        : {}),
+        : input.mode === "audio"
+          ? { durationSeconds: input.settings.durationSeconds, steps: input.settings.steps }
+          : {}),
       createdAt: output.created_at,
     });
     return ipcSchemas.creatorGenerateResult.parse({
@@ -664,7 +679,7 @@ function registerIpcHandlers(): void {
     const definitions = [
       { directory: "images", extension: ".png", mode: "image" as const, mediaType: "image" as const },
       { directory: "videos", extension: ".mp4", mode: "video" as const, mediaType: "video" as const },
-      { directory: "audio", extension: ".wav", mode: "speech" as const, mediaType: "audio" as const },
+      { directory: "audio", extension: ".wav", mode: "audio" as const, mediaType: "audio" as const },
     ];
     const outputs = [];
     for (const definition of definitions) {

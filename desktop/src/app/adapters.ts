@@ -495,19 +495,30 @@ export function createRendererAdapters(
             : installedNames.has(model.name)
               ? model.backend
               : `Install from Models · ${model.backend}`,
-        limits: { maxWidth: 4096, maxHeight: 4096, maxFrames: 513 },
+        limits: {
+          maxWidth: 4096,
+          maxHeight: 4096,
+          maxFrames: 513,
+          ...(model.max_duration_seconds
+            ? { maxDurationSeconds: model.max_duration_seconds }
+            : {}),
+        },
         supportsInputImage: model.supports_input_image,
         supportsLoRA: model.supports_lora,
         requiresInputImage: model.requires_input_image,
         requiresVoiceReference:
           kind === "speech" &&
-          (model.name.includes("qwen3-tts") || model.name.includes("chatterbox:nano")),
+          ((model.name.includes("qwen3-tts") &&
+            !model.name.includes("custom-voice") &&
+            !model.name.includes("voice-design")) ||
+            model.name.includes("chatterbox:nano")),
         defaults: {
           ...(model.width ? { width: model.width } : {}),
           ...(model.height ? { height: model.height } : {}),
           ...(model.steps ? { steps: model.steps } : {}),
           ...(model.frames ? { frames: model.frames } : {}),
           ...(model.fps ? { fps: model.fps } : {}),
+          ...(model.duration_seconds ? { durationSeconds: model.duration_seconds } : {}),
         },
       }));
     },
@@ -548,10 +559,13 @@ export function createRendererAdapters(
           model: request.modelId,
           prompt: request.prompt,
           text: request.text,
+          transcript: request.transcript,
+          language: request.language,
+          speaker: request.speaker,
+          instruct: request.instruct,
           inputImageToken: request.inputImage?.token,
           voiceReferenceToken: request.voiceReference?.token,
           voiceConsent: request.voiceConsent,
-          transcript: request.transcript,
           loras: request.loras.map((lora) =>
             lora.source.type === "reference"
               ? { type: "reference" as const, reference: lora.source.reference, weight: lora.weight }
@@ -659,7 +673,8 @@ function eventProgress(data: unknown): number | undefined {
 function desktopKind(kind: string): ModelKind {
   if (kind === "image") return "image";
   if (kind === "video") return "video";
-  if (["speech", "tts", "audio", "voice"].includes(kind)) return "speech";
+  if (kind === "audio") return "audio";
+  if (["speech", "tts", "voice"].includes(kind)) return "speech";
   return "chat";
 }
 
@@ -667,7 +682,7 @@ function modelRequirements(backend: string, size?: string, memory?: string) {
   const lower = backend.toLowerCase();
 	const accelerators: Accelerator[] = lower.includes("mlx") || lower.includes("comfy-h3-mps") || lower.includes("diffusers-mps")
     ? ["apple"]
-		: lower.includes("cuda") || lower.includes("comfy-h3-cuda") || lower === "diffusers" || lower === "diffusers-video"
+		: lower.includes("cuda") || lower.includes("comfy-h3-cuda") || lower === "diffusers" || lower === "diffusers-video" || lower === "diffusers-ltx2"
       ? ["nvidia"]
       : ["cpu", "apple", "nvidia", "amd", "intel"];
   return {

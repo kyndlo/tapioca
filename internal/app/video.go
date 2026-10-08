@@ -111,8 +111,9 @@ func video(args []string) error {
 	} else if *frames <= 0 || (*frames-1)%4 != 0 {
 		return errors.New("frames must be positive and have the form 4n+1 (for example 17, 41, or 81)")
 	}
-	if profile.Name == "ltx-video:2b-fp16" && (*frames-1)%8 != 0 {
-		return errors.New("LTX-Video frames must have the form 8n+1 (for example 17, 49, or 97)")
+	if (profile.Name == "ltx-video:2b-fp16" || profile.Name == "ltx-2.5:22b-bf16-cuda") &&
+		(*frames-1)%8 != 0 {
+		return errors.New("LTX video frames must have the form 8n+1 (for example 17, 49, or 121)")
 	}
 	if *steps <= 0 || *fps <= 0 {
 		return errors.New("steps and fps must be positive")
@@ -219,7 +220,7 @@ func videoFrameRule(model catalog.Resolved) (step, offset int) {
 	if model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda" {
 		return 17, 5
 	}
-	if model.Name == "ltx-video:2b-fp16" {
+	if model.Name == "ltx-video:2b-fp16" || model.Name == "ltx-2.5:22b-bf16-cuda" {
 		return 8, 1
 	}
 	return 4, 1

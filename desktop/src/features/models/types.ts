@@ -1,4 +1,4 @@
-export type ModelKind = "chat" | "image" | "video" | "speech";
+export type ModelKind = "chat" | "image" | "video" | "speech" | "audio";
 export type ModelPlatform = "macos" | "windows" | "linux";
 export type Accelerator = "apple" | "nvidia" | "amd" | "intel" | "cpu";
 

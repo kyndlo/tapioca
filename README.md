@@ -6,8 +6,8 @@
 
 <p align="center"><strong>Your local models, ready to roll.</strong></p>
 
-Tapioca is a local AI runtime and desktop studio for language, speech, image,
-and video models. It downloads supported models on demand, chooses a native
+Tapioca is a local AI runtime and desktop studio for language, speech, audio,
+image, and video models. It downloads supported models on demand, chooses a native
 backend for the computer, and can expose local models to coding agents.
 
 Use the friendly desktop app or the full CLI—both run the same private,
@@ -18,7 +18,7 @@ local-first engine.
 Tapioca Desktop brings the complete local workflow into one interface:
 
 - Chat with installed models and see model reasoning as it streams.
-- Generate and manage images, videos, speech, and cloned voices.
+- Generate and manage images, videos, music, sound effects, speech, and cloned voices.
 - Record voice-cloning references with a live microphone level meter.
 - Choose guided image resolutions, video duration, orientation, quality, and
   workload presets while retaining exact expert controls.
@@ -79,6 +79,7 @@ Tapioca pulls a catalog model automatically when it is first used. Enter
 - [Coding agents: Codex, Claude Code, OpenCode, OpenClaw, and Hermes](docs/guides/coding-agents.md)
 - [Image generation](docs/guides/image-generation.md)
 - [Video generation](docs/guides/video-generation.md)
+- [Music and sound generation](docs/guides/audio-generation.md)
 - [Text to speech and voice cloning](docs/guides/speech-and-voices.md)
 - [LoRA adapters and model composition](docs/concepts/lora-adapters.md)
 - [Replaceable video engines](docs/concepts/video-engines.md)
@@ -102,6 +103,7 @@ or read the machine-oriented
 | GGUF text models | Metal llama.cpp | Vulkan llama.cpp | CPU llama.cpp | Vulkan llama.cpp | Vulkan llama.cpp |
 | Native MLX text | Yes | No | No | No | No |
 | Speech and voice cloning | MLX or MPS/CPU | CUDA or CPU | CPU | CUDA or CPU | CPU |
+| Music and sound generation | Stable Audio 3 | Stable Audio 3 CUDA | CPU fallback | Stable Audio 3 CUDA | CPU fallback |
 | Image generation | MLX/MFLUX | CUDA or ONNX DirectML | ONNX Runtime CPU | NVIDIA CUDA | Not yet |
 | Video generation | MLX | NVIDIA CUDA/Diffusers | Not yet | NVIDIA CUDA/Diffusers | Not yet |
 | Coding-agent APIs | Yes | Yes | Yes | Yes | Yes |
@@ -154,6 +156,7 @@ tapioca serve MODEL [--port 11435] [--context TOKENS]
 tapioca image MODEL --prompt TEXT [--seed NUMBER | --random-seed] [--output image.png]
 tapioca edit MODEL --image FILE [--image FILE] --prompt TEXT [--seed NUMBER | --random-seed]
 tapioca video MODEL --prompt TEXT [--image start.png] [--seconds N | --frames N] [--seed NUMBER | --random-seed] [--output video.mp4]
+tapioca audio MODEL --prompt TEXT [--seconds N] [--seed NUMBER | --random-seed] [--output audio.wav]
 tapioca tts MODEL --text TEXT [--voice NAME] [--output speech.wav]
 tapioca voice (create|list|inspect|remove) [NAME]
 tapioca adapter (inspect|pull|import|list) [REFERENCE]

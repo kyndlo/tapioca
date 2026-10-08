@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generated_at": "2026-09-18T22:42:42.917442Z",
+  "generated_at": "2026-10-07T15:01:27.467Z",
   "models": {
     "chatterbox": {
       "name": "chatterbox",
@@ -44,25 +44,148 @@
       "name": "flux2-klein",
       "repo": "mlx-community/flux2-klein-4b-4bit",
       "files": {
-        "4b-q4-mlx": ""
+        "4b-q4-mlx": "",
+        "4b-bf16-cuda": "",
+        "4b-fp8-cuda": ""
       },
       "kind": "image",
       "backends": {
-        "4b-q4-mlx": "mflux"
+        "4b-q4-mlx": "mflux",
+        "4b-bf16-cuda": "diffusers",
+        "4b-fp8-cuda": "diffusers"
       },
       "default": "4b-q4-mlx",
       "width": 1024,
       "height": 1024,
       "steps": 4,
       "sizes": {
-        "4b-q4-mlx": "~4.6 GiB"
+        "4b-q4-mlx": "~4.6 GiB",
+        "4b-bf16-cuda": "~15 GiB",
+        "4b-fp8-cuda": "~11 GiB"
       },
       "memory": {
-        "4b-q4-mlx": "16 GiB min; 24 GiB recommended"
+        "4b-q4-mlx": "16 GiB min; 24 GiB recommended",
+        "4b-bf16-cuda": "24 GiB system RAM; 13 GiB VRAM min",
+        "4b-fp8-cuda": "24 GiB system RAM; 12 GiB VRAM recommended"
       },
       "gpus": {
-        "4b-q4-mlx": "Apple Silicon GPU"
-      }
+        "4b-q4-mlx": "Apple Silicon GPU",
+        "4b-bf16-cuda": "NVIDIA RTX 3090/4070 or newer",
+        "4b-fp8-cuda": "NVIDIA Ada or newer recommended; Ampere supported with reduced benefit"
+      },
+      "repos": {
+        "4b-bf16-cuda": "black-forest-labs/FLUX.2-klein-4B",
+        "4b-fp8-cuda": "black-forest-labs/FLUX.2-klein-4b-fp8",
+        "4b-q4-mlx": "mlx-community/flux2-klein-4b-4bit"
+      },
+      "platform_defaults": {
+        "darwin/arm64": "4b-q4-mlx",
+        "linux": "4b-bf16-cuda",
+        "windows": "4b-bf16-cuda"
+      },
+      "features": {
+        "4b-bf16-cuda": "4-step generation, image editing, multi-reference editing, Apache-2.0",
+        "4b-fp8-cuda": "reduced-storage CUDA bundle, image editing, multi-reference editing, Apache-2.0",
+        "4b-q4-mlx": "4-step generation, image editing, multi-reference editing"
+      },
+      "artifacts": {
+        "4b-fp8-cuda": [
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "model_index.json",
+            "target": "model_index.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "scheduler/scheduler_config.json",
+            "target": "scheduler/scheduler_config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "text_encoder/config.json",
+            "target": "text_encoder/config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "text_encoder/generation_config.json",
+            "target": "text_encoder/generation_config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "text_encoder/model-00001-of-00002.safetensors",
+            "target": "text_encoder/model-00001-of-00002.safetensors"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "text_encoder/model-00002-of-00002.safetensors",
+            "target": "text_encoder/model-00002-of-00002.safetensors"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "text_encoder/model.safetensors.index.json",
+            "target": "text_encoder/model.safetensors.index.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/added_tokens.json",
+            "target": "tokenizer/added_tokens.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/chat_template.jinja",
+            "target": "tokenizer/chat_template.jinja"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/merges.txt",
+            "target": "tokenizer/merges.txt"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/special_tokens_map.json",
+            "target": "tokenizer/special_tokens_map.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/tokenizer.json",
+            "target": "tokenizer/tokenizer.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/tokenizer_config.json",
+            "target": "tokenizer/tokenizer_config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "tokenizer/vocab.json",
+            "target": "tokenizer/vocab.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "transformer/config.json",
+            "target": "transformer/config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "vae/config.json",
+            "target": "vae/config.json"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4B",
+            "filename": "vae/diffusion_pytorch_model.safetensors",
+            "target": "vae/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "black-forest-labs/FLUX.2-klein-4b-fp8",
+            "filename": "flux-2-klein-4b-fp8.safetensors",
+            "target": "transformer/diffusion_pytorch_model.safetensors"
+          }
+        ]
+      },
+      "guidance_scale": 1,
+      "guidance_scale_set": true,
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B"
     },
     "gemma3": {
       "name": "gemma3",
@@ -93,7 +216,7 @@
       "name": "glm-4.7-flash",
       "repo": "ggml-org/GLM-4.7-Flash-GGUF",
       "files": {
-        "q4_k_m": "GLM-4.7-Flash-Q4_K.gguf",
+        "q4_k_m": "GLM-4.7-Flash-Q4_K_M.gguf",
         "q8_0": "GLM-4.7-Flash-Q8_0.gguf"
       },
       "default": "q4_k_m",
@@ -445,38 +568,88 @@
       "name": "qwen3-tts",
       "files": {
         "0.6b": "",
-        "0.6b-mlx": ""
+        "0.6b-mlx": "",
+        "1.7b-base": "",
+        "1.7b-base-mlx": "",
+        "1.7b-custom-voice": "",
+        "1.7b-custom-voice-mlx": "",
+        "1.7b-voice-design": "",
+        "1.7b-voice-design-mlx": ""
       },
       "kind": "speech",
       "backends": {
         "0.6b": "speech-qwen",
-        "0.6b-mlx": "speech-qwen-mlx"
+        "0.6b-mlx": "speech-qwen-mlx",
+        "1.7b-base": "speech-qwen",
+        "1.7b-base-mlx": "speech-qwen-mlx",
+        "1.7b-custom-voice": "speech-qwen",
+        "1.7b-custom-voice-mlx": "speech-qwen-mlx",
+        "1.7b-voice-design": "speech-qwen",
+        "1.7b-voice-design-mlx": "speech-qwen-mlx"
       },
       "repos": {
         "0.6b": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
-        "0.6b-mlx": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16"
+        "0.6b-mlx": "mlx-community/Qwen3-TTS-12Hz-0.6B-Base-bf16",
+        "1.7b-base": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
+        "1.7b-base-mlx": "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16",
+        "1.7b-custom-voice": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+        "1.7b-custom-voice-mlx": "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-bf16",
+        "1.7b-voice-design": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+        "1.7b-voice-design-mlx": "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16"
       },
       "default": "0.6b",
       "sizes": {
         "0.6b": "~2.5 GiB",
-        "0.6b-mlx": "~2.5 GiB"
+        "0.6b-mlx": "~2.5 GiB",
+        "1.7b-base": "~4.3 GiB",
+        "1.7b-base-mlx": "~4.3 GiB",
+        "1.7b-custom-voice": "~4.3 GiB",
+        "1.7b-custom-voice-mlx": "~4.3 GiB",
+        "1.7b-voice-design": "~4.3 GiB",
+        "1.7b-voice-design-mlx": "~4.3 GiB"
       },
       "memory": {
         "0.6b": "12 GiB min; 16 GiB recommended",
-        "0.6b-mlx": "12 GiB min; 16 GiB recommended"
+        "0.6b-mlx": "12 GiB min; 16 GiB recommended",
+        "1.7b-base": "16 GiB min; 24 GiB recommended",
+        "1.7b-base-mlx": "16 GiB min; 24 GiB recommended",
+        "1.7b-custom-voice": "16 GiB min; 24 GiB recommended",
+        "1.7b-custom-voice-mlx": "16 GiB min; 24 GiB recommended",
+        "1.7b-voice-design": "16 GiB min; 24 GiB recommended",
+        "1.7b-voice-design-mlx": "16 GiB min; 24 GiB recommended"
       },
       "gpus": {
         "0.6b": "NVIDIA CUDA recommended; CPU supported",
-        "0.6b-mlx": "Apple Silicon GPU"
+        "0.6b-mlx": "Apple Silicon GPU",
+        "1.7b-base": "NVIDIA CUDA recommended; CPU supported",
+        "1.7b-base-mlx": "Apple Silicon GPU",
+        "1.7b-custom-voice": "NVIDIA CUDA recommended; CPU supported",
+        "1.7b-custom-voice-mlx": "Apple Silicon GPU",
+        "1.7b-voice-design": "NVIDIA CUDA recommended; CPU supported",
+        "1.7b-voice-design-mlx": "Apple Silicon GPU"
       },
       "languages": {
         "0.6b": "10 languages",
-        "0.6b-mlx": "10 languages"
+        "0.6b-mlx": "10 languages",
+        "1.7b-base": "10 languages",
+        "1.7b-base-mlx": "10 languages",
+        "1.7b-custom-voice": "10 languages",
+        "1.7b-custom-voice-mlx": "10 languages",
+        "1.7b-voice-design": "10 languages",
+        "1.7b-voice-design-mlx": "10 languages"
       },
       "features": {
         "0.6b": "3-second voice cloning, streaming architecture",
-        "0.6b-mlx": "3-second voice cloning, Apple Silicon optimized"
-      }
+        "0.6b-mlx": "3-second voice cloning, Apple Silicon optimized",
+        "1.7b-base": "higher-quality 3-second voice cloning, streaming architecture",
+        "1.7b-base-mlx": "higher-quality voice cloning, Apple Silicon optimized",
+        "1.7b-custom-voice": "9 built-in speakers, instruction-based emotion and style",
+        "1.7b-custom-voice-mlx": "9 built-in speakers, instruction-based emotion and style, Apple Silicon optimized",
+        "1.7b-voice-design": "natural-language voice design without a reference recording",
+        "1.7b-voice-design-mlx": "natural-language voice design without a reference recording, Apple Silicon optimized"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-TTS-12Hz-1.7B-Base"
     },
     "qwen3.6": {
       "name": "qwen3.6",
@@ -484,7 +657,9 @@
         "35b-mlx": "",
         "35b-mlx-4bit": "",
         "35b-mlx-6bit": "",
-        "35b-mlx-8bit": ""
+        "35b-mlx-8bit": "",
+        "27b-q4_k_m": "Qwen3.6-27B-Q4_K_M.gguf",
+        "27b-q8_0": "Qwen3.6-27B-Q8_0.gguf"
       },
       "kind": "text",
       "backends": {
@@ -497,14 +672,35 @@
         "35b-mlx": "mlx-community/Qwen3.6-35B-A3B-4bit",
         "35b-mlx-4bit": "mlx-community/Qwen3.6-35B-A3B-4bit",
         "35b-mlx-6bit": "mlx-community/Qwen3.6-35B-A3B-6bit",
-        "35b-mlx-8bit": "mlx-community/Qwen3.6-35B-A3B-8bit"
+        "35b-mlx-8bit": "mlx-community/Qwen3.6-35B-A3B-8bit",
+        "27b-q4_k_m": "ggml-org/Qwen3.6-27B-GGUF",
+        "27b-q8_0": "ggml-org/Qwen3.6-27B-GGUF"
       },
       "default": "35b-mlx",
       "sizes": {
         "35b-mlx": "~20 GiB",
         "35b-mlx-4bit": "~20 GiB",
         "35b-mlx-6bit": "~27 GiB",
-        "35b-mlx-8bit": "~36 GiB"
+        "35b-mlx-8bit": "~36 GiB",
+        "27b-q4_k_m": "~19.1 GiB",
+        "27b-q8_0": "~28.6 GiB"
+      },
+      "platform_defaults": {
+        "darwin/arm64": "35b-mlx",
+        "linux": "27b-q4_k_m",
+        "windows": "27b-q4_k_m"
+      },
+      "memory": {
+        "27b-q4_k_m": "24 GiB min; 32 GiB recommended",
+        "27b-q8_0": "40 GiB min; 48 GiB recommended"
+      },
+      "gpus": {
+        "27b-q4_k_m": "Optional Metal, CUDA, Vulkan, or ROCm acceleration",
+        "27b-q8_0": "Optional Metal, CUDA, Vulkan, or ROCm acceleration"
+      },
+      "features": {
+        "27b-q4_k_m": "reasoning, coding, tool use, image understanding with optional mmproj",
+        "27b-q8_0": "higher-fidelity reasoning, coding, tool use, image understanding with optional mmproj"
       }
     },
     "qwen3.8": {
@@ -719,6 +915,346 @@
       "gpus": {
         "5b-mlx": "Apple Silicon GPU"
       }
+    },
+    "audio8-tts": {
+      "name": "audio8-tts",
+      "files": {
+        "0.6b": "",
+        "0.6b-mlx": ""
+      },
+      "kind": "speech",
+      "backends": {
+        "0.6b": "speech-audio8",
+        "0.6b-mlx": "speech-audio8-mlx"
+      },
+      "repos": {
+        "0.6b": "Audio8/Audio8-TTS-Preview-0.6b",
+        "0.6b-mlx": "mlx-community/Audio8-TTS-Preview-0.6b-bf16"
+      },
+      "default": "0.6b",
+      "platform_defaults": {
+        "darwin/arm64": "0.6b-mlx"
+      },
+      "sizes": {
+        "0.6b": "~2.4 GiB",
+        "0.6b-mlx": "~2.4 GiB"
+      },
+      "memory": {
+        "0.6b": "8 GiB min; 12 GiB recommended",
+        "0.6b-mlx": "8 GiB min; 12 GiB recommended"
+      },
+      "gpus": {
+        "0.6b": "NVIDIA CUDA recommended; CPU supported",
+        "0.6b-mlx": "Apple Silicon GPU"
+      },
+      "languages": {
+        "0.6b": "11 languages",
+        "0.6b-mlx": "11 languages"
+      },
+      "features": {
+        "0.6b": "preview, 44.1 kHz speech, zero-shot voice cloning, default voice",
+        "0.6b-mlx": "preview, 44.1 kHz speech, zero-shot voice cloning, Apple Silicon optimized"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/Audio8/Audio8-TTS-Preview-0.6b"
+    },
+    "gemma4": {
+      "name": "gemma4",
+      "repo": "ggml-org/gemma-4-E2B-it-GGUF",
+      "files": {
+        "e2b-mlx-4bit": "",
+        "e2b-q4_0": "gemma-4-E2B-it-Q4_0.gguf"
+      },
+      "kind": "text",
+      "backends": {
+        "e2b-mlx-4bit": "mlx-vlm"
+      },
+      "repos": {
+        "e2b-mlx-4bit": "mlx-community/gemma-4-e2b-it-4bit",
+        "e2b-q4_0": "ggml-org/gemma-4-E2B-it-GGUF"
+      },
+      "default": "e2b-q4_0",
+      "platform_defaults": {
+        "darwin/arm64": "e2b-mlx-4bit"
+      },
+      "sizes": {
+        "e2b-mlx-4bit": "~3.6 GiB",
+        "e2b-q4_0": "~2.8 GiB"
+      },
+      "memory": {
+        "e2b-mlx-4bit": "12 GiB min; 16 GiB recommended",
+        "e2b-q4_0": "8 GiB min; 12 GiB recommended"
+      },
+      "gpus": {
+        "e2b-mlx-4bit": "Apple Silicon GPU",
+        "e2b-q4_0": "Optional Metal, CUDA, Vulkan, or ROCm acceleration"
+      },
+      "features": {
+        "e2b-mlx-4bit": "reasoning, system prompts, function calling, image understanding",
+        "e2b-q4_0": "reasoning, system prompts, function calling, 128K context"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/google/gemma-4-E2B-it"
+    },
+    "ltx-2.5": {
+      "name": "ltx-2.5",
+      "repo": "Lightricks/LTX-2.5-Diffusers",
+      "files": {
+        "22b-bf16-cuda": ""
+      },
+      "kind": "video",
+      "backends": {
+        "22b-bf16-cuda": "diffusers-ltx2"
+      },
+      "default": "22b-bf16-cuda",
+      "width": 768,
+      "height": 512,
+      "steps": 30,
+      "frames": 121,
+      "fps": 24,
+      "sizes": {
+        "22b-bf16-cuda": "~68 GiB"
+      },
+      "memory": {
+        "22b-bf16-cuda": "96 GiB system RAM recommended; sequential CPU offload enabled"
+      },
+      "gpus": {
+        "22b-bf16-cuda": "NVIDIA CUDA, 24 GiB VRAM minimum; 48 GiB recommended"
+      },
+      "features": {
+        "22b-bf16-cuda": "text-to-video, synchronized stereo audio, multishot prompting, 1-20 second clips"
+      },
+      "artifacts": {
+        "22b-bf16-cuda": [
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "model_index.json",
+            "target": "model_index.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "modular_model_index.json",
+            "target": "modular_model_index.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "audio_vae/config.json",
+            "target": "audio_vae/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "audio_vae/diffusion_pytorch_model.safetensors",
+            "target": "audio_vae/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "connectors/config.json",
+            "target": "connectors/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "connectors/diffusion_pytorch_model.safetensors",
+            "target": "connectors/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "diffusion_decoder/config.json",
+            "target": "diffusion_decoder/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "diffusion_decoder/diffusion_pytorch_model.safetensors",
+            "target": "diffusion_decoder/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "duration_head/config.json",
+            "target": "duration_head/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "duration_head/diffusion_pytorch_model.safetensors",
+            "target": "duration_head/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "latent_upsampler/config.json",
+            "target": "latent_upsampler/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "latent_upsampler/diffusion_pytorch_model.safetensors",
+            "target": "latent_upsampler/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "scheduler/scheduler_config.json",
+            "target": "scheduler/scheduler_config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "temporal_latent_upsampler/config.json",
+            "target": "temporal_latent_upsampler/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "temporal_latent_upsampler/diffusion_pytorch_model.safetensors",
+            "target": "temporal_latent_upsampler/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/config.json",
+            "target": "text_encoder/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/generation_config.json",
+            "target": "text_encoder/generation_config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model-00001-of-00005.safetensors",
+            "target": "text_encoder/model-00001-of-00005.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model-00002-of-00005.safetensors",
+            "target": "text_encoder/model-00002-of-00005.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model-00003-of-00005.safetensors",
+            "target": "text_encoder/model-00003-of-00005.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model-00004-of-00005.safetensors",
+            "target": "text_encoder/model-00004-of-00005.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model-00005-of-00005.safetensors",
+            "target": "text_encoder/model-00005-of-00005.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "text_encoder/model.safetensors.index.json",
+            "target": "text_encoder/model.safetensors.index.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "tokenizer/chat_template.jinja",
+            "target": "tokenizer/chat_template.jinja"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "tokenizer/tokenizer.json",
+            "target": "tokenizer/tokenizer.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "tokenizer/tokenizer_config.json",
+            "target": "tokenizer/tokenizer_config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "vae/config.json",
+            "target": "vae/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "vae/diffusion_pytorch_model.safetensors",
+            "target": "vae/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "vocoder/config.json",
+            "target": "vocoder/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "vocoder/diffusion_pytorch_model.safetensors",
+            "target": "vocoder/diffusion_pytorch_model.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/config.json",
+            "target": "transformer/config.json"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/diffusion_pytorch_model-00001-of-00004.safetensors",
+            "target": "transformer/diffusion_pytorch_model-00001-of-00004.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/diffusion_pytorch_model-00002-of-00004.safetensors",
+            "target": "transformer/diffusion_pytorch_model-00002-of-00004.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/diffusion_pytorch_model-00003-of-00004.safetensors",
+            "target": "transformer/diffusion_pytorch_model-00003-of-00004.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/diffusion_pytorch_model-00004-of-00004.safetensors",
+            "target": "transformer/diffusion_pytorch_model-00004-of-00004.safetensors"
+          },
+          {
+            "repo": "Lightricks/LTX-2.5-Diffusers",
+            "filename": "transformer_full/diffusion_pytorch_model.safetensors.index.json",
+            "target": "transformer/diffusion_pytorch_model.safetensors.index.json"
+          }
+        ]
+      },
+      "gated": true,
+      "license": "LTX-2 Community License",
+      "license_url": "https://huggingface.co/Lightricks/LTX-2.5-Diffusers"
+    },
+    "stable-audio-3": {
+      "name": "stable-audio-3",
+      "files": {
+        "small-music": "",
+        "small-sfx": ""
+      },
+      "kind": "audio",
+      "backends": {
+        "small-music": "stable-audio3",
+        "small-sfx": "stable-audio3"
+      },
+      "repos": {
+        "small-music": "stabilityai/stable-audio-3-small-music",
+        "small-sfx": "stabilityai/stable-audio-3-small-sfx"
+      },
+      "default": "small-music",
+      "steps": 8,
+      "duration_seconds": 30,
+      "max_duration_seconds": 120,
+      "sample_rate": 44100,
+      "sizes": {
+        "small-music": "~3.3 GiB",
+        "small-sfx": "~3.3 GiB"
+      },
+      "memory": {
+        "small-music": "16 GiB min; 24 GiB recommended",
+        "small-sfx": "16 GiB min; 24 GiB recommended"
+      },
+      "gpus": {
+        "small-music": "Apple Silicon MPS, NVIDIA CUDA, or CPU",
+        "small-sfx": "Apple Silicon MPS, NVIDIA CUDA, or CPU"
+      },
+      "languages": {
+        "small-music": "English prompts",
+        "small-sfx": "English prompts"
+      },
+      "features": {
+        "small-music": "text-to-music, 44.1 kHz stereo, variable duration up to 120 seconds",
+        "small-sfx": "text-to-sound-effects, 44.1 kHz stereo, variable duration up to 120 seconds"
+      },
+      "gated": true,
+      "license": "Stability AI Community License",
+      "license_url": "https://huggingface.co/collections/stabilityai/stable-audio-3"
     }
   }
 }

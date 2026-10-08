@@ -4,7 +4,7 @@ import {
   controlEventSchema,
 } from "./sidecar";
 
-export const modelKindSchema = z.enum(["chat", "image", "video", "speech"]);
+export const modelKindSchema = z.enum(["chat", "image", "video", "speech", "audio"]);
 export const desktopModelSchema = z
   .object({
     id: z.string().min(1),
@@ -236,6 +236,7 @@ export const creatorCapabilitiesSchema = z
     image: creatorCapabilitySchema,
     video: creatorCapabilitySchema,
     speech: creatorCapabilitySchema,
+    audio: creatorCapabilitySchema,
     voice_clone: creatorCapabilitySchema,
     outputs: z
       .object({
@@ -295,14 +296,17 @@ const creatorLoraSchema = z.discriminatedUnion("type", [
 export const creatorGenerateInputSchema = z
   .object({
     jobId: z.string().min(1).max(128),
-    mode: z.enum(["image", "video", "speech", "voice-clone"]),
+    mode: z.enum(["image", "video", "audio", "speech", "voice-clone"]),
     model: z.string().min(1).max(256),
     prompt: z.string().max(20_000),
     text: z.string().max(20_000).optional(),
+    transcript: z.string().max(20_000).optional(),
+    language: z.string().max(64).optional(),
+    speaker: z.string().max(128).optional(),
+    instruct: z.string().max(2_000).optional(),
     inputImageToken: z.string().uuid().optional(),
     voiceReferenceToken: z.string().uuid().optional(),
     voiceConsent: z.boolean().optional(),
-    transcript: z.string().max(20_000).optional(),
     loras: z.array(creatorLoraSchema).max(8),
     settings: z.object({
       width: z.number().int().min(64).max(4096),
@@ -311,12 +315,13 @@ export const creatorGenerateInputSchema = z
       seed: z.number().int().nonnegative().optional(),
       frames: z.number().int().min(1).max(513),
       fps: z.number().int().min(1).max(60),
+      durationSeconds: z.number().int().min(1).max(120),
     }).strict(),
   })
   .strict();
 export const creatorOutputSchema = z.object({
   id: z.string().uuid(),
-  mode: z.enum(["image", "video", "speech", "voice-clone"]),
+  mode: z.enum(["image", "video", "audio", "speech", "voice-clone"]),
   mediaType: z.enum(["image", "video", "audio"]),
   url: z.string().url(),
   createdAt: z.string().datetime(),

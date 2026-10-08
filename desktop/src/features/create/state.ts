@@ -11,6 +11,7 @@ export const defaultCreatorSettings = (): CreatorAdvancedSettings => ({
   steps: 4,
   frames: 49,
   fps: 24,
+  durationSeconds: 30,
 });
 
 export function videoDurationSeconds(frames: number, fps: number): number {
@@ -117,7 +118,16 @@ export function validateCreatorRequest(request: CreatorRequest): string[] {
   if (request.mode === "voice-clone" && !request.voiceReference) {
     errors.push("Choose a voice reference recording.");
   }
-  const { width, height, steps, frames, fps, seed } = request.settings;
+  if (request.modelId.includes("custom-voice") && !request.speaker?.trim()) {
+    errors.push("Choose a speaker for this CustomVoice model.");
+  }
+  if (request.modelId.includes("voice-design") && !request.instruct?.trim()) {
+    errors.push("Describe the voice to design.");
+  }
+  if (request.modelId.startsWith("audio8-tts:") && request.voiceReference && !request.transcript?.trim()) {
+    errors.push("Enter the transcript of the Audio8 reference recording.");
+  }
+  const { width, height, steps, frames, fps, seed, durationSeconds } = request.settings;
   const dimensionStep = request.mode === "video" ? 32 : 8;
   if (width < 256 || width > 2048 || width % dimensionStep !== 0) {
     errors.push(`Width must be 256–2048 and divisible by ${dimensionStep}.`);
@@ -141,6 +151,9 @@ export function validateCreatorRequest(request: CreatorRequest): string[] {
   if (request.mode === "video" && (fps < 1 || fps > 60)) {
     errors.push("FPS must be between 1 and 60.");
   }
+  if (request.mode === "audio" && (durationSeconds < 1 || durationSeconds > 120)) {
+    errors.push("Audio duration must be between 1 and 120 seconds.");
+  }
   if (seed !== undefined && (!Number.isInteger(seed) || seed < 0)) {
     errors.push("Seed must be a positive whole number.");
   }
@@ -154,6 +167,7 @@ export function modeLabel(mode: CreatorMode): string {
   return {
     image: "Image",
     video: "Video",
+    audio: "Audio / Music",
     speech: "Speech / TTS",
     "voice-clone": "Voice Clone",
   }[mode];

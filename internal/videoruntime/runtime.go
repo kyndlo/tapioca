@@ -51,7 +51,7 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 		if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
 			return errors.New("the MLX video backend requires macOS on Apple Silicon")
 		}
-	case "diffusers-video":
+	case "diffusers-video", "diffusers-ltx2":
 		if (runtime.GOOS != "windows" && runtime.GOOS != "linux") || runtime.GOARCH != "amd64" {
 			return errors.New("the CUDA video backend requires Windows or Linux x64 with an NVIDIA GPU")
 		}
@@ -624,12 +624,7 @@ func waitForServer(ctx context.Context, base string, timeout time.Duration) erro
 }
 
 func runPython(ctx context.Context, cacheDir string, request Request, flavor string) error {
-	version := "0.1.1"
-	if flavor == "diffusers" {
-		// Do not reuse an environment with the vulnerable pre-0.40 shard loader.
-		version = "0.1.2-diffusers040"
-	}
-	root := filepath.Join(cacheDir, "video-runtime", version+"-"+flavor)
+	root := filepath.Join(cacheDir, "video-runtime", "0.2.0-"+flavor)
 	script := flavor + "_video.py"
 	requirements := "requirements-" + flavor + ".txt"
 	for _, name := range []string{script, requirements} {

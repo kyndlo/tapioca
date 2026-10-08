@@ -14,6 +14,11 @@ contain the model's built-in imperceptible audio watermark.
 | `chatterbox:multilingual` | Default voices and cloning across 23+ languages | CPU, Apple MPS, or NVIDIA CUDA |
 | `qwen3-tts:0.6b-mlx` | High-quality 3-second cloning on Apple Silicon | Mac with 12 GiB+ unified memory |
 | `qwen3-tts:0.6b` | High-quality cloning on GPU servers | Windows/Linux NVIDIA; CPU fallback |
+| `qwen3-tts:1.7b-base` | Higher-quality reference cloning | Windows/Linux NVIDIA |
+| `qwen3-tts:1.7b-custom-voice` | Named built-in speakers and instructed delivery | Windows/Linux NVIDIA |
+| `qwen3-tts:1.7b-voice-design` | Design a voice from a written description | Windows/Linux NVIDIA |
+| `audio8-tts:0.6b-mlx` | Compact default voice or transcript-assisted cloning | Apple Silicon |
+| `audio8-tts:0.6b` | Compact default voice or transcript-assisted cloning | Windows/Linux NVIDIA |
 
 Running a missing model automatically downloads it. To download first:
 
@@ -111,6 +116,28 @@ tapioca tts qwen3-tts:0.6b \
   --output one-off.wav
 ```
 
+Qwen CustomVoice and VoiceDesign do not use a reference recording:
+
+```bash
+tapioca tts qwen3-tts:1.7b-custom-voice \
+  --speaker Ryan --instruct "Speak warmly and at a measured pace" \
+  --text "The local studio is ready." --output custom.wav
+
+tapioca tts qwen3-tts:1.7b-voice-design \
+  --instruct "A calm middle-aged narrator with a low, clear voice" \
+  --text "This voice was designed from text." --output designed.wav
+```
+
+Audio8 can use its default voice without a reference, or clone a recording
+when the exact transcript is supplied:
+
+```bash
+tapioca tts audio8-tts \
+  --voice-sample ./reference.wav \
+  --transcript "The exact words in the reference recording." \
+  --text "Audio8 is running locally." --output audio8.wav
+```
+
 ## Files on disk
 
 Voices are stored under `~/.tapioca/voices` on macOS/Linux and
@@ -137,14 +164,14 @@ few minutes. Later runs reuse both the runtime and model.
 
 ## Platform and acceleration matrix
 
-| Platform | Chatterbox | Qwen3-TTS |
-| --- | --- | --- |
-| Apple Silicon | PyTorch MPS or CPU | MLX recommended |
-| Windows x64 NVIDIA | CUDA or CPU | CUDA or CPU |
-| Windows x64 AMD/Intel | CPU | CPU |
-| Windows ARM64 | CPU | CPU |
-| Linux NVIDIA | CUDA or CPU | CUDA or CPU |
-| Linux without NVIDIA | CPU | CPU |
+| Platform | Chatterbox | Qwen3-TTS | Audio8 |
+| --- | --- | --- | --- |
+| Apple Silicon | PyTorch MPS or CPU | MLX recommended | MLX recommended |
+| Windows x64 NVIDIA | CUDA or CPU | CUDA or CPU | CUDA or CPU |
+| Windows x64 AMD/Intel | CPU | CPU | CPU |
+| Windows ARM64 | CPU | CPU | CPU |
+| Linux NVIDIA | CUDA or CPU | CUDA or CPU | CUDA or CPU |
+| Linux without NVIDIA | CPU | CPU | CPU |
 
 MLX is selected automatically when you request `qwen3-tts` on Apple Silicon.
 On Windows or Linux NVIDIA, use `qwen3-tts:0.6b`.

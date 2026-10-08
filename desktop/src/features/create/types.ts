@@ -1,4 +1,4 @@
-export const creatorModes = ["image", "video", "speech", "voice-clone"] as const;
+export const creatorModes = ["image", "video", "audio", "speech", "voice-clone"] as const;
 export type CreatorMode = (typeof creatorModes)[number];
 
 export interface CreatorModel {
@@ -11,6 +11,7 @@ export interface CreatorModel {
     maxWidth?: number;
     maxHeight?: number;
     maxFrames?: number;
+    maxDurationSeconds?: number;
   };
   supportsInputImage?: boolean;
   supportsLoRA?: boolean;
@@ -60,6 +61,7 @@ export interface CreatorAdvancedSettings {
   seed?: number;
   frames: number;
   fps: number;
+  durationSeconds: number;
 }
 
 export interface CreatorRequest {
@@ -67,10 +69,13 @@ export interface CreatorRequest {
   modelId: string;
   prompt: string;
   text?: string;
+  transcript?: string;
+  language?: string;
+  speaker?: string;
+  instruct?: string;
   inputImage?: LocalFileSelection;
   voiceReference?: LocalFileSelection;
   voiceConsent?: boolean;
-  transcript?: string;
   loras: CreatorLora[];
   settings: CreatorAdvancedSettings;
 }

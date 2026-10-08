@@ -1,2 +1,2 @@
-qwen-tts
-soundfile
+qwen-tts==0.1.1
+soundfile>=0.12

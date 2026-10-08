@@ -1,6 +1,9 @@
 package catalog
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestResolveGLM(t *testing.T) {
 	got, err := Resolve("glm-4.7-flash:q8_0")
@@ -47,6 +50,26 @@ func TestResolveImageDefaultsToDiffusersOnWindows(t *testing.T) {
 	}
 }
 
+func TestResolveFlux2KleinCUDAProfiles(t *testing.T) {
+	windows, err := ResolveForPlatform("flux2-klein", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windows.Name != "flux2-klein:4b-bf16-cuda" ||
+		windows.Backend != "diffusers" || windows.GuidanceScale != 1.0 ||
+		!windows.GuidanceScaleSet || windows.Repo != "black-forest-labs/FLUX.2-klein-4B" {
+		t.Fatalf("unexpected FLUX.2 CUDA default: %#v", windows)
+	}
+	fp8, err := ResolveForPlatform("flux2-klein:4b-fp8-cuda", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fp8.Backend != "diffusers" || len(fp8.Artifacts) != 18 ||
+		fp8.Artifacts[len(fp8.Artifacts)-1].Target != "transformer/diffusion_pytorch_model.safetensors" {
+		t.Fatalf("unexpected FLUX.2 FP8 bundle: %#v", fp8)
+	}
+}
+
 func TestResolveQwenMLXAlias(t *testing.T) {
 	got, err := ResolveFor("qwen3.6:35b-mlx", "darwin")
 	if err != nil {
@@ -78,6 +101,57 @@ func TestResolveQwen38PlatformDefaults(t *testing.T) {
 		windows.Filename != "Qwen3.8-27B-UD-Q4_K_M.gguf" ||
 		windows.Backend != "" {
 		t.Fatalf("unexpected Qwen3.8 Windows resolution: %#v", windows)
+	}
+}
+
+func TestResolveCurrentGenerationTextModels(t *testing.T) {
+	windowsQwen, err := ResolveForPlatform("qwen3.6", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if windowsQwen.Name != "qwen3.6:27b-q4_k_m" ||
+		windowsQwen.Filename != "Qwen3.6-27B-Q4_K_M.gguf" ||
+		windowsQwen.Repo != "ggml-org/Qwen3.6-27B-GGUF" {
+		t.Fatalf("unexpected Windows Qwen3.6 resolution: %#v", windowsQwen)
+	}
+
+	macGemma, err := ResolveForPlatform("gemma4", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if macGemma.Name != "gemma4:e2b-mlx-4bit" ||
+		macGemma.Backend != "mlx-vlm" ||
+		macGemma.Repo != "mlx-community/gemma-4-e2b-it-4bit" {
+		t.Fatalf("unexpected macOS Gemma 4 resolution: %#v", macGemma)
+	}
+
+	linuxGemma, err := ResolveForPlatform("gemma4", "linux", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if linuxGemma.Name != "gemma4:e2b-q4_0" ||
+		linuxGemma.Filename != "gemma-4-E2B-it-Q4_0.gguf" {
+		t.Fatalf("unexpected Linux Gemma 4 resolution: %#v", linuxGemma)
+	}
+}
+
+func TestResolveCurrentSpeechModels(t *testing.T) {
+	qwen, err := ResolveForPlatform("qwen3-tts:1.7b-voice-design-mlx", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if qwen.Backend != "speech-qwen-mlx" ||
+		qwen.Repo != "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-bf16" ||
+		!strings.Contains(qwen.Features, "voice design") {
+		t.Fatalf("unexpected Qwen voice design profile: %#v", qwen)
+	}
+	audio8, err := ResolveForPlatform("audio8-tts", "darwin", "arm64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if audio8.Name != "audio8-tts:0.6b-mlx" ||
+		audio8.Backend != "speech-audio8-mlx" || audio8.Languages != "11 languages" {
+		t.Fatalf("unexpected Audio8 profile: %#v", audio8)
 	}
 }
 
@@ -244,6 +318,36 @@ func TestLowMemoryVideoProfiles(t *testing.T) {
 		}
 		if model.Width == 0 || model.Height == 0 || model.Frames == 0 || model.FPS == 0 {
 			t.Errorf("%s lacks generation defaults: %#v", test.ref, model)
+		}
+	}
+}
+
+func TestResolveLTX25CuratedBundle(t *testing.T) {
+	model, err := ResolveForPlatform("ltx-2.5", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if model.Backend != "diffusers-ltx2" || !model.Gated || model.FPS != 24 ||
+		model.Frames != 121 || len(model.Artifacts) != 36 {
+		t.Fatalf("unexpected LTX-2.5 profile: %#v", model)
+	}
+	seenTargets := map[string]bool{}
+	for _, artifact := range model.Artifacts {
+		if seenTargets[artifact.Target] {
+			t.Fatalf("duplicate LTX-2.5 artifact target %q", artifact.Target)
+		}
+		seenTargets[artifact.Target] = true
+		if strings.Contains(artifact.Target, "transformer_full/") {
+			t.Fatalf("LTX-2.5 exposes source-only transformer_full path: %#v", artifact)
+		}
+	}
+	for _, target := range []string{
+		"audio_vae/diffusion_pytorch_model.safetensors",
+		"transformer/diffusion_pytorch_model.safetensors.index.json",
+		"vocoder/diffusion_pytorch_model.safetensors",
+	} {
+		if !seenTargets[target] {
+			t.Errorf("LTX-2.5 bundle is missing %s", target)
 		}
 	}
 }

@@ -27,6 +27,13 @@ const iconShapes: Record<RouteId, ReactNode> = {
       <path d="m10 9 5 3-5 3Z" />
     </>
   ),
+  audio: (
+    <>
+      <path d="M5 14.5V6l12-2v8.5" />
+      <ellipse cx="4.5" cy="16.5" rx="2.5" ry="2" />
+      <ellipse cx="16.5" cy="14.5" rx="2.5" ry="2" />
+    </>
+  ),
   voice: (
     <>
       <path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4" />

@@ -95,7 +95,17 @@ required; verify it with `python -c "import platform; print(platform.machine())"
 
 ## Windows x64 with NVIDIA CUDA
 
-Start with SD Turbo:
+FLUX.2 Klein 4B is the current recommended quality path on a modern NVIDIA
+card. Use the official FP8 checkpoint to reduce memory pressure:
+
+```powershell
+tapioca image flux2-klein:4b-fp8-cuda `
+  --prompt "A red fox in snow, editorial photography" `
+  --output fox.png
+```
+
+Use `flux2-klein:4b-bf16-cuda` when VRAM permits and you want the official
+BF16 weights. Start with SD Turbo on smaller GPUs:
 
 ```powershell
 tapioca image sd-turbo:fp16 `
@@ -109,6 +119,8 @@ tapioca image sd-turbo:fp16 `
 | `sd-turbo:onnx-arm64` | ~4.8 GiB | 512×512 | Windows ARM64 CPU; slower |
 | `sd-turbo:fp16` | ~3 GiB | 512×512 | Best first model |
 | `sdxl-turbo:fp16` | ~7 GiB | 1024×1024 | Better detail |
+| `flux2-klein:4b-fp8-cuda` | ~12 GiB | 1024×1024 | Current FLUX.2 4B, reduced precision |
+| `flux2-klein:4b-bf16-cuda` | ~15 GiB | 1024×1024 | Official BF16 checkpoint; more VRAM |
 | `qwen-image-flash:bf16` | ~58 GiB | 1024×1024 | Ampere+; very high memory |
 | `krea-2-turbo:bf16-cuda` | ~34 GiB | 1024×1024 | NVIDIA 16 GiB minimum with CPU offload; 24 GiB recommended |
 

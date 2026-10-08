@@ -1,0 +1,5 @@
+torch>=2.5,<2.12
+torchaudio>=2.5,<2.12
+transformers==4.57.6
+soundfile>=0.12
+safetensors>=0.4

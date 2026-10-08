@@ -39,6 +39,7 @@ def main():
             "PyTorch build; AMD and CPU diffusion backends are not supported yet."
         )
     is_qwen_image = "qwen-image" in args.model.lower()
+    is_flux2_klein = "flux2-klein" in args.model.lower()
     if is_qwen_image and not use_mps and not torch.cuda.is_bf16_supported():
         raise SystemExit(
             "Qwen-Image-Flash requires a CUDA GPU with bfloat16 support "
@@ -58,7 +59,7 @@ def main():
         )
     dtype = (
         torch.bfloat16
-        if (is_qwen_image or "krea-2" in args.model.lower())
+        if (is_qwen_image or is_flux2_klein or "krea-2" in args.model.lower())
         else torch.float16
     )
     load_options = {

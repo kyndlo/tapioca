@@ -57,10 +57,12 @@ are not yet qualified. Try `tapioca pull minicpm5-2b` or
 | `qwen3-coder:30b-mlx` | ~16 GiB | Coding agents |
 | `qwen3.6:35b-mlx` | ~20 GiB | Larger Qwen MLX option |
 | `qwen3.8:27b-mlx` | ~15 GiB | Newest Qwen agentic coding and tool use |
+| `gemma4:e2b-mlx-4bit` | ~3.6 GiB | Compact current-generation Gemma |
 
 On Windows or Linux, `qwen3.8:27b-q4_k_m` is the portable GGUF option and
 needs at least 24 GiB of system memory. Qwen3.8 is a reasoning-heavy model;
 start with a moderate context size and allow extra time for complex tasks.
 
-For image and video recommendations, use the
-[image](image-generation.md) and [video](video-generation.md) guides.
+For image, video, speech, and standalone audio recommendations, use the
+[image](image-generation.md), [video](video-generation.md),
+[voice](speech-and-voices.md), and [audio](audio-generation.md) guides.

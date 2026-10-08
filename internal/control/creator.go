@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/carlos/tapioca/internal/adapter"
+	"github.com/carlos/tapioca/internal/audioruntime"
 	"github.com/carlos/tapioca/internal/catalog"
 	"github.com/carlos/tapioca/internal/config"
 	"github.com/carlos/tapioca/internal/imageruntime"
@@ -24,6 +25,7 @@ import (
 type ImageRunFunc func(context.Context, string, imageruntime.Request, io.Writer, io.Writer) error
 type VideoRunFunc func(context.Context, string, videoruntime.Request, io.Writer, io.Writer) error
 type SpeechRunFunc func(context.Context, string, speechruntime.Request, io.Writer, io.Writer) error
+type AudioRunFunc func(context.Context, string, audioruntime.Request, io.Writer, io.Writer) error
 
 type LoRASelection struct {
 	Reference string   `json:"reference"`
@@ -86,7 +88,19 @@ type SpeechGenerateParams struct {
 	VoiceSample  string `json:"voice_sample,omitempty"`
 	Transcript   string `json:"transcript,omitempty"`
 	Language     string `json:"language,omitempty"`
+	Speaker      string `json:"speaker,omitempty"`
+	Instruct     string `json:"instruct,omitempty"`
 	OutputName   string `json:"output_name,omitempty"`
+}
+
+type AudioGenerateParams struct {
+	Model          string `json:"model"`
+	Prompt         string `json:"prompt"`
+	NegativePrompt string `json:"negative_prompt,omitempty"`
+	Duration       int    `json:"duration_seconds,omitempty"`
+	Steps          int    `json:"steps,omitempty"`
+	Seed           uint64 `json:"seed,omitempty"`
+	OutputName     string `json:"output_name,omitempty"`
 }
 
 func (h *Handler) handleCreator(
@@ -109,7 +123,7 @@ func (h *Handler) handleCreator(
 		}
 		filtered := make([]CreatorCatalogModel, 0, len(models))
 		for _, model := range models {
-			if model.Kind == "image" || model.Kind == "video" || model.Kind == "speech" {
+			if model.Kind == "image" || model.Kind == "video" || model.Kind == "speech" || model.Kind == "audio" {
 				item := CreatorCatalogModel{
 					CatalogModel: model,
 					Operation:    model.Kind + ".generate",
@@ -152,6 +166,13 @@ func (h *Handler) handleCreator(
 			return nil, err, true
 		}
 		result, err := h.generateSpeech(ctx, request.ID, params, request.Method == "voice.clone")
+		return result, err, true
+	case "audio.generate":
+		var params AudioGenerateParams
+		if err := decodeParams(request.Params, &params); err != nil {
+			return nil, err, true
+		}
+		result, err := h.generateAudio(ctx, request.ID, params)
 		return result, err, true
 	case "lora.list":
 		if err := decodeNoParams(request.Params); err != nil {
@@ -226,6 +247,14 @@ func creatorCapabilities() map[string]any {
 			"available": true, "method": "speech.generate",
 			"supports_voice_reference": true,
 		},
+		"audio": map[string]any{
+			"available": true, "method": "audio.generate",
+			"parameters": map[string]any{
+				"duration_seconds": "1 through the model maximum; omit for the catalog default",
+				"steps":            "1 through 200; omit for the catalog default",
+				"output_name":      "optional .wav filename without directories",
+			},
+		},
 		"voice_clone": map[string]any{
 			"available": true, "method": "voice.clone",
 			"requires_voice_reference": true,
@@ -237,7 +266,7 @@ func creatorCapabilities() map[string]any {
 		"progress": map[string]any{
 			"mode":                   "indeterminate",
 			"numeric_when_available": false,
-			"reason":                 "current image and video runtimes expose log streams but no numeric progress callback",
+			"reason":                 "current media runtimes expose log streams but no numeric progress callback",
 		},
 	}
 }
@@ -334,6 +363,9 @@ func (h *Handler) generateVideo(
 	if err := validateVideo(params); err != nil {
 		return nil, err
 	}
+	if protocolError := validateVideoModelFrames(model.Name, params.Frames); protocolError != nil {
+		return nil, protocolError
+	}
 	if (model.Backend == "comfy-h3-mps" || model.Backend == "comfy-h3-cuda") &&
 		(params.Frames < 5 || (params.Frames-5)%17 != 0) {
 		return nil, invalidParams("MiniMax-H3 frames must have the form 17n+5", nil)
@@ -376,6 +408,17 @@ func (h *Handler) generateVideo(
 	return creatorOutput(output, "video", model.Name, h.dependencies.Now())
 }
 
+func validateVideoModelFrames(modelName string, frames int) *ProtocolError {
+	if (modelName == "ltx-video:2b-fp16" || modelName == "ltx-2.5:22b-bf16-cuda") &&
+		(frames-1)%8 != 0 {
+		return invalidParams(
+			"LTX video frames must have the form 8n+1 (for example 17, 49, or 121)",
+			nil,
+		)
+	}
+	return nil
+}
+
 func runImage(
 	ctx context.Context,
 	cacheDir string,
@@ -404,6 +447,68 @@ func runSpeech(
 	stderr io.Writer,
 ) error {
 	return speechruntime.RunWithWriters(ctx, cacheDir, request, stdout, stderr)
+}
+
+func runAudio(
+	ctx context.Context,
+	cacheDir string,
+	request audioruntime.Request,
+	stdout io.Writer,
+	stderr io.Writer,
+) error {
+	return audioruntime.RunWithWriters(ctx, cacheDir, request, stdout, stderr)
+}
+
+func (h *Handler) generateAudio(
+	ctx context.Context,
+	requestID string,
+	params AudioGenerateParams,
+) (any, *ProtocolError) {
+	model, resolved, protocolError := resolveCreatorModel(params.Model, "audio")
+	if protocolError != nil {
+		return nil, protocolError
+	}
+	params.Prompt = strings.TrimSpace(params.Prompt)
+	if params.Prompt == "" {
+		return nil, invalidParams("params.prompt is required", nil)
+	}
+	if params.Duration == 0 {
+		params.Duration = resolved.DurationSeconds
+	}
+	if params.Steps == 0 {
+		params.Steps = resolved.Steps
+	}
+	if params.Duration < 1 || params.Duration > resolved.MaxDuration {
+		return nil, invalidParams(fmt.Sprintf(
+			"duration_seconds must be between 1 and %d", resolved.MaxDuration,
+		), nil)
+	}
+	if params.Steps < 1 || params.Steps > 200 {
+		return nil, invalidParams("steps must be between 1 and 200", nil)
+	}
+	output, err := managedOutputPath("audio", requestID, params.OutputName, ".wav")
+	if err != nil {
+		return nil, err
+	}
+	reportProgress(ctx, map[string]any{
+		"stage": "starting", "determinate": false, "output": output,
+	})
+	logs := creatorLogWriter{ctx: ctx}
+	cacheDir, cacheError := runtimeCacheDir()
+	if cacheError != nil {
+		return nil, cacheError
+	}
+	runError := h.dependencies.Audio(ctx, cacheDir, audioruntime.Request{
+		ModelPath: model.Path, Prompt: params.Prompt,
+		NegativePrompt: params.NegativePrompt, Output: output,
+		Duration: params.Duration, Steps: params.Steps, Seed: params.Seed,
+		Backend: model.Backend,
+	}, logs, logs)
+	if runError != nil {
+		_ = os.Remove(output)
+		return nil, operationError(ctx, "audio_generation_failed", runError)
+	}
+	return creatorOutput(output, "audio", model.Name, h.dependencies.Now())
 }
 
 func (h *Handler) generateSpeech(
@@ -438,9 +543,21 @@ func (h *Handler) generateSpeech(
 	if clone && voiceSample == "" {
 		return nil, invalidParams("params.voice_sample is required for voice cloning", nil)
 	}
-	if (model.Backend == "speech-qwen" || model.Backend == "speech-qwen-mlx" ||
-		strings.Contains(model.Name, "chatterbox:nano")) && voiceSample == "" {
+	qwenBase := strings.HasPrefix(model.Name, "qwen3-tts:") &&
+		!strings.Contains(model.Name, "custom-voice") &&
+		!strings.Contains(model.Name, "voice-design")
+	if (qwenBase || strings.Contains(model.Name, "chatterbox:nano")) && voiceSample == "" {
 		return nil, invalidParams(model.Name+" requires a voice reference", nil)
+	}
+	if strings.Contains(model.Name, "custom-voice") && strings.TrimSpace(params.Speaker) == "" {
+		return nil, invalidParams("params.speaker is required for Qwen3-TTS CustomVoice", nil)
+	}
+	if strings.Contains(model.Name, "voice-design") && strings.TrimSpace(params.Instruct) == "" {
+		return nil, invalidParams("params.instruct is required for Qwen3-TTS VoiceDesign", nil)
+	}
+	if strings.HasPrefix(model.Name, "audio8-tts:") && voiceSample != "" &&
+		strings.TrimSpace(params.Transcript) == "" {
+		return nil, invalidParams("params.transcript is required for Audio8 voice cloning", nil)
 	}
 	output, err := managedOutputPath("audio", requestID, params.OutputName, ".wav")
 	if err != nil {
@@ -459,6 +576,8 @@ func (h *Handler) generateSpeech(
 		Output: output, VoiceSample: voiceSample, Transcript: params.Transcript,
 		Language: params.Language, Backend: model.Backend,
 		VoiceConsent: params.VoiceConsent, Seed: params.Seed,
+		Speaker:  strings.TrimSpace(params.Speaker),
+		Instruct: strings.TrimSpace(params.Instruct),
 	}, logs, logs)
 	if runError != nil {
 		_ = os.Remove(output)

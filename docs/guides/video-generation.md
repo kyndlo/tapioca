@@ -138,6 +138,25 @@ LTX-Video 2B needs approximately 24 GiB system RAM and an 8 GiB CUDA GPU with
 offload; 32 GiB RAM is recommended. Stable Video Diffusion is approximately
 4.5 GiB and requires a starting image.
 
+### LTX-2.5 on a high-memory NVIDIA workstation
+
+`ltx-2.5:22b-bf16-cuda` uses the official Diffusers component layout and
+generates synchronized video and audio. It is a gated, approximately 68 GiB
+download intended for a machine with at least 96 GiB system RAM and 24 GiB
+VRAM:
+
+```powershell
+$env:HF_TOKEN = "hf_your_read_token"
+tapioca pull ltx-2.5:22b-bf16-cuda --accept-license
+tapioca video ltx-2.5:22b-bf16-cuda `
+  --prompt 'A close-up of rain on leaves with quiet natural ambience' `
+  --width 768 --height 512 --frames 121 --steps 30 --fps 24 `
+  --output ltx25.mp4
+```
+
+Use the included Windows validation script before treating this heavyweight
+profile as verified on a particular driver/GPU combination.
+
 ## Rules and flags
 
 - The default seed is `0`. Use `--random-seed` to generate and print a seed,

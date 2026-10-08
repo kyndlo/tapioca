@@ -24,6 +24,20 @@ func TestDiffusersVideoUsesFixedShardLoader(t *testing.T) {
 	}
 }
 
+func TestLTX2SelectsImageConditionedPipeline(t *testing.T) {
+	script, err := source.ReadFile("diffusers_video.py")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, required := range []string{
+		"LTX2ImageToVideoPipeline", "if args.image else LTX2Pipeline",
+	} {
+		if !strings.Contains(string(script), required) {
+			t.Fatalf("LTX-2.5 image conditioning is not wired through: %s", script)
+		}
+	}
+}
+
 func TestH3GraphChainsAdaptersIntoSchedulerAndGuider(t *testing.T) {
 	python, err := exec.LookPath("python3")
 	if err != nil {
@@ -172,7 +186,8 @@ func TestExtractZipRejectsParentTraversal(t *testing.T) {
 func TestEngineForKeepsBackendDetailsBehindStableBoundary(t *testing.T) {
 	tests := map[string]string{
 		"mlx-video": "mlx", "diffusers-video": "diffusers",
-		"comfy-h3-mps": "comfy-h3", "comfy-h3-cuda": "comfy-h3",
+		"diffusers-ltx2": "diffusers",
+		"comfy-h3-mps":   "comfy-h3", "comfy-h3-cuda": "comfy-h3",
 	}
 	for backend, want := range tests {
 		engine, err := engineFor(backend)

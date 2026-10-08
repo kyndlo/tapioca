@@ -54,7 +54,7 @@ tapioca pull MODEL[:VARIANT] --force
 tapioca pull GATED_MODEL[:VARIANT] --accept-license
 ```
 
-Explicit pull is optional for `run`, `serve`, `launch`, `image`, `video`, and `tts`;
+Explicit pull is optional for `run`, `serve`, `launch`, `image`, `video`, `audio`, and `tts`;
 they download a missing catalog model automatically.
 
 Gated models do not auto-pull until their terms have been accepted explicitly.
@@ -151,7 +151,27 @@ tapioca tts MODEL --text TEXT [flags]
 ```
 
 Flags include `--output`, `--language`, `--voice`, `--voice-sample`,
-`--transcript`, and `--transcript-file`.
+`--transcript`, `--transcript-file`, `--speaker`, and `--instruct`.
+
+Qwen3-TTS Base variants clone from a voice sample, CustomVoice variants use
+`--speaker`, and VoiceDesign variants use `--instruct`. Audio8 can speak with
+its default voice or clone a sample when its exact transcript is supplied.
+
+## `audio`
+
+Generate standalone music, ambience, or sound effects as a WAV file:
+
+```bash
+tapioca audio stable-audio-3:small-music \
+  --prompt "Warm analog synthesizer, slow pulse, no vocals" \
+  --seconds 30 --output ambient.wav
+```
+
+Flags include `--negative-prompt`, `--seconds`, `--steps`, `--seed`,
+`--random-seed`, and `--output`. Stable Audio 3 supports 1–120 seconds; the
+catalog default is 30 seconds. Its weights are gated, so provider access,
+`HF_TOKEN`, and an explicit `tapioca pull ... --accept-license` are required
+before the first generation.
 
 ## `voice`
 

@@ -259,6 +259,7 @@ function ActiveFeature({
   if (route === "models") return <ModelHubRoute adapters={adapters} />;
   if (route === "images") return <CreatorScreen adapter={adapters.creator} initialMode="image" modes={["image"]} />;
   if (route === "video") return <CreatorScreen adapter={adapters.creator} initialMode="video" modes={["video"]} />;
+  if (route === "audio") return <CreatorScreen adapter={adapters.creator} initialMode="audio" modes={["audio"]} />;
   if (route === "voice") return <CreatorScreen adapter={adapters.creator} initialMode="speech" modes={["speech", "voice-clone"]} />;
   if (route === "api") return <ApiRoute />;
   if (route === "settings") return <SettingsRoute update={softwareUpdate} updateError={updateError} installing={installingUpdate} onCheck={onCheckForUpdates} onInstall={onInstallUpdate} />;

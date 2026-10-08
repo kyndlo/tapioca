@@ -35,8 +35,13 @@ func pullSnapshotWithContext(
 	if len(model.Artifacts) > 0 {
 		return pullArtifactsWithContext(ctx, model, destination, force, report)
 	}
+	include := snapshotFileFilter(model)
+	return pullHubSnapshotWithContext(ctx, model, destination, force, include, report)
+}
+
+func snapshotFileFilter(model catalog.Resolved) func(string) bool {
 	include := imageSnapshotFile
-	if model.Kind == "speech" {
+	if model.Kind == "speech" || model.Kind == "audio" {
 		include = textSnapshotFile
 	}
 	if model.Repo == "stabilityai/sd-turbo" ||
@@ -50,10 +55,10 @@ func pullSnapshotWithContext(
 	if model.Backend == "mflux" {
 		include = textSnapshotFile
 	}
-	if model.Gated {
+	if model.Gated && model.Kind != "audio" && model.Kind != "speech" {
 		include = licensedImageSnapshotFile
 	}
-	return pullHubSnapshotWithContext(ctx, model, destination, force, include, report)
+	return include
 }
 
 func pullArtifactsWithContext(

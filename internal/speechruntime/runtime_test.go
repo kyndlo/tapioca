@@ -14,12 +14,14 @@ func TestPythonArguments(t *testing.T) {
 		Text: "hello", Output: "/tmp/hello.wav", VoiceSample: "/tmp/voice.wav",
 		Transcript: "reference words", Language: "English", Backend: "speech-qwen-mlx",
 		VoiceConsent: true, Seed: 42,
+		Speaker: "Ryan", Instruct: "speak warmly",
 	})
 	for _, value := range []string{
 		"--model", "/models/qwen", "--model-name", "qwen3-tts:0.6b-mlx",
 		"--text", "hello", "--output", "/tmp/hello.wav", "--voice-sample",
 		"/tmp/voice.wav", "--transcript", "reference words", "--language", "English",
 		"--voice-consent", "--seed", "42",
+		"--speaker", "Ryan", "--instruct", "speak warmly",
 	} {
 		if !slices.Contains(args, value) {
 			t.Fatalf("arguments missing %q: %#v", value, args)

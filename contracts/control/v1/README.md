@@ -56,11 +56,12 @@ the registry is updated.
 | `chat.describe` | `model`; optional port | local chat endpoint descriptor |
 | `agent.describe` | `agent`, `model`; optional port and args | non-executing launch descriptor |
 | `creator.capabilities` | none | protocol-safe creator feature availability |
-| `creator.catalog` | none | image, video, and speech-compatible catalog variants |
+| `creator.catalog` | none | image, video, audio, and speech-compatible catalog variants |
 | `image.generate` | `model`, `prompt`; optional dimensions, inputs, LoRAs | local image file metadata |
 | `video.generate` | `model`, `prompt`; optional image, dimensions, LoRAs | local MP4 file metadata |
-| `speech.generate` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
-| `voice.clone` | reserved typed request | `runtime_adapter_required` until writer-safe runtime is available |
+| `speech.generate` | `model`, `text`; optional voice, language, speaker, instruction | local WAV file metadata |
+| `voice.clone` | `model`, `text`, `voice_sample`; optional transcript and language | local WAV file metadata |
+| `audio.generate` | `model`, `prompt`; optional duration, steps, seed | local WAV file metadata |
 | `lora.list` | none | installed `.safetensors` metadata |
 | `lora.inspect` | `reference` | provider-neutral LoRA metadata |
 | `lora.pull` | `reference`; optional `file`, `force` | installed provider LoRA record |
@@ -90,18 +91,13 @@ typed adapter package, must already resolve to a local regular
 use a scale from -4 through 4. The API does not auto-download a LoRA during a
 generation job.
 
-Speech and voice cloning are intentionally reported unavailable in this
-protocol revision. The existing speech runtime currently binds its child
-process directly to process stdout; invoking it would corrupt NDJSON. Both
-methods return stable `runtime_adapter_required` until that runtime exposes the
-same writer-aware adapter used by image and video.
-
 Stable feature error codes include `invalid_params`, `model_not_found`,
 `model_not_installed`, `confirmation_required`, `unsafe_model_path`,
 `pull_failed`, `remove_failed`, `registry_failed`, `storage_failed`,
 `server_conflict`, `server_not_found`, `chat_failed`, and
 `unsupported_agent`. Creator errors add `incompatible_model`,
-`image_generation_failed`, `video_generation_failed`, `output_exists`,
+`image_generation_failed`, `video_generation_failed`,
+`audio_generation_failed`, `speech_generation_failed`, `output_exists`,
 `output_missing`, `lora_not_found`, `lora_not_installed`,
 `incompatible_lora`, `lora_discovery_failed`, `lora_inspection_failed`,
 `lora_pull_failed`, `lora_import_failed`, and

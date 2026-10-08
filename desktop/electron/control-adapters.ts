@@ -10,11 +10,12 @@ import {
   installedListResultSchema,
 } from "../src/shared/sidecar";
 
-function desktopKind(kind: string): "chat" | "image" | "video" | "speech" {
+function desktopKind(kind: string): "chat" | "image" | "video" | "speech" | "audio" {
   const normalized = kind.toLowerCase();
   if (normalized === "image") return "image";
   if (normalized === "video") return "video";
-  if (["speech", "audio", "tts", "voice"].includes(normalized)) return "speech";
+  if (normalized === "audio") return "audio";
+  if (["speech", "tts", "voice"].includes(normalized)) return "speech";
   return "chat";
 }
 

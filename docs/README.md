@@ -14,6 +14,7 @@ Then choose what you want to do:
 - [Install the Codex plugin or Claude Code skill](agents/install-integrations.md)
 - [Generate an image](guides/image-generation.md)
 - [Generate a video](guides/video-generation.md)
+- [Generate music and sound effects](guides/audio-generation.md)
 - [Generate speech and clone a voice](guides/speech-and-voices.md)
 - [Run Tapioca on Linux](guides/linux.md)
 - [Understand LoRA adapters](concepts/lora-adapters.md)

@@ -25,6 +25,8 @@ type Request struct {
 	VoiceSample  string
 	Transcript   string
 	Language     string
+	Speaker      string
+	Instruct     string
 	Backend      string
 	VoiceConsent bool
 	Seed         uint64
@@ -74,6 +76,13 @@ func RunWithWriters(
 			return errors.New("the MLX speech backend requires macOS on Apple Silicon")
 		}
 		flavor = "mlx"
+	case "speech-audio8":
+		flavor = "audio8-torch"
+	case "speech-audio8-mlx":
+		if runtime.GOOS != "darwin" || runtime.GOARCH != "arm64" {
+			return errors.New("the Audio8 MLX speech backend requires macOS on Apple Silicon")
+		}
+		flavor = "mlx"
 	default:
 		return fmt.Errorf("unsupported speech backend %q", request.Backend)
 	}
@@ -88,7 +97,7 @@ func runPython(
 	stdout io.Writer,
 	stderr io.Writer,
 ) error {
-	root := filepath.Join(cacheDir, "speech-runtime", "0.1.3-"+flavor)
+	root := filepath.Join(cacheDir, "speech-runtime", "0.3.0-"+flavor)
 	requirementsName := "requirements-" + flavor + ".txt"
 	names := []string{"speech.py", requirementsName, "cpu_speech.py", "pocket_qualification.py", "sopro_qualification.py"}
 	if flavor == "audio8" {
@@ -178,5 +187,11 @@ func pythonArguments(root string, request Request) []string {
 		args = append(args, "--voice-consent")
 	}
 	args = append(args, "--seed", fmt.Sprint(request.Seed))
+	if request.Speaker != "" {
+		args = append(args, "--speaker", request.Speaker)
+	}
+	if request.Instruct != "" {
+		args = append(args, "--instruct", request.Instruct)
+	}
 	return args
 }

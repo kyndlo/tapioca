@@ -3,6 +3,7 @@ export const routeIds = [
   "chat",
   "images",
   "video",
+  "audio",
   "voice",
   "agents",
   "models",
@@ -38,6 +39,11 @@ export const navigationItems: readonly NavigationItem[] = [
     id: "video",
     label: "Video",
     description: "Create motion from prompts and images",
+  },
+  {
+    id: "audio",
+    label: "Audio",
+    description: "Generate music, sound effects, and ambient audio",
   },
   {
     id: "voice",

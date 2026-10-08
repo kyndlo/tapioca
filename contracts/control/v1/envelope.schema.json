@@ -41,6 +41,7 @@
             "image.generate",
             "video.generate",
             "speech.generate",
+            "audio.generate",
             "voice.clone",
             "lora.list",
             "lora.inspect",

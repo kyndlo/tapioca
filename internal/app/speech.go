@@ -48,6 +48,8 @@ func tts(args []string) error {
 	language := fs.String("language", "", "language name or code")
 	voiceConsent := fs.Bool("voice-consent", false, "confirm permission to use the reference voice")
 	seed := fs.Uint64("seed", 0, "speech sampling seed (CPU backends)")
+	speaker := fs.String("speaker", "", "built-in speaker name for CustomVoice models")
+	instruct := fs.String("instruct", "", "voice style or VoiceDesign description")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}
@@ -89,6 +91,21 @@ func tts(args []string) error {
 			return fmt.Errorf("voice sample: %w", err)
 		}
 	}
+	variant := strings.ToLower(profile.Name)
+	if strings.Contains(variant, "custom-voice") && strings.TrimSpace(*speaker) == "" {
+		return errors.New("Qwen3-TTS CustomVoice models require --speaker")
+	}
+	if strings.Contains(variant, "voice-design") && strings.TrimSpace(*instruct) == "" {
+		return errors.New("Qwen3-TTS VoiceDesign models require --instruct")
+	}
+	if strings.HasPrefix(variant, "qwen3-tts:") &&
+		!strings.Contains(variant, "custom-voice") &&
+		!strings.Contains(variant, "voice-design") && sample == "" {
+		return errors.New("Qwen3-TTS Base models require --voice or --voice-sample")
+	}
+	if strings.HasPrefix(variant, "audio8-tts:") && sample != "" && referenceText == "" {
+		return errors.New("Audio8 voice cloning requires --transcript or --transcript-file")
+	}
 
 	model, err := ensureResolvedModel(profile)
 	if err != nil {
@@ -120,6 +137,7 @@ func tts(args []string) error {
 		VoiceSample: sample, Transcript: referenceText, Language: *language,
 		Backend:      model.Backend,
 		VoiceConsent: *voiceConsent, Seed: *seed,
+		Speaker: strings.TrimSpace(*speaker), Instruct: strings.TrimSpace(*instruct),
 	}); err != nil {
 		return err
 	}

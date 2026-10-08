@@ -30,7 +30,7 @@ func engineFor(backend string) (Engine, error) {
 		return engineFunc{name: "mlx", run: func(ctx context.Context, cache string, request Request) error {
 			return runPython(ctx, cache, request, "mlx")
 		}}, nil
-	case "diffusers-video":
+	case "diffusers-video", "diffusers-ltx2":
 		return engineFunc{name: "diffusers", run: func(ctx context.Context, cache string, request Request) error {
 			return runPython(ctx, cache, request, "diffusers")
 		}}, nil

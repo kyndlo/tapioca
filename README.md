@@ -143,6 +143,13 @@ terms or store access tokens on a user's behalf. `--accept-license` records the
 local Tapioca acknowledgement; it does not approve access in the user's
 Hugging Face account.
 
+Qwen Image 2.1 is available as `qwen-image-2.1` for Windows/Linux NVIDIA with
+Diffusers 0.41. It supports image editing, native RGBA transparency, improved
+text rendering, and multiple references. The roughly 31 GiB BF16 snapshot is
+public but restricted to non-commercial research/evaluation by the Qwen
+Research License, so Tapioca requires `--accept-license` without requiring an
+Hugging Face token.
+
 ## Everyday commands
 
 ```text

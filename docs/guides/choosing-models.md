@@ -42,9 +42,10 @@ Use an 8K–16K context instead of the model's maximum advertised context.
 (~2.42 GiB) use pinned, SHA-256-checked official GGUF files and default to an
 8K context. The 8 GiB memory figure is a test target, **not a measured
 minimum**; 16 GiB leaves room for the operating system and other apps.
-Both passed basic CPU and Apple Silicon Metal chat tests with bundled
-llama.cpp b10964. Windows/Linux Vulkan, long context, and structured tool use
-are not yet qualified. Try `tapioca pull minicpm5-2b` or
+Both passed basic CPU and Apple Silicon Metal chat tests with the prior bundled
+llama.cpp b10964; the current release bundles checksummed b11476 archives on
+every desktop target. Windows/Linux Vulkan model inference, long context, and
+structured tool use are not yet qualified. Try `tapioca pull minicpm5-2b` or
 `tapioca pull spark-x2.5-4b`, then `tapioca run MODEL`.
 
 ### Apple Silicon

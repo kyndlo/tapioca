@@ -153,6 +153,38 @@ describe("ModelsScreen", () => {
     await act(async () => container?.querySelector<HTMLButtonElement>(".model-detail__actions button")?.click());
     expect(adapter.pullModel).toHaveBeenCalledTimes(2);
   });
+
+  it("requires license acceptance without demanding a token for public restricted models", async () => {
+    const restricted = {
+      ...model,
+      id: "qwen-image-2.1:bf16-cuda",
+      name: "Qwen Image 2.1",
+      licenseAcceptanceRequired: true,
+      license: "Qwen Research License Agreement (non-commercial only)",
+      licenseUrl: "https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE",
+    };
+    const adapter: ModelHubAdapter = {
+      listModels: vi.fn().mockResolvedValue([restricted]),
+      pullModel: vi.fn().mockResolvedValue({ ...restricted, installed: true }),
+      cancelPull: vi.fn(), removeModel: vi.fn(),
+    };
+    container = document.createElement("div"); document.body.append(container); root = createRoot(container);
+    await act(async () => root?.render(createElement(ModelsScreen, { adapter, machine })));
+    await act(() => container?.querySelector<HTMLButtonElement>(".model-card__body")?.click());
+    const dialog = container.querySelector("[role=dialog]")!;
+    const pull = dialog.querySelector<HTMLButtonElement>(".model-primary")!;
+    expect(dialog.querySelector('input[type="password"]')).toBeNull();
+    expect(pull.disabled).toBe(true);
+    const acceptance = dialog.querySelector<HTMLInputElement>('input[type="checkbox"]')!;
+    await act(() => acceptance.click());
+    expect(pull.disabled).toBe(false);
+    await act(async () => pull.click());
+    expect(adapter.pullModel).toHaveBeenCalledWith(
+      restricted.id,
+      expect.objectContaining({ acceptLicense: true, accessToken: "" }),
+    );
+  });
+
   it("loads real adapter records and starts a cancellable pull", async () => {
     let pullOptions: PullOptions | undefined;
     const adapter: ModelHubAdapter = {

@@ -19,36 +19,37 @@ import (
 )
 
 type Model struct {
-	Context          int                   `json:"context,omitempty"`
-	Name             string                `json:"name"`
-	Repo             string                `json:"repo,omitempty"`
-	Files            map[string]string     `json:"files"`
-	Template         string                `json:"template,omitempty"`
-	Kind             string                `json:"kind,omitempty"`
-	Backends         map[string]string     `json:"backends,omitempty"`
-	Repos            map[string]string     `json:"repos,omitempty"`
-	Default          string                `json:"default"`
-	PlatformDefaults map[string]string     `json:"platform_defaults,omitempty"`
-	Width            int                   `json:"width,omitempty"`
-	Height           int                   `json:"height,omitempty"`
-	Steps            int                   `json:"steps,omitempty"`
-	Frames           int                   `json:"frames,omitempty"`
-	FPS              int                   `json:"fps,omitempty"`
-	DurationSeconds  int                   `json:"duration_seconds,omitempty"`
-	MaxDuration      int                   `json:"max_duration_seconds,omitempty"`
-	SampleRate       int                   `json:"sample_rate,omitempty"`
-	Sizes            map[string]string     `json:"sizes"`
-	Memory           map[string]string     `json:"memory,omitempty"`
-	GPUs             map[string]string     `json:"gpus,omitempty"`
-	Languages        map[string]string     `json:"languages,omitempty"`
-	Features         map[string]string     `json:"features,omitempty"`
-	Artifacts        map[string][]Artifact `json:"artifacts,omitempty"`
-	Downloads        map[string]Download   `json:"downloads,omitempty"`
-	GuidanceScale    float64               `json:"guidance_scale,omitempty"`
-	GuidanceScaleSet bool                  `json:"guidance_scale_set,omitempty"`
-	Gated            bool                  `json:"gated,omitempty"`
-	License          string                `json:"license,omitempty"`
-	LicenseURL       string                `json:"license_url,omitempty"`
+	Context                   int                   `json:"context,omitempty"`
+	Name                      string                `json:"name"`
+	Repo                      string                `json:"repo,omitempty"`
+	Files                     map[string]string     `json:"files"`
+	Template                  string                `json:"template,omitempty"`
+	Kind                      string                `json:"kind,omitempty"`
+	Backends                  map[string]string     `json:"backends,omitempty"`
+	Repos                     map[string]string     `json:"repos,omitempty"`
+	Default                   string                `json:"default"`
+	PlatformDefaults          map[string]string     `json:"platform_defaults,omitempty"`
+	Width                     int                   `json:"width,omitempty"`
+	Height                    int                   `json:"height,omitempty"`
+	Steps                     int                   `json:"steps,omitempty"`
+	Frames                    int                   `json:"frames,omitempty"`
+	FPS                       int                   `json:"fps,omitempty"`
+	DurationSeconds           int                   `json:"duration_seconds,omitempty"`
+	MaxDuration               int                   `json:"max_duration_seconds,omitempty"`
+	SampleRate                int                   `json:"sample_rate,omitempty"`
+	Sizes                     map[string]string     `json:"sizes"`
+	Memory                    map[string]string     `json:"memory,omitempty"`
+	GPUs                      map[string]string     `json:"gpus,omitempty"`
+	Languages                 map[string]string     `json:"languages,omitempty"`
+	Features                  map[string]string     `json:"features,omitempty"`
+	Artifacts                 map[string][]Artifact `json:"artifacts,omitempty"`
+	Downloads                 map[string]Download   `json:"downloads,omitempty"`
+	GuidanceScale             float64               `json:"guidance_scale,omitempty"`
+	GuidanceScaleSet          bool                  `json:"guidance_scale_set,omitempty"`
+	Gated                     bool                  `json:"gated,omitempty"`
+	LicenseAcceptanceRequired bool                  `json:"license_acceptance_required,omitempty"`
+	License                   string                `json:"license,omitempty"`
+	LicenseURL                string                `json:"license_url,omitempty"`
 }
 
 // Artifact is one explicitly selected file in a multi-repository model bundle.
@@ -370,15 +371,20 @@ func validateModel(name string, model Model) error {
 		}
 	}
 	for variant, download := range model.Downloads {
-		if file, ok := model.Files[variant]; !ok || file == "" {
-			return fmt.Errorf("catalog model %s download requires a single-file variant %q", name, variant)
+		file, ok := model.Files[variant]
+		if !ok {
+			return fmt.Errorf("catalog model %s download has unknown variant %q", name, variant)
+		}
+		if file == "" && (download.Revision == "" || download.SHA256 != "" || download.SizeBytes != 0) {
+			return fmt.Errorf("catalog model %s snapshot download %q requires only a pinned revision", name, variant)
 		}
 		if err := download.Validate(); err != nil {
 			return fmt.Errorf("catalog model %s download: %w", name, err)
 		}
 	}
-	if model.Gated && (model.License == "" || !strings.HasPrefix(model.LicenseURL, "https://")) {
-		return fmt.Errorf("gated catalog model %s requires license metadata", name)
+	if (model.Gated || model.LicenseAcceptanceRequired) &&
+		(model.License == "" || !strings.HasPrefix(model.LicenseURL, "https://")) {
+		return fmt.Errorf("restricted catalog model %s requires license metadata", name)
 	}
 	return nil
 }
@@ -741,6 +747,26 @@ var builtInModels = map[string]Model{
 			"8bit": "Apple Silicon GPU",
 			"bf16": "NVIDIA Ampere+, 16 GiB VRAM with offload",
 		},
+	},
+	"qwen-image-2.1": {
+		Name:                      "qwen-image-2.1",
+		Repo:                      "Qwen/Qwen-Image-2.1",
+		Kind:                      "image",
+		Default:                   "bf16-cuda",
+		Width:                     1024,
+		Height:                    1024,
+		Steps:                     40,
+		Files:                     map[string]string{"bf16-cuda": ""},
+		Backends:                  map[string]string{"bf16-cuda": "diffusers"},
+		Sizes:                     map[string]string{"bf16-cuda": "~31 GiB"},
+		Memory:                    map[string]string{"bf16-cuda": "48 GiB min; 64 GiB recommended"},
+		GPUs:                      map[string]string{"bf16-cuda": "NVIDIA CUDA, 24 GiB+ VRAM; CPU offload recommended"},
+		Languages:                 map[string]string{"bf16-cuda": "multilingual prompts and typography"},
+		Features:                  map[string]string{"bf16-cuda": "text-to-image, image editing, native RGBA transparency, up to 10 references"},
+		Downloads:                 map[string]Download{"bf16-cuda": {Revision: "d26bb61231c349cf6b7896fa83353113880e1ba3"}},
+		LicenseAcceptanceRequired: true,
+		License:                   "Qwen Research License Agreement (non-commercial only)",
+		LicenseURL:                "https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE",
 	},
 	"flux2-klein": {
 		Name:             "flux2-klein",
@@ -1306,32 +1332,33 @@ var builtInModels = map[string]Model{
 
 type Resolved struct {
 	Download
-	Name             string
-	Repo             string
-	Filename         string
-	URL              string
-	Kind             string
-	Backend          string
-	Width            int
-	Height           int
-	Steps            int
-	Frames           int
-	FPS              int
-	DurationSeconds  int
-	MaxDuration      int
-	SampleRate       int
-	Size             string
-	Platform         string
-	Memory           string
-	GPU              string
-	Languages        string
-	Features         string
-	Artifacts        []Artifact
-	GuidanceScale    float64
-	GuidanceScaleSet bool
-	Gated            bool
-	License          string
-	LicenseURL       string
+	Name                      string
+	Repo                      string
+	Filename                  string
+	URL                       string
+	Kind                      string
+	Backend                   string
+	Width                     int
+	Height                    int
+	Steps                     int
+	Frames                    int
+	FPS                       int
+	DurationSeconds           int
+	MaxDuration               int
+	SampleRate                int
+	Size                      string
+	Platform                  string
+	Memory                    string
+	GPU                       string
+	Languages                 string
+	Features                  string
+	Artifacts                 []Artifact
+	GuidanceScale             float64
+	GuidanceScaleSet          bool
+	Gated                     bool
+	LicenseAcceptanceRequired bool
+	License                   string
+	LicenseURL                string
 }
 
 func Resolve(ref string) (Resolved, error) {
@@ -1470,7 +1497,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 		Features:        m.Features[strings.ToLower(tag)],
 		Artifacts:       append([]Artifact(nil), m.Artifacts[strings.ToLower(tag)]...),
 		GuidanceScale:   m.GuidanceScale, GuidanceScaleSet: m.GuidanceScaleSet,
-		Gated: m.Gated, License: m.License, LicenseURL: m.LicenseURL,
+		Gated: m.Gated, LicenseAcceptanceRequired: m.LicenseAcceptanceRequired,
+		License: m.License, LicenseURL: m.LicenseURL,
 	}, nil
 }
 

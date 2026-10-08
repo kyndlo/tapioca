@@ -7,14 +7,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { verifyBundledRuntime } from "./verify-runtime.ts";
 
-export const LLAMA_CPP_VERSION = "b10964";
+export const LLAMA_CPP_VERSION = "b11476";
 
 const runtimeChecksums: Record<string, string> = {
-  "darwin/arm64": "033c845c1df9bf945ff37bb193238b40910b2244be3e1e637b2ceb5878f1a6f5",
-  "win32/x64": "1ee3ad952f4ba71f438bd6d7bebef19e1c7af04adcaa35d08b4ddabb27d4c642",
-  "win32/arm64": "4b6a004b076eea47c318bea35cf1db2ff2bf037738b04645646ae8d7c3159478",
-  "linux/x64": "55d1e58e14c11eedea090bf088fdeefbfe7b4b09ee03bf6dba9834651769afcf",
-  "linux/arm64": "f7864baa0edf5a059fb42c5efb5aceb96075aa1f41e6c3142b71ca69286cb0bb",
+  "darwin/arm64": "577634a1b8a59e8dabe02ba10de1e610be0574dfaf1cf3020e6dd42853ed877e",
+  "win32/x64": "5c71e7b749697da4a8d46e9ee55486845cbba27c9dfbecb4007f31ba6610d523",
+  "win32/arm64": "68e3a218ed7d9cd563e8ddf7a1e58d88d034a8f90a91061bdd3876bf247d8a93",
+  "linux/x64": "5bb4306d7917f33e81efda02e6f791ae6a82e86bee121227a3ab2b4e8e40427f",
+  "linux/arm64": "8dae2f39afee01d3032a101d7c398a6734d6fd9697690d8f93bdce4e3a9efea2",
 };
 
 export function windowsExtraction(archive: string, destination: string) {

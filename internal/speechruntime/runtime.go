@@ -97,7 +97,7 @@ func runPython(
 	stdout io.Writer,
 	stderr io.Writer,
 ) error {
-	root := filepath.Join(cacheDir, "speech-runtime", "0.3.0-"+flavor)
+	root := filepath.Join(cacheDir, "speech-runtime", "0.4.0-"+flavor)
 	requirementsName := "requirements-" + flavor + ".txt"
 	names := []string{"speech.py", requirementsName, "cpu_speech.py", "pocket_qualification.py", "sopro_qualification.py"}
 	if flavor == "audio8" {

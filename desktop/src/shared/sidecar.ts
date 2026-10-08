@@ -174,6 +174,7 @@ export const catalogModelSchema = z
 		max_duration_seconds: z.number().int().positive().optional(),
 		sample_rate: z.number().int().positive().optional(),
 		gated: z.boolean().optional(),
+		license_acceptance_required: z.boolean().optional(),
 		license: z.string().optional(),
 		license_url: z.string().url().optional(),
   })

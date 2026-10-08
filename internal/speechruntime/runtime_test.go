@@ -8,6 +8,16 @@ import (
 	"testing"
 )
 
+func TestMLXAudioRuntimeIsCurrent(t *testing.T) {
+	requirements, err := source.ReadFile("requirements-mlx.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(requirements), "mlx-audio==0.5.8\n") {
+		t.Fatalf("MLX audio runtime is not pinned to the qualified release: %s", requirements)
+	}
+}
+
 func TestPythonArguments(t *testing.T) {
 	args := pythonArguments("/runtime", Request{
 		ModelPath: "/models/qwen", ModelName: "qwen3-tts:0.6b-mlx",

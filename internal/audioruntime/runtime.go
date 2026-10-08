@@ -45,7 +45,7 @@ func RunWithWriters(
 	if request.Duration <= 0 || request.Duration > 120 {
 		return errors.New("Stable Audio 3 duration must be between 1 and 120 seconds")
 	}
-	root := filepath.Join(cacheDir, "audio-runtime", "0.1.0-stable-audio3")
+	root := filepath.Join(cacheDir, "audio-runtime", "0.2.0-stable-audio3")
 	for _, name := range []string{"stable_audio3.py", "requirements.txt"} {
 		data, err := source.ReadFile(name)
 		if err != nil {

@@ -55,14 +55,14 @@ func PullModel(
 }
 
 // AcceptModelLicense records that the user reviewed and accepted the terms for
-// a gated catalog model. The provider may still require a separate account-side
-// acceptance and an access token.
+// a catalog model with restricted terms. Gated providers may still require a
+// separate account-side acceptance and an access token.
 func AcceptModelLicense(ref string) error {
 	resolved, err := catalog.Resolve(ref)
 	if err != nil {
 		return err
 	}
-	if !resolved.Gated {
+	if !resolved.Gated && !resolved.LicenseAcceptanceRequired {
 		return fmt.Errorf("%s does not require explicit license acceptance", resolved.Name)
 	}
 	return modellicense.Accept(resolved.Name, resolved.License, resolved.LicenseURL)

@@ -55,7 +55,7 @@ func Require(model, license, licenseURL string) error {
 		return nil
 	}
 	return fmt.Errorf(
-		"%s is gated by the %s; review and accept the terms at %s, then run `tapioca pull %s --accept-license` (and set HF_TOKEN to a Hugging Face read token)",
+		"%s requires acceptance of the %s; review the terms at %s, then run `tapioca pull %s --accept-license` (gated providers may also require HF_TOKEN)",
 		model, license, licenseURL, model,
 	)
 }

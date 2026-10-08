@@ -9,13 +9,14 @@ import (
 	"github.com/carlos/tapioca/internal/adapter"
 )
 
-func TestDiffusersUsesFixedShardLoader(t *testing.T) {
+func TestDiffusersUsesQwenImage21Runtime(t *testing.T) {
 	requirements, err := source.ReadFile("requirements.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(requirements), "diffusers==0.40.0\n") {
-		t.Fatalf("image runtime must pin the fixed Diffusers loader: %s", requirements)
+	if !strings.Contains(string(requirements), "diffusers==0.41.0\n") ||
+		!strings.Contains(string(requirements), "transformers==5.19.0\n") {
+		t.Fatalf("image runtime must pin the Qwen Image 2.1-capable stack: %s", requirements)
 	}
 }
 

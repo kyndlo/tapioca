@@ -23,6 +23,7 @@ export interface ModelRecord {
   installedBytes?: number;
 	updatedAt?: string;
 	gated?: boolean;
+	licenseAcceptanceRequired?: boolean;
 	license?: string;
 	licenseUrl?: string;
 }

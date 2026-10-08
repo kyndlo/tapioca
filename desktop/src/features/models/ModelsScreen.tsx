@@ -361,7 +361,7 @@ export function ModelsScreen({ adapter, machine }: ModelsScreenProps) {
               transfer={transfers[model.id]}
               onCancel={() => void cancelPull(model)}
               onOpen={() => setSelected(model)}
-				onPull={() => model.gated ? setSelected(model) : void pull(model)}
+				onPull={() => model.gated || model.licenseAcceptanceRequired ? setSelected(model) : void pull(model)}
             />
           ))}
         </div>
@@ -610,14 +610,13 @@ function ModelDetail({
             <span key={tag}>{tag}</span>
           ))}
 		</div>
-		{model.gated && !model.installed ? (
+		{(model.gated || model.licenseAcceptanceRequired) && !model.installed ? (
 			<div className="model-license">
-				<strong>{model.license ?? "Gated model license"}</strong>
+				<strong>{model.license ?? "Restricted model license"}</strong>
 				<p>
-					First accept the provider terms at {model.licenseUrl}. Paste a Hugging Face read
-					 token for this download. Tapioca passes it only to the local downloader and does not save it.
+					Review the provider terms at {model.licenseUrl} before downloading.
 				</p>
-				<label className="model-license__token">
+				{model.gated ? <label className="model-license__token">
 					<span>Hugging Face read token</span>
 					<input
 						type="password"
@@ -626,7 +625,8 @@ function ModelDetail({
 						placeholder="hf_…"
 						autoComplete="off"
 					/>
-				</label>
+					<small>Tapioca passes this token only to the local downloader and does not save it.</small>
+				</label> : null}
 				<label>
 					<input
 						type="checkbox"
@@ -639,7 +639,7 @@ function ModelDetail({
 		) : null}
         <div className="model-detail__actions">
           {transfer?.state === "error" ? (
-            <div role="alert"><p>{transfer.message}</p><button className="model-primary" type="button" onClick={() => onPull(licenseAccepted, accessToken)} disabled={Boolean(model.gated && (!licenseAccepted || !accessToken.trim()))}>Retry download</button></div>
+            <div role="alert"><p>{transfer.message}</p><button className="model-primary" type="button" onClick={() => onPull(licenseAccepted, accessToken)} disabled={Boolean((model.gated || model.licenseAcceptanceRequired) && !licenseAccepted) || Boolean(model.gated && !accessToken.trim())}>Retry download</button></div>
           ) : transfer ? (
             <button className="model-secondary" type="button" onClick={onCancel} disabled={transfer.state === "cancelling"}>
               {transfer.state === "cancelling" ? "Cancelling…" : "Cancel download"}
@@ -656,7 +656,7 @@ function ModelDetail({
               className="model-primary"
               type="button"
 				onClick={() => onPull(licenseAccepted, accessToken)}
-				disabled={compatibility.level === "incompatible" || (model.gated && (!licenseAccepted || !accessToken.trim()))}
+				disabled={compatibility.level === "incompatible" || ((model.gated || model.licenseAcceptanceRequired) && !licenseAccepted) || Boolean(model.gated && !accessToken.trim())}
             >
               Pull {estimate.required}
             </button>

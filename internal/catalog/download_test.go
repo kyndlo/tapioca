@@ -41,6 +41,27 @@ func TestPinnedDownloadResolution(t *testing.T) {
 	}
 }
 
+func TestPinnedSnapshotResolution(t *testing.T) {
+	revision := strings.Repeat("c", 40)
+	model := Model{
+		Name: "test-snapshot", Repo: "owner/model", Default: "bf16",
+		Files:     map[string]string{"bf16": ""},
+		Downloads: map[string]Download{"bf16": {Revision: revision}},
+	}
+	if err := validateModel(model.Name, model); err != nil {
+		t.Fatal(err)
+	}
+	builtInModels[model.Name] = model
+	t.Cleanup(func() { delete(builtInModels, model.Name) })
+	result, err := ResolveForPlatform("test-snapshot", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Revision != revision || result.Filename != "" {
+		t.Fatalf("lost snapshot pin metadata: %#v", result)
+	}
+}
+
 func TestDownloadValidation(t *testing.T) {
 	for _, invalid := range []Download{{Revision: "main"}, {Revision: "../main"}, {SHA256: "abc"}, {SizeBytes: -1}} {
 		if err := invalid.Validate(); err == nil {

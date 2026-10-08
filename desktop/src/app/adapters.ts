@@ -95,6 +95,7 @@ export function createRendererAdapters(
         installed: Boolean(local),
 		installedBytes: local ? requirements.diskBytes : undefined,
 		gated: model.gated,
+		licenseAcceptanceRequired: model.license_acceptance_required,
 		license: model.license,
 		licenseUrl: model.license_url,
       };
@@ -118,7 +119,7 @@ export function createRendererAdapters(
 			name: modelId,
 			jobId,
 			acceptLicense: options.acceptLicense,
-			accessToken: options.accessToken,
+			accessToken: options.accessToken?.trim() || undefined,
 		});
         const refreshed = await listModels();
         const installed = refreshed.find((model) => model.id === modelId);

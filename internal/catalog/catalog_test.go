@@ -50,6 +50,17 @@ func TestResolveImageDefaultsToDiffusersOnWindows(t *testing.T) {
 	}
 }
 
+func TestResolveQwenImage21RequiresNonCommercialLicenseAcceptance(t *testing.T) {
+	got, err := ResolveForPlatform("qwen-image-2.1", "windows", "amd64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Backend != "diffusers" || got.Revision != "d26bb61231c349cf6b7896fa83353113880e1ba3" ||
+		got.Gated || !got.LicenseAcceptanceRequired || !strings.Contains(got.License, "non-commercial") {
+		t.Fatalf("unexpected Qwen Image 2.1 profile: %#v", got)
+	}
+}
+
 func TestResolveFlux2KleinCUDAProfiles(t *testing.T) {
 	windows, err := ResolveForPlatform("flux2-klein", "windows", "amd64")
 	if err != nil {

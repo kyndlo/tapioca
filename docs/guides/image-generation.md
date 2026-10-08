@@ -63,6 +63,28 @@ tapioca image krea-2-raw --prompt "A hand-built ceramic robot in soft window lig
 For normal image creation, start with `krea-2-turbo`; choose Raw when you need
 the base model's behavior or are evaluating a compatible fine-tuning workflow.
 
+## Qwen Image 2.1 on NVIDIA
+
+Qwen Image 2.1 adds native RGBA transparency, image editing, improved text
+rendering, and up to ten reference images through the CUDA Diffusers backend.
+The pinned BF16 snapshot is about 31 GiB; use a Windows or Linux machine with
+an NVIDIA GPU, at least 48 GiB system memory, and preferably 24 GiB or more VRAM.
+
+Its Qwen Research License permits non-commercial research and evaluation only.
+Review the [current license](https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE)
+and explicitly record acceptance before downloading; no Hugging Face token is
+required because the repository itself is public:
+
+```bash
+tapioca pull qwen-image-2.1 --accept-license
+tapioca image qwen-image-2.1 \
+  --prompt "An RGBA sticker of a glass robot, transparent background" \
+  --width 1024 --height 1024 --steps 40 --output robot.png
+```
+
+Do not use this model or its outputs commercially without a separate commercial
+license from Qwen.
+
 ## Windows x64 with AMD or Intel graphics
 
 Use the ONNX DirectML variant:

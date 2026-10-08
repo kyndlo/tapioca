@@ -90,7 +90,7 @@ func (h *Handler) handleFeature(
 			}
 		}
 		if params.AcceptLicense {
-			if !resolved.Gated {
+			if !resolved.Gated && !resolved.LicenseAcceptanceRequired {
 				return nil, invalidParams("selected model does not require license acceptance", nil)
 			}
 			if acceptError := app.AcceptModelLicense(params.Name); acceptError != nil {
@@ -298,7 +298,8 @@ func catalogDetail(ctx context.Context, name string) (any, *ProtocolError) {
 		Languages: resolved.Languages, Features: resolved.Features,
 		Width: resolved.Width, Height: resolved.Height, Steps: resolved.Steps,
 		Frames: resolved.Frames, FPS: resolved.FPS,
-		Gated: resolved.Gated, License: resolved.License, LicenseURL: resolved.LicenseURL,
+		Gated: resolved.Gated, LicenseAcceptanceRequired: resolved.LicenseAcceptanceRequired,
+		License: resolved.License, LicenseURL: resolved.LicenseURL,
 	}, nil
 }
 

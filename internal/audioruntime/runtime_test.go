@@ -3,8 +3,19 @@ package audioruntime
 import (
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
+
+func TestStableAudioRuntimeIsPinned(t *testing.T) {
+	requirements, err := source.ReadFile("requirements.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(requirements), "3a82c807b69cf4b7c5c05270011a5d5e47abac18.zip") {
+		t.Fatalf("Stable Audio 3 runtime is not pinned to the qualified revision: %s", requirements)
+	}
+}
 
 func TestPythonArguments(t *testing.T) {
 	args := pythonArguments("/runtime", Request{

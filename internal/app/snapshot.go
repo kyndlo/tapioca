@@ -146,9 +146,17 @@ func pullHubSnapshotWithContext(
 	include func(string) bool,
 	report PullReporter,
 ) error {
-	req, err := http.NewRequest(
-		http.MethodGet, "https://huggingface.co/api/models/"+model.Repo, nil,
-	)
+	if model.Revision != "" {
+		marker, err := os.ReadFile(filepath.Join(destination, ".tapioca-snapshot-revision"))
+		if err != nil || strings.TrimSpace(string(marker)) != model.Revision {
+			force = true
+		}
+	}
+	metadataURL := "https://huggingface.co/api/models/" + model.Repo
+	if model.Revision != "" {
+		metadataURL += "/revision/" + model.Revision
+	}
+	req, err := http.NewRequest(http.MethodGet, metadataURL, nil)
 	if err != nil {
 		return err
 	}
@@ -218,7 +226,7 @@ func pullHubSnapshotWithContext(
 			File:    name, Index: index + 1, Count: len(files),
 		})
 		partial := path + ".partial"
-		url := "https://huggingface.co/" + model.Repo + "/resolve/main/" + name
+		url := "https://huggingface.co/" + model.Repo + "/resolve/" + model.Ref() + "/" + name
 		if err := downloadWithContext(ctx, url, partial, report); err != nil {
 			if model.Gated && (strings.Contains(err.Error(), "401") || strings.Contains(err.Error(), "403")) {
 				return fmt.Errorf(
@@ -229,6 +237,14 @@ func pullHubSnapshotWithContext(
 			return err
 		}
 		if err := os.Rename(partial, path); err != nil {
+			return err
+		}
+	}
+	if model.Revision != "" {
+		if err := os.WriteFile(
+			filepath.Join(destination, ".tapioca-snapshot-revision"),
+			[]byte(model.Revision+"\n"), 0o644,
+		); err != nil {
 			return err
 		}
 	}

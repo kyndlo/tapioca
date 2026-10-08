@@ -14,13 +14,14 @@ import (
 	"github.com/carlos/tapioca/internal/adapter"
 )
 
-func TestDiffusersVideoUsesFixedShardLoader(t *testing.T) {
+func TestDiffusersVideoUsesLTX25Runtime(t *testing.T) {
 	requirements, err := source.ReadFile("requirements-diffusers.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(requirements), "diffusers==0.40.0\n") {
-		t.Fatalf("video runtime must pin the fixed Diffusers loader: %s", requirements)
+	if !strings.Contains(string(requirements), "diffusers==0.41.0\n") ||
+		!strings.Contains(string(requirements), "transformers==5.19.0\n") {
+		t.Fatalf("video runtime must pin the current LTX 2.5-capable stack: %s", requirements)
 	}
 }
 
@@ -261,7 +262,7 @@ func TestH3RuntimeSetupIntegration(t *testing.T) {
 	if cache == "" {
 		t.Skip("set TAPIOCA_H3_INTEGRATION_CACHE to install and verify the managed H3 runtime")
 	}
-	root := filepath.Join(cache, "video-runtime", "0.2.0-h3")
+	root := filepath.Join(cache, "video-runtime", "0.3.0-h3")
 	comfy := filepath.Join(root, "ComfyUI")
 	venv := filepath.Join(root, "venv")
 	if err := ensureH3Runtime(

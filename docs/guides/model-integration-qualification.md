@@ -1,6 +1,6 @@
 # Model integration qualification
 
-Research/validation: 2026-09-05 and 2026-09-18. Addresses [#30](https://github.com/kyndlo/tapioca/issues/30), [#31](https://github.com/kyndlo/tapioca/issues/31), [#32](https://github.com/kyndlo/tapioca/issues/32), and [#36](https://github.com/kyndlo/tapioca/issues/36). Issue #29 stays historical. Daily discovery remains local Codex scheduling, not GitHub cron.
+Research/validation: 2026-09-05, 2026-09-18, and 2026-10-07. Addresses [#30](https://github.com/kyndlo/tapioca/issues/30), [#31](https://github.com/kyndlo/tapioca/issues/31), [#32](https://github.com/kyndlo/tapioca/issues/32), and [#36](https://github.com/kyndlo/tapioca/issues/36). Issue #29 stays historical. Daily discovery remains local Codex scheduling, not GitHub cron.
 
 ## Release scope and downloads
 
@@ -78,6 +78,50 @@ Sources: [official model card](https://huggingface.co/samuel-vitorino/sopro-v2-t
 [official runtime at the pinned commit](https://github.com/samuel-vitorino/sopro/tree/7bfcf9a0539d274f6593959a21da948f506ceee1),
 [PyPI 2.2.0](https://pypi.org/project/sopro/2.2.0/), and
 [non-authoritative r/LocalLLaMA discussion](https://www.reddit.com/r/LocalLLaMA/comments/1vzvtgv/sopro_v2_sotalevel_voice_cloning_tts_at_120m/).
+
+## Qwen Image 2.1
+
+The public BF16 snapshot is pinned to
+`d26bb61231c349cf6b7896fa83353113880e1ba3` and is approximately 31 GiB.
+Diffusers 0.41.0 and Transformers 5.19.0 provide the CUDA pipeline used by
+Tapioca. The catalog exposes text-to-image, editing, native RGBA transparency,
+and multiple references with conservative 48 GiB system-memory and 24 GiB VRAM
+guidance. Snapshot metadata and every selected file are fetched from the pinned
+revision rather than a mutable `main` URL.
+
+The repository is public but the Qwen Research License is non-commercial. The
+desktop and CLI therefore require explicit license acknowledgement without
+incorrectly requiring a Hugging Face access token. Full visual and peak-memory
+qualification remains for the authorized Windows NVIDIA machine; catalog
+metadata does not claim benchmark quality or commercial rights.
+
+Sources: [official model card](https://huggingface.co/Qwen/Qwen-Image-2.1),
+[license](https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE), and
+[Diffusers 0.41.0 release](https://github.com/huggingface/diffusers/releases/tag/v0.41.0).
+
+## Step-Audio-EditX and Dia2 watchlist
+
+`mlx-community/Step-Audio-EditX-8bit` revision
+`b905e8c29eca8bc562b7e6f76ecd868cc44d970d` is a 4.69 GB Apple Silicon audio
+editing and voice-cloning bundle. It is not activated because Tapioca does not
+yet host its custom Swift consumer, and its tokenizer combines Apache-2.0
+components with the separate FunASR model license. A generic `mlx-audio`
+adapter would not load these exact artifacts safely.
+
+`mlx-community/Dia2-2B-bf16` revision
+`83658abe9f3016cce50da1185fa747c66c60a69f` is a 4.23 GB two-speaker English
+dialogue TTS bundle for MLX-Swift. It is not activated because its Mimi weights
+use a custom moshi-swift layout and require the dedicated Swift runtime. The
+Dia2 files are Apache-2.0 while Mimi is CC-BY-4.0, so a future integration must
+retain attribution and surface the compound terms.
+
+These are tracked P2 candidates rather than catalog entries: publishing either
+without an exact runtime would violate Tapioca's integration rules. Qualification
+requires a pinned consumer revision, isolated lifecycle, cancellation, output
+validation, memory measurement, and audible review on Apple Silicon.
+
+Sources: [Step-Audio-EditX 8-bit model card](https://huggingface.co/mlx-community/Step-Audio-EditX-8bit)
+and [Dia2 MLX model card](https://huggingface.co/mlx-community/Dia2-2B-bf16).
 
 ## Repeat validation
 

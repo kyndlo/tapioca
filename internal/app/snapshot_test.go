@@ -2,11 +2,56 @@ package app
 
 import (
 	"context"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/carlos/tapioca/internal/catalog"
 )
+
+func TestPinnedSnapshotUsesImmutableMetadataAndFileURLs(t *testing.T) {
+	old := http.DefaultClient
+	t.Cleanup(func() { http.DefaultClient = old })
+	revision := strings.Repeat("d", 40)
+	requests := []string{}
+	http.DefaultClient = &http.Client{Transport: artifactTransport(func(request *http.Request) (*http.Response, error) {
+		requests = append(requests, request.URL.String())
+		body := "pinned model"
+		if strings.Contains(request.URL.Path, "/api/models/") {
+			body = `{"siblings":[{"rfilename":"model_index.json"}]}`
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK, Header: make(http.Header),
+			Body: io.NopCloser(strings.NewReader(body)), ContentLength: int64(len(body)),
+		}, nil
+	})}
+	model := catalog.Resolved{
+		Download: catalog.Download{Revision: revision},
+		Name:     "qwen-image-2.1:bf16-cuda", Repo: "Qwen/Qwen-Image-2.1", Kind: "image",
+	}
+	root := t.TempDir()
+	if err := pullHubSnapshotWithContext(context.Background(), model, root, false, imageSnapshotFile, nil); err != nil {
+		t.Fatal(err)
+	}
+	wantMetadata := "https://huggingface.co/api/models/Qwen/Qwen-Image-2.1/revision/" + revision
+	wantFile := "https://huggingface.co/Qwen/Qwen-Image-2.1/resolve/" + revision + "/model_index.json"
+	if len(requests) != 2 || requests[0] != wantMetadata || requests[1] != wantFile {
+		t.Fatalf("unpinned snapshot requests: %#v", requests)
+	}
+	marker, err := os.ReadFile(filepath.Join(root, ".tapioca-snapshot-revision"))
+	if err != nil || strings.TrimSpace(string(marker)) != revision {
+		t.Fatalf("snapshot revision marker = %q, %v", marker, err)
+	}
+	if err := pullHubSnapshotWithContext(context.Background(), model, root, false, imageSnapshotFile, nil); err != nil {
+		t.Fatal(err)
+	}
+	if len(requests) != 3 || requests[2] != wantMetadata {
+		t.Fatalf("matching snapshot pin unexpectedly downloaded weights: %#v", requests)
+	}
+}
 
 func TestImageFP16SnapshotFile(t *testing.T) {
 	included := []string{

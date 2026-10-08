@@ -133,7 +133,7 @@ func pull(args []string) error {
 		return err
 	}
 	if *acceptLicense {
-		if !resolved.Gated {
+		if !resolved.Gated && !resolved.LicenseAcceptanceRequired {
 			return fmt.Errorf("%s does not require explicit license acceptance", resolved.Name)
 		}
 		if err := AcceptModelLicense(resolved.Name); err != nil {
@@ -240,7 +240,7 @@ func pullResolvedWithContext(
 	if err != nil {
 		return config.Model{}, err
 	}
-	if resolved.Gated {
+	if resolved.Gated || resolved.LicenseAcceptanceRequired {
 		if err := modellicense.Require(resolved.Name, resolved.License, resolved.LicenseURL); err != nil {
 			return config.Model{}, err
 		}

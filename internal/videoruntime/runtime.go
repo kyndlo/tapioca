@@ -72,10 +72,10 @@ func Run(ctx context.Context, cacheDir string, request Request) error {
 }
 
 const (
-	comfyTag        = "v0.30.0"
-	comfyCommit     = "b1693ecba9f5b65f8c80ab36b195ab963ec92413"
+	comfyTag        = "v0.39.0"
+	comfyCommit     = "b0b743566f65daafc423b4fea8a2fbda94b3384a"
 	comfyArchiveURL = "https://github.com/comfyanonymous/ComfyUI/archive/" + comfyCommit + ".zip"
-	comfyArchiveSHA = "912365439272d6c7cd9428f897b23be747e27a6a56dfa7f3d3132e72fb564699"
+	comfyArchiveSHA = "c8997f6781e2b53861697fab23b77a7fdb556ec0640f21653a89689556816b54"
 	h3WorkflowURL   = "https://raw.githubusercontent.com/Bambushu/minimax-h3-mac/6959ac3d986909183e2a0bc9c06c1a13e2746ebf/h3_api.json"
 	h3WorkflowSHA   = "26291d8f7ac3aaecca9738f066925169f5f31524eebd7c5bfcfee6ac658322a9"
 	uvWindowsURL    = "https://github.com/astral-sh/uv/releases/download/0.12.3/uv-x86_64-pc-windows-msvc.zip"
@@ -95,7 +95,7 @@ func runH3(ctx context.Context, cacheDir string, request Request) error {
 		}
 		cudaGPU = &gpu
 	}
-	root := filepath.Join(cacheDir, "video-runtime", "0.2.0-h3")
+	root := filepath.Join(cacheDir, "video-runtime", "0.3.0-h3")
 	comfy := filepath.Join(root, "ComfyUI")
 	venv := filepath.Join(root, "venv")
 	python := venvPython(venv)
@@ -624,7 +624,7 @@ func waitForServer(ctx context.Context, base string, timeout time.Duration) erro
 }
 
 func runPython(ctx context.Context, cacheDir string, request Request, flavor string) error {
-	root := filepath.Join(cacheDir, "video-runtime", "0.2.0-"+flavor)
+	root := filepath.Join(cacheDir, "video-runtime", "0.3.0-"+flavor)
 	script := flavor + "_video.py"
 	requirements := "requirements-" + flavor + ".txt"
 	for _, name := range []string{script, requirements} {

@@ -29,6 +29,7 @@ export interface ChatMessage {
   id: string;
   role: ChatMessageRole;
   content: string;
+  images?: string[];
   thinking?: string;
   tools?: ChatToolStep[];
   createdAt: string;
@@ -51,7 +52,7 @@ export type ChatStreamEvent =
 export interface ChatSendRequest {
   sessionId?: string;
   modelId: string;
-  messages: Array<Pick<ChatMessage, "role" | "content">>;
+  messages: Array<Pick<ChatMessage, "role" | "content" | "images">>;
 }
 
 export interface ChatAdapter {

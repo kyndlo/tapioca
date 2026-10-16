@@ -30,6 +30,7 @@ type Options struct {
 	UpstreamPort int
 	Context      int
 	LlamaServer  string
+	CPU          bool
 	Verbose      bool
 }
 
@@ -59,6 +60,17 @@ func (s *Server) Start(ctx context.Context) error {
 			return err
 		}
 	} else {
+		if s.opts.Model.Backend == "llama-vision" {
+			if err := s.validateVisionModel(); err != nil {
+				return err
+			}
+			if s.opts.LlamaServer == "" {
+				s.opts.LlamaServer = visionRuntimePath()
+			}
+			if err := verifyVisionRuntime(ctx, s.opts.LlamaServer); err != nil {
+				return err
+			}
+		}
 		if s.opts.LlamaServer == "" {
 			s.opts.LlamaServer = bundledLlamaServer()
 			if s.opts.LlamaServer == "" {
@@ -69,17 +81,7 @@ func (s *Server) Start(ctx context.Context) error {
 				}
 			}
 		}
-		args := []string{
-			"--model", s.opts.Model.Path,
-			"--host", "127.0.0.1",
-			"--port", strconv.Itoa(s.opts.UpstreamPort),
-			"--ctx-size", strconv.Itoa(s.opts.Context),
-			"--jinja",
-			"--n-gpu-layers", "999",
-		}
-		if !s.opts.Verbose {
-			args = append(args, "-lv", "0")
-		}
+		args := s.llamaArgs()
 		s.cmd = exec.CommandContext(ctx, s.opts.LlamaServer, args...)
 	}
 	if s.opts.Verbose {
@@ -198,6 +200,73 @@ func (s *Server) models(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "POST required", http.StatusMethodNotAllowed)
+		return
+	}
+	var payload map[string]any
+	decoder := json.NewDecoder(http.MaxBytesReader(w, r.Body, MaxChatBodyBytes))
+	if err := decoder.Decode(&payload); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if decoder.Decode(new(any)) != io.EOF {
+		http.Error(w, "expected one JSON object", 400)
+		return
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	var request ChatRequest
+	if err := json.Unmarshal(encoded, &request); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if err := validateChatContent(request.Messages, s.opts.Model.Backend == "llama-vision"); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if s.opts.Model.Backend == "llama-vision" {
+		for _, alias := range []string{"max_completion_tokens", "n_predict"} {
+			if _, ok := payload[alias]; ok {
+				http.Error(w, "use max_tokens for vision requests", 400)
+				return
+			}
+		}
+		if n, ok := payload["n"]; ok && n != float64(1) {
+			http.Error(w, "vision supports n=1", 400)
+			return
+		}
+		if request.MaxTokens < 0 || request.MaxTokens > 1024 {
+			http.Error(w, "vision max_tokens must be between 1 and 1024", 400)
+			return
+		}
+		if request.MaxTokens == 0 {
+			payload["max_tokens"] = 512
+		}
+		kwargs, exists := payload["chat_template_kwargs"]
+		if exists {
+			if _, ok := kwargs.(map[string]any); !ok {
+				http.Error(w, "chat_template_kwargs must be an object", 400)
+				return
+			}
+		} else {
+			payload["chat_template_kwargs"] = map[string]any{}
+		}
+		templateKwargs := payload["chat_template_kwargs"].(map[string]any)
+		if thinking, ok := templateKwargs["enable_thinking"]; ok {
+			if _, ok := thinking.(bool); !ok {
+				http.Error(w, "enable_thinking must be a boolean", 400)
+				return
+			}
+		} else {
+			templateKwargs["enable_thinking"] = false
+		}
+	}
+	encoded, _ = json.Marshal(payload)
+	r.Body = io.NopCloser(bytes.NewReader(encoded))
 	s.proxy(w, r, "/v1/chat/completions")
 }
 

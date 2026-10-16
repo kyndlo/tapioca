@@ -48,5 +48,5 @@ export function lastUserPrompt(messages: ChatMessage[]): string | undefined {
 }
 
 export function chatMessagesForRequest(messages: ChatMessage[]) {
-  return messages.map(({ role, content }) => ({ role, content }));
+  return messages.map(({ role, content, images }) => ({ role, content, ...(images?.length ? { images } : {}) }));
 }

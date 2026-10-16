@@ -569,3 +569,21 @@ describe("renderer adapters", () => {
     expect(onEvent).toHaveBeenCalledWith({ type: "exit", code: 0 });
   });
 });
+
+it("forwards ordered image parts and retains them when reopening a session", async () => {
+  const name = "minicpm-v-4.7:1b-q4-k-m";
+  const status = [{id: "desktop-chat", model: name, endpoint: "http://127.0.0.1:11435", state: "running" as const}];
+  const api = apiFixture({
+    serverStatus: vi.fn().mockResolvedValue(status),
+    chatStatus: vi.fn().mockResolvedValue({installed: [{name, repo: "openbmb/model", backend: "llama-vision"}], servers: status}),
+    chatRequest: vi.fn().mockResolvedValue({id: "answer", object: "chat.completion", created: 1, model: name, choices: [{index: 0, message: {role: "assistant", content: "Red circle"}, finish_reason: "stop"}]}),
+  });
+  const adapter = createRendererAdapters(api, vi.fn()).chat;
+  const images = ["data:image/png;base64,AA==", "data:image/jpeg;base64,AQ=="];
+  const result = await adapter.send({modelId: name, messages: [{role: "user", content: "Describe", images}]}, vi.fn());
+  expect(api.chatRequest).toHaveBeenCalledWith(expect.objectContaining({messages: [{role: "user", content: [{type: "text", text: "Describe"}, ...images.map((url) => ({type: "image_url", image_url: {url}}))]}]}));
+  const session = await adapter.loadSession(result.sessionId);
+  expect(session.messages[0].images).toEqual(images);
+  await adapter.send({modelId: name, sessionId: result.sessionId, messages: [...session.messages, {role: "user", content: "Which color?"}]}, vi.fn());
+  expect(api.chatRequest).toHaveBeenLastCalledWith(expect.objectContaining({messages: expect.arrayContaining([expect.objectContaining({role: "user", content: expect.arrayContaining([{type: "image_url", image_url: {url: images[0]}}])})])}));
+});

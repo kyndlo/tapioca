@@ -81,3 +81,65 @@ describe("ChatWorkspace", () => {
     expect(container.textContent).toContain("Conversation ended with /bye.");
   });
 });
+
+it("sends and retries an attachment without duplicating the user message", async () => {
+  Element.prototype.scrollIntoView = vi.fn();
+  class DecodedImage {
+    width = 512;
+    height = 256;
+    onload?: () => void;
+    set src(_value: string) { queueMicrotask(() => this.onload?.()); }
+  }
+  vi.stubGlobal("Image", DecodedImage);
+  const send = vi.fn()
+    .mockRejectedValueOnce(new Error("Temporary failure"))
+    .mockResolvedValueOnce({sessionId: "session", assistantMessageId: "answer"});
+  const adapter: ChatAdapter = {
+    connection: vi.fn().mockResolvedValue("ready"),
+    reconnect: vi.fn().mockResolvedValue("ready"),
+    models: vi.fn().mockResolvedValue([{id: "minicpm", name: "MiniCPM", ready: true}]),
+    sessions: vi.fn().mockResolvedValue([]),
+    loadSession: vi.fn(), send, stop: vi.fn(),
+  };
+  container = document.createElement("div");
+  document.body.append(container);
+  root = createRoot(container);
+  let completeRead!: () => void;
+  const readComplete = new Promise<void>((resolve) => { completeRead = resolve; });
+  const nativeRead = FileReader.prototype.readAsDataURL;
+  const readSpy = vi.spyOn(FileReader.prototype, "readAsDataURL").mockImplementation(function (this: FileReader, file: Blob) {
+    this.addEventListener("loadend", () => queueMicrotask(completeRead), {once: true});
+    nativeRead.call(this, file);
+  });
+  try {
+    await act(async () => root?.render(createElement(ChatWorkspace, {adapter})));
+    const picker = container.querySelector<HTMLInputElement>('input[type="file"]');
+    const file = new File(["fixture"], "scene.png", {type: "image/png"});
+    Object.defineProperty(picker, "files", {value: [file]});
+    await act(async () => {
+      picker?.dispatchEvent(new Event("change", {bubbles: true}));
+      await readComplete;
+    });
+    expect(container.querySelector('img[alt="Pending image 1"]')).not.toBeNull();
+    const input = container.querySelector<HTMLTextAreaElement>("#chat-prompt");
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(input,"Describe");
+      input?.dispatchEvent(new Event("input", {bubbles: true}));
+    });
+    await act(async () => container?.querySelector<HTMLButtonElement>('button[type="submit"]')?.click());
+    expect(send).toHaveBeenCalledWith(expect.objectContaining({messages: [expect.objectContaining({content: "Describe", images: ["data:image/png;base64,Zml4dHVyZQ=="]})]}), expect.any(Function));
+    expect(container.querySelector('img[alt="Attached image 1"]')).not.toBeNull();
+    expect(container.querySelector('img[alt="Pending image 1"]')).toBeNull();
+    expect(container.textContent).toContain("Temporary failure");
+    const original = send.mock.calls[0][0].messages;
+    const retry = Array.from(container.querySelectorAll("button")).find((button) => button.textContent === "Try again");
+    await act(async () => retry?.click());
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[1][0].messages).toEqual(original);
+    expect(container.querySelectorAll('.chat-message--user')).toHaveLength(1);
+    expect(container.querySelectorAll('img[alt="Attached image 1"]')).toHaveLength(1);
+  } finally {
+    readSpy.mockRestore();
+    vi.unstubAllGlobals();
+  }
+});

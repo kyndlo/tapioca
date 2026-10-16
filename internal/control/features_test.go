@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -357,5 +360,39 @@ func assertJobEventSequences(t *testing.T, output string) {
 			t.Fatalf("event sequence %d follows %d", event.Sequence, previous)
 		}
 		previous = event.Sequence
+	}
+}
+
+func TestChatSidecarForwardsInlineImageParts(t *testing.T) {
+	imageURL := "data:image/png;base64,AA=="
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var payload map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			t.Error(err)
+			return
+		}
+		messages := payload["messages"].([]any)
+		parts := messages[0].(map[string]any)["content"].([]any)
+		if len(parts) != 2 || parts[1].(map[string]any)["image_url"].(map[string]any)["url"] != imageURL {
+			t.Error("sidecar changed image content/order")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		io.WriteString(w, `{"id":"answer","choices":[{"index":0,"message":{"role":"assistant","content":"red"},"finish_reason":"stop"}]}`)
+	}))
+	defer upstream.Close()
+	params := ChatParams{Port: upstream.Listener.Addr().(*net.TCPAddr).Port, Messages: []modelserver.ChatMessage{{Role: "user", Content: []any{
+		map[string]any{"type": "text", "text": "Describe"},
+		map[string]any{"type": "image_url", "image_url": map[string]any{"url": imageURL}},
+	}}}}
+	encoded, err := json.Marshal(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, protocolErr := NewHandler(Dependencies{}).Handle(context.Background(), Request{Method: "chat.request", Params: encoded})
+	if protocolErr != nil {
+		t.Fatal(protocolErr)
+	}
+	if result.(modelserver.ChatResponse).ID != "answer" {
+		t.Fatalf("unexpected result: %v", result)
 	}
 }

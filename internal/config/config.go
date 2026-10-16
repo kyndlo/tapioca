@@ -6,15 +6,21 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/carlos/tapioca/internal/catalog"
 )
 
 type Model struct {
-	Name     string `json:"name"`
-	Repo     string `json:"repo"`
-	Filename string `json:"filename"`
-	Path     string `json:"path"`
-	Kind     string `json:"kind,omitempty"`
-	Backend  string `json:"backend,omitempty"`
+	Context            int              `json:"context,omitempty"`
+	ProjectorPath      string           `json:"projector_path,omitempty"`
+	Integrity          catalog.Download `json:"integrity,omitempty"`
+	ProjectorIntegrity catalog.Download `json:"projector_integrity,omitempty"`
+	Name               string           `json:"name"`
+	Repo               string           `json:"repo"`
+	Filename           string           `json:"filename"`
+	Path               string           `json:"path"`
+	Kind               string           `json:"kind,omitempty"`
+	Backend            string           `json:"backend,omitempty"`
 }
 
 type Registry struct {

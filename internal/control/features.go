@@ -453,9 +453,6 @@ func (m *ModelServerManager) Start(params ServerStartParams) (any, *ProtocolErro
 	if params.UpstreamPort == 0 {
 		params.UpstreamPort = params.Port + 1
 	}
-	if params.Context == 0 {
-		params.Context = catalog.DefaultContext(params.Model)
-	}
 	if params.Host == "" {
 		params.Host = "127.0.0.1"
 	}
@@ -474,6 +471,14 @@ func (m *ModelServerManager) Start(params ServerStartParams) (any, *ProtocolErro
 	if !ok {
 		return nil, &ProtocolError{
 			Code: "model_not_installed", Message: "model is not installed", Retryable: false,
+		}
+	}
+	if params.Context == 0 {
+		params.Context = catalog.DefaultContext(params.Model)
+		if model.Context > 0 {
+			params.Context = model.Context
+		} else if model.Backend == "llama-vision" {
+			params.Context = 4096
 		}
 	}
 	if params.ID == "" {

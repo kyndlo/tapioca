@@ -19,9 +19,22 @@ type anthropicRequest struct {
 
 func (s *Server) messages(w http.ResponseWriter, r *http.Request) {
 	var in anthropicRequest
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, MaxChatBodyBytes)).Decode(&in); err != nil {
 		http.Error(w, err.Error(), 400)
 		return
+	}
+	if hasMessageMedia(in.Messages) || containsMedia(in.System) {
+		http.Error(w, "media input is supported only through /v1/chat/completions using image_url parts", 400)
+		return
+	}
+	if s.opts.Model.Backend == "llama-vision" {
+		if in.MaxTokens < 0 || in.MaxTokens > 1024 {
+			http.Error(w, "vision output limit must be between 1 and 1024", 400)
+			return
+		}
+		if in.MaxTokens == 0 {
+			in.MaxTokens = 512
+		}
 	}
 	messages := anthropicMessages(in.Messages)
 	if in.System != nil {

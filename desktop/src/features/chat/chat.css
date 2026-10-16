@@ -328,7 +328,7 @@
   border-top: 1px solid var(--color-border);
 }
 
-.chat-composer > label {
+.chat-composer > label:not(.chat-attachments) {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -397,3 +397,34 @@
     padding-left: var(--space-4);
   }
 }
+
+.chat-attachments {
+  display: grid;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.chat-attachments input { max-width: 100%; }
+
+.chat-attachment-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.chat-attachment-previews button {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.chat-message > img { max-width: 100%; height: auto; }

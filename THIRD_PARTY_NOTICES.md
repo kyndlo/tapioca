@@ -77,3 +77,15 @@ modifying, or redistributing model files or generated outputs.
 
 This notice is informational and is not legal advice. The license files shipped
 with a particular dependency or model are authoritative.
+
+### Optional MiniCPM-V 4.7 1B candidate
+
+OpenBMB's source and official GGUF model cards declare exactly
+`license: apache-2.0`. Source: <https://huggingface.co/openbmb/MiniCPM-V-4.7-1B>;
+GGUF card pinned at
+<https://huggingface.co/openbmb/MiniCPM-V-4.7-1B-gguf/blob/6c2f4cb8bde51a00247e11003bbf66ca7c4f9249/README.md>.
+The candidate pull retains that exact card as `MODEL_CARD.md`, with its own
+revision, byte count and SHA-256. No separate model LICENSE file existed in the
+pinned repository. The isolated llama.cpp b11696 archive retains its upstream
+LICENSE and notices. This candidate is still-image understanding/OCR only;
+its presence here does not claim platform or hardware qualification.

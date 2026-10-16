@@ -98,8 +98,10 @@ images, reasoning off/on, streaming EOS, cancellation and subsequent reuse.
 It writes answers, correctness checks, latency and sampled peak host RSS to the
 chosen work directory. Unit tests cover interrupted downloads, corrupt-cache
 and corrupt-projector rejection, installed context after catalog refresh,
-stale runtime versions, image/body bounds,
-unsupported modalities, sidecar forwarding and desktop image persistence.
+stale runtime versions, image/body bounds, unsupported modalities, sidecar
+forwarding and desktop image persistence/retry without duplicated prompts.
+`python3 scripts/test-minicpm-qualification.py` checks normal shutdown and
+forced cleanup of a separately grouped backend on timeout.
 
 Real-weight smoke evidence is from an **Apple M2 Max with 96 GiB unified
 memory**. All five cases passed:

@@ -13,7 +13,6 @@ import {
   chatMessagesForRequest,
   emptyChatDraft,
   isByeCommand,
-  lastUserPrompt,
   type ChatDraft,
 } from "./state";
 import type {
@@ -116,7 +115,7 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
     }
   };
 
-  const sendPrompt = async (prompt: string) => {
+  const sendPrompt = async (prompt: string, retryMessages?: ChatMessage[]) => {
     const text = prompt.trim();
     if (!text || busy || readingImages) return;
     if (isByeCommand(text)) {
@@ -144,7 +143,7 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
       ...(images.length ? {images} : {}),
       createdAt: now(),
     };
-    const requestMessages = [...messages, userMessage];
+    const requestMessages = retryMessages ?? [...messages, userMessage];
     setMessages(requestMessages);
     setImages([]);
     setInput("");
@@ -224,8 +223,8 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
   };
 
   const regenerate = () => {
-    const prompt = lastUserPrompt(messages);
-    if (prompt) void sendPrompt(prompt);
+    const index = messages.map((message) => message.role).lastIndexOf("user");
+    if (index >= 0) void sendPrompt(messages[index].content, messages.slice(0, index + 1));
   };
 
   return (

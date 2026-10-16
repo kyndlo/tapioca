@@ -65,6 +65,32 @@ def verify_rejected_artifacts(binary, runtime, env, model):
     return results
 
 
+def stop_process_tree(proc, timeout=30):
+    def children():
+        try:
+            return set(map(int, subprocess.check_output(['pgrep', '-P', str(proc.pid)], text=True).split()))
+        except subprocess.CalledProcessError:
+            return set()
+
+    def kill_group(pid, sig):
+        try:
+            os.killpg(pid, sig)
+        except ProcessLookupError:
+            pass
+
+    backend_pids = children() if proc.poll() is None else set()
+    if proc.poll() is None:
+        kill_group(proc.pid, signal.SIGTERM)
+    try:
+        proc.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # The Go launcher puts llama-server in its own process group.
+        for pid in backend_pids | children():
+            kill_group(pid, signal.SIGKILL)
+        kill_group(proc.pid, signal.SIGKILL)
+        proc.wait(timeout=5)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
@@ -178,14 +204,14 @@ def main():
                 # Closing the stream must cancel the upstream request.
             row['cancel_then_reuse'] = bool(chat('after-cancellation', [{'role': 'user', 'content': 'Say OK.'}], []))
         finally:
-            if proc.poll() is None:
-                os.killpg(proc.pid, signal.SIGTERM)
-            proc.wait(timeout=30)
-            stop.set()
-            sampler.join(timeout=3)
-            row['sampled_peak_host_rss_bytes'] = peak[0]
-            log.close()
-            (work / 'acceptance.json').write_text(json.dumps(report, indent=2) + '\n')
+            try:
+                stop_process_tree(proc)
+            finally:
+                stop.set()
+                sampler.join(timeout=3)
+                row['sampled_peak_host_rss_bytes'] = peak[0]
+                log.close()
+                (work / 'acceptance.json').write_text(json.dumps(report, indent=2) + '\n')
     failures = [f"{r['case']}: {q['name']}" for r in report['results'] for q in r['requests'] if not q['passed']]
     if failures:
         raise SystemExit('Acceptance failures: ' + ', '.join(failures))

@@ -102,12 +102,16 @@ jobs:
           tar -xzf llama.cpp.tar.gz -C dist/runtime/llama.cpp --strip-components=1
           test -x dist/runtime/llama.cpp/llama-server
 
+      - name: Prepare isolated Apple Silicon vision runtime
+        run: sh scripts/prepare-vision-runtime.sh dist/runtime
+
       - name: Build Tapioca Desktop
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: |
           mkdir -p desktop/runtime
           cp -R dist/runtime/llama.cpp desktop/runtime/llama.cpp
+          cp -R dist/runtime/llama-vision-b11696 desktop/runtime/llama-vision-b11696
           npm ci --prefix desktop
           npm run package --prefix desktop
 

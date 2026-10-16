@@ -1,4 +1,5 @@
 import {
+  type ChangeEvent,
   type FormEvent,
   type KeyboardEvent,
   useCallback,
@@ -40,6 +41,8 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState<ChatDraft>();
   const [input, setInput] = useState("");
+  const [images, setImages] = useState<string[]>([]);
+  const [readingImages, setReadingImages] = useState(false);
   const [busy, setBusy] = useState(false);
   const [closed, setClosed] = useState(false);
   const [error, setError] = useState<string>();
@@ -78,12 +81,13 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
   );
 
   const openSession = async (id: string) => {
-    if (busy) return;
+    if (busy || readingImages) return;
     setError(undefined);
     try {
       const session = await adapter.loadSession(id);
       setSessionId(session.id);
       setMessages(session.messages);
+      setImages([]);
       if (session.modelId) setModelId(session.modelId);
       setClosed(false);
     } catch (cause) {
@@ -91,9 +95,30 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
     }
   };
 
+  const attachImages = async (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    const historyImages = messages.reduce((total, message) => total + (message.images?.length ?? 0), 0);
+    if (historyImages + images.length + files.length > 4 || files.some((file) =>
+      file.size > 128 * 1024 || !["image/png", "image/jpeg"].includes(file.type))) {
+      setError("Choose at most four images per conversation, each a PNG/JPEG no larger than 128 KiB and 1024 pixels per side.");
+      return;
+    }
+    setReadingImages(true);
+    try {
+      const urls = await Promise.all(files.map(readChatImage));
+      setImages((current) => [...current, ...urls]);
+      setError(undefined);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setReadingImages(false);
+    }
+  };
+
   const sendPrompt = async (prompt: string) => {
     const text = prompt.trim();
-    if (!text || busy) return;
+    if (!text || busy || readingImages) return;
     if (isByeCommand(text)) {
       try {
         await adapter.stop();
@@ -116,10 +141,12 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
       id: crypto.randomUUID(),
       role: "user",
       content: text,
+      ...(images.length ? {images} : {}),
       createdAt: now(),
     };
     const requestMessages = [...messages, userMessage];
     setMessages(requestMessages);
+    setImages([]);
     setInput("");
     setError(undefined);
     setClosed(false);
@@ -214,10 +241,12 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
             onClick={() => {
               setSessionId(undefined);
               setMessages([]);
+              setImages([]);
               setDraft(undefined);
               setClosed(false);
               setError(undefined);
             }}
+            disabled={busy || readingImages}
             aria-label="Start a new conversation"
           >
             +
@@ -322,6 +351,7 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
                   <ToolFlow tools={message.tools} />
                 </details>
               )}
+              {message.images?.map((url, index) => <img key={index} src={url} alt={`Attached image ${index + 1}`} width={160} />)}
               <p>{message.content}</p>
             </article>
           ))}
@@ -366,6 +396,30 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
           </div>
         ) : (
           <form className="chat-composer" onSubmit={onSubmit}>
+            <label className="chat-attachments">Attach PNG/JPEG images (up to four, 128 KiB each)
+              <input
+                type="file"
+                accept="image/png,image/jpeg"
+                multiple
+                disabled={busy || readingImages}
+                onChange={(event) => void attachImages(event)}
+              />
+            </label>
+            {images.length > 0 && (
+              <div className="chat-attachment-previews">
+                {images.map((url, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    disabled={busy}
+                    onClick={() => setImages((current) => current.filter((_, i) => i !== index))}
+                    aria-label={`Remove image ${index + 1}`}
+                  >
+                    <img src={url} alt={`Pending image ${index + 1}`} width={64} /> ×
+                  </button>
+                ))}
+              </div>
+            )}
             <label htmlFor="chat-prompt">Message your local model</label>
             <textarea
               id="chat-prompt"
@@ -386,7 +440,7 @@ export function ChatWorkspace({ adapter }: ChatWorkspaceProps) {
                 <button
                   type="submit"
                   className="chat-send"
-                  disabled={!input.trim() || !selectedModel?.ready}
+                  disabled={!input.trim() || !selectedModel?.ready || readingImages}
                 >
                   Send
                 </button>
@@ -414,4 +468,25 @@ function ToolFlow({ tools }: { tools: NonNullable<ChatMessage["tools"]> }) {
       ))}
     </ol>
   );
+}
+
+function readChatImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Could not read attachment"));
+    reader.onload = () => {
+      const url = String(reader.result);
+      const image = new Image();
+      image.onerror = () => reject(new Error("Invalid PNG/JPEG attachment"));
+      image.onload = () => {
+        if (image.width < 1 || image.height < 1 || image.width > 1024 || image.height > 1024) {
+          reject(new Error("Images must be at most 1024 pixels per side"));
+        } else {
+          resolve(url);
+        }
+      };
+      image.src = url;
+    };
+    reader.readAsDataURL(file);
+  });
 }

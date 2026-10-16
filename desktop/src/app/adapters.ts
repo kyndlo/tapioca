@@ -203,7 +203,13 @@ export function createRendererAdapters(
         const response = await api.chatRequest({
           jobId,
           model: request.modelId,
-          messages: request.messages,
+          messages: request.messages.map(({ role, content, images }) => ({
+            role,
+            content: images?.length ? [
+              { type: "text" as const, text: content },
+              ...images.map((url) => ({ type: "image_url" as const, image_url: { url } })),
+            ] : content,
+          })),
         });
         const message = response.choices[0]?.message;
         const content = textContent(message?.content);
@@ -230,6 +236,7 @@ export function createRendererAdapters(
             id: `${sessionId}-${index}`,
             role: item.role,
             content: item.content,
+            ...(item.images?.length ? {images: item.images} : {}),
             createdAt: new Date().toISOString(),
           })),
           {

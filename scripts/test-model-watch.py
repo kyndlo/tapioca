@@ -23,6 +23,14 @@ class ModelWatchTests(unittest.TestCase):
         self.assertNotIn("schedule:", workflow)
         self.assertNotIn("github.rest.issues.", workflow)
 
+    def test_still_image_discovery_and_projector_inventory(self):
+        self.assertIn("image-text-to-text", model_watch.PIPELINES["Image"])
+        repositories, artifacts = model_watch.catalog_inventory({"models": {"vision": {
+            "repo": "owner/model", "files": {"q4": "model.gguf"},
+            "projectors": {"q4": {"repo": "owner/model", "filename": "projector.gguf", "revision": "a" * 40}},
+        }}})
+        self.assertIn(("owner/model", "projector.gguf", "a" * 40), artifacts)
+
     def test_catalog_inventory_tracks_variant_and_bundle_artifacts(self):
         repositories, artifacts = model_watch.catalog_inventory(
             {

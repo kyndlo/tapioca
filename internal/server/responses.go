@@ -20,9 +20,22 @@ type responsesRequest struct {
 
 func (s *Server) responses(w http.ResponseWriter, r *http.Request) {
 	var in responsesRequest
-	if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, MaxChatBodyBytes)).Decode(&in); err != nil {
 		http.Error(w, err.Error(), 400)
 		return
+	}
+	if containsMedia(in.Input) {
+		http.Error(w, "media input is supported only through /v1/chat/completions using image_url parts", 400)
+		return
+	}
+	if s.opts.Model.Backend == "llama-vision" {
+		if in.MaxOutput < 0 || in.MaxOutput > 1024 {
+			http.Error(w, "vision output limit must be between 1 and 1024", 400)
+			return
+		}
+		if in.MaxOutput == 0 {
+			in.MaxOutput = 512
+		}
 	}
 	messages := responseInputMessages(in.Input)
 	if in.Instructions != "" {

@@ -128,3 +128,10 @@ and [Dia2 MLX model card](https://huggingface.co/mlx-community/Dia2-2B-bf16).
 `powershell -NoProfile -File scripts/test-windows.ps1` records hardware/commands in a unique temporary directory and runs affected checks from a checkout. Executed successfully on the authorized Windows PC: 64 GB, RTX 4070 Ti SUPER, Python 3.12.10, Node 22.20.0, Go 1.26.1. Inference/visual QA remain separate from the script.
 
 Run full Go tests/vet, `scripts/test-model-watch.py`, Python speech unit discovery, manifest/checksum checks and desktop tests/typecheck/build. The release qualification includes actual Electron search/filter/reset/details/Escape interaction checks, not just component tests. Local test artifacts were moved to the DATA volume to avoid filling the Mac system disk; the installed user app was not replaced.
+
+## MiniCPM-V 4.7 1B still-image candidate — 2026-10-16
+
+The isolated GGUF/projector path, API and Desktop attachment scope, local
+CPU/Metal smoke evidence and remaining shipping qualification are documented in
+[the MiniCPM-V guide](minicpm-v-4.7.md). Its manifest remains outside the
+published catalog; no Windows/Linux or minimum-memory support is implied.

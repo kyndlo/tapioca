@@ -149,7 +149,21 @@ export const chatRequestInputSchema = z
         z
           .object({
             role: z.enum(["user", "assistant"]),
-            content: z.string(),
+            content: z.union([
+              z.string(),
+              z.array(z.discriminatedUnion("type", [
+                z.object({
+                  type: z.literal("text"),
+                  text: z.string(),
+                }).strict(),
+                z.object({
+                  type: z.literal("image_url"),
+                  image_url: z.object({
+                    url: z.string().max(700_000).regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/),
+                  }).strict(),
+                }).strict(),
+              ])).min(1).max(5),
+            ]),
           })
           .strict(),
       )

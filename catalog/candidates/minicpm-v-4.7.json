@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "generated_at": "2026-10-16T16:00:00Z",
+  "models": {
+    "minicpm-v-4.7": {
+      "name": "minicpm-v-4.7",
+      "repo": "openbmb/MiniCPM-V-4.7-1B-gguf",
+      "files": {
+        "1b-q4-k-m": "MiniCPM-V-4_7-1B-Q4_K_M.gguf"
+      },
+      "default": "1b-q4-k-m",
+      "backends": {
+        "1b-q4-k-m": "llama-vision"
+      },
+      "context": 4096,
+      "sizes": {
+        "1b-q4-k-m": "1.66 GiB (model + projector)"
+      },
+      "memory": {
+        "1b-q4-k-m": "Qualification target: 8 GiB; 16 GiB preferred; measured minimum pending"
+      },
+      "gpus": {
+        "1b-q4-k-m": "Apple Silicon Metal or CPU; other platforms unqualified"
+      },
+      "features": {
+        "1b-q4-k-m": "Experimental still-image understanding/OCR; PNG/JPEG data URLs; no video; reasoning off by default"
+      },
+      "license": "Apache-2.0",
+      "license_url": "https://huggingface.co/openbmb/MiniCPM-V-4.7-1B-gguf/blob/6c2f4cb8bde51a00247e11003bbf66ca7c4f9249/README.md",
+      "downloads": {
+        "1b-q4-k-m": {
+          "revision": "6c2f4cb8bde51a00247e11003bbf66ca7c4f9249",
+          "size_bytes": 672003680,
+          "sha256": "588c6c94c82f756b86dba35c42ed9ba9ec187d65824eb52f039c347df563e63d"
+        }
+      },
+      "projectors": {
+        "1b-q4-k-m": {
+          "repo": "openbmb/MiniCPM-V-4.7-1B-gguf",
+          "filename": "mmproj-model-f16.gguf",
+          "target": "mmproj-model-f16.gguf",
+          "revision": "6c2f4cb8bde51a00247e11003bbf66ca7c4f9249",
+          "size_bytes": 1110117984,
+          "sha256": "fb9cc047a3cdad5317fd8433a4aeda2d22f00f02ca4bd93b34ad84165b25a900"
+        }
+      },
+      "artifacts": {
+        "1b-q4-k-m": [
+          {
+            "repo": "openbmb/MiniCPM-V-4.7-1B-gguf",
+            "filename": "README.md",
+            "target": "MODEL_CARD.md",
+            "revision": "6c2f4cb8bde51a00247e11003bbf66ca7c4f9249",
+            "sha256": "a8730753941a10d236343ef977d744648ed8a88c0f50debd6a74089122041bb8",
+            "size_bytes": 17895
+          }
+        ]
+      },
+      "kind": "text"
+    }
+  }
+}

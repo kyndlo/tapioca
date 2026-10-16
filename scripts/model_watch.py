@@ -20,7 +20,7 @@ USER_AGENT = "tapioca-model-watch/1.0 (+https://github.com/kyndlo/tapioca)"
 HUGGING_FACE_API = "https://huggingface.co/api/models"
 PIPELINES = {
     "Language": ("text-generation",),
-    "Image": ("text-to-image",),
+    "Image": ("text-to-image", "image-text-to-text"),
     "Speech/audio": ("text-to-speech",),
     "Video": ("text-to-video", "image-to-video"),
 }
@@ -90,7 +90,7 @@ def catalog_inventory(catalog: dict) -> tuple[set[str], list[tuple[str, str, str
             if repo and filename:
                 revision = model.get("downloads", {}).get(variant, {}).get("revision") or "main"
                 artifacts.append((repo, filename, revision))
-        for bundle in model.get("artifacts", {}).values():
+        for bundle in [*model.get("artifacts", {}).values(), list(model.get("projectors", {}).values())]:
             for artifact in bundle:
                 repo = artifact.get("repo", "")
                 filename = artifact.get("filename", "")

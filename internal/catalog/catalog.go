@@ -42,6 +42,7 @@ type Model struct {
 	GPUs                      map[string]string     `json:"gpus,omitempty"`
 	Languages                 map[string]string     `json:"languages,omitempty"`
 	Features                  map[string]string     `json:"features,omitempty"`
+	Projectors                map[string]Artifact   `json:"projectors,omitempty"`
 	Artifacts                 map[string][]Artifact `json:"artifacts,omitempty"`
 	Downloads                 map[string]Download   `json:"downloads,omitempty"`
 	GuidanceScale             float64               `json:"guidance_scale,omitempty"`
@@ -321,7 +322,7 @@ func validateModel(name string, model Model) error {
 		return fmt.Errorf("catalog model %s has invalid repository", name)
 	}
 	allowedBackends := map[string]bool{
-		"": true, "mlx": true, "mlx-vlm": true, "mlx-video": true,
+		"": true, "llama-vision": true, "mlx": true, "mlx-vlm": true, "mlx-video": true,
 		"mflux": true, "diffusers": true, "diffusers-mps": true,
 		"diffusers-video": true, "diffusers-ltx2": true,
 		"onnx-directml": true, "onnx-cpu": true,
@@ -356,11 +357,50 @@ func validateModel(name string, model Model) error {
 			}
 		}
 	}
+	for variant, projector := range model.Projectors {
+		if model.Backends[variant] != "llama-vision" || model.Files[variant] == "" {
+			return fmt.Errorf("catalog model %s projector requires a llama-vision single-file variant", name)
+		}
+		language := model.Downloads[variant]
+		languageRepo := model.Repo
+		if repo := model.Repos[variant]; repo != "" {
+			languageRepo = repo
+		}
+		if !validRepo(projector.Repo) || !validRelativePath(projector.Filename) ||
+			!validRelativePath(projector.Target) || strings.EqualFold(projector.Target, model.Files[variant]) {
+			return fmt.Errorf("catalog model %s has an unsafe projector", name)
+		}
+		if err := projector.Download.Validate(); err != nil {
+			return err
+		}
+		if projector.Revision == "" || projector.SHA256 == "" || projector.SizeBytes <= 0 ||
+			language.Revision != projector.Revision || language.SHA256 == "" || language.SizeBytes <= 0 ||
+			projector.Repo != languageRepo {
+			return fmt.Errorf("catalog model %s requires fully pinned, matching language/projector artifacts", name)
+		}
+	}
+	for variant, backend := range model.Backends {
+		if backend == "llama-vision" {
+			if _, ok := model.Projectors[variant]; !ok {
+				return fmt.Errorf("catalog model %s is missing its projector", name)
+			}
+		}
+	}
 	for variant, artifacts := range model.Artifacts {
 		if _, ok := model.Files[variant]; !ok {
 			return fmt.Errorf("catalog model %s has artifacts for unknown variant %q", name, variant)
 		}
+		targets := map[string]bool{}
+		if projector, ok := model.Projectors[variant]; ok {
+			targets[strings.ToLower(model.Files[variant])] = true
+			targets[strings.ToLower(projector.Target)] = true
+		}
 		for _, artifact := range artifacts {
+			target := strings.ToLower(artifact.Target)
+			if targets[target] {
+				return fmt.Errorf("catalog model %s has duplicate artifact target %q", name, artifact.Target)
+			}
+			targets[target] = true
 			if err := artifact.Download.Validate(); err != nil {
 				return fmt.Errorf("catalog model %s artifact: %w", name, err)
 			}
@@ -1331,6 +1371,7 @@ var builtInModels = map[string]Model{
 }
 
 type Resolved struct {
+	Context int
 	Download
 	Name                      string
 	Repo                      string
@@ -1352,6 +1393,7 @@ type Resolved struct {
 	GPU                       string
 	Languages                 string
 	Features                  string
+	Projector                 *Artifact
 	Artifacts                 []Artifact
 	GuidanceScale             float64
 	GuidanceScaleSet          bool
@@ -1445,6 +1487,8 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	backend := m.Backends[strings.ToLower(tag)]
 	platform := "Windows, macOS, Linux"
 	switch backend {
+	case "llama-vision":
+		platform = "macOS Apple Silicon (CPU/Metal qualification only)"
 	case "mlx", "mlx-vlm", "mlx-video", "mflux", "speech-qwen-mlx", "speech-audio8-mlx":
 		platform = "macOS Apple Silicon"
 	case "diffusers", "diffusers-video", "diffusers-ltx2":
@@ -1472,8 +1516,17 @@ func ResolveForPlatform(ref, goos, goarch string) (Resolved, error) {
 	case "onnx-cpu":
 		platform = "Windows ARM64"
 	}
+	var projector *Artifact
+	if artifact, ok := m.Projectors[strings.ToLower(tag)]; ok {
+		projector = &artifact
+	}
+	if backend == "llama-vision" && (goos != "darwin" || goarch != "arm64") {
+		return Resolved{}, fmt.Errorf("%s vision backend is only qualified on macOS Apple Silicon", name)
+	}
 	memory, gpu := requirements(m, strings.ToLower(tag), backend)
 	return Resolved{
+		Context:         m.Context,
+		Projector:       projector,
 		Download:        download,
 		Name:            m.Name + ":" + strings.ToLower(tag),
 		Repo:            repo,

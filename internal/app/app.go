@@ -264,6 +264,21 @@ func pullResolvedWithContext(
 		}
 		return modelFromResolved(resolved, dir), nil
 	}
+	if resolved.Projector != nil {
+		bundle := resolved
+		bundle.Artifacts = append([]catalog.Artifact{
+			{Repo: resolved.Repo, Filename: resolved.Filename, Target: resolved.Filename, Download: resolved.Download},
+			*resolved.Projector,
+		}, resolved.Artifacts...)
+		if err := pullArtifactsWithContext(ctx, bundle, dir, force, report); err != nil {
+			return config.Model{}, err
+		}
+		path := filepath.Join(dir, resolved.Filename)
+		if err := register(resolved, path); err != nil {
+			return config.Model{}, err
+		}
+		return modelFromResolved(resolved, path), nil
+	}
 	path := filepath.Join(dir, resolved.Filename)
 	if _, err := os.Stat(path); err == nil && !force {
 		if err := verifyArtifact(path, resolved.Download); err != nil {
@@ -305,10 +320,21 @@ func pullResolvedWithContext(
 }
 
 func modelFromResolved(resolved catalog.Resolved, path string) config.Model {
-	return config.Model{
+	model := config.Model{
 		Name: resolved.Name, Repo: resolved.Repo, Filename: resolved.Filename, Path: path,
 		Kind: resolved.Kind, Backend: resolved.Backend,
 	}
+	if resolved.Projector != nil {
+		model.Context = resolved.Context
+		root := path
+		for range strings.Split(filepath.ToSlash(resolved.Filename), "/") {
+			root = filepath.Dir(root)
+		}
+		model.ProjectorPath = filepath.Join(root, filepath.FromSlash(resolved.Projector.Target))
+		model.Integrity = resolved.Download
+		model.ProjectorIntegrity = resolved.Projector.Download
+	}
+	return model
 }
 
 func register(resolved catalog.Resolved, path string) error {
@@ -316,10 +342,7 @@ func register(resolved catalog.Resolved, path string) error {
 	if err != nil {
 		return err
 	}
-	registry.Models[strings.ToLower(resolved.Name)] = config.Model{
-		Name: resolved.Name, Repo: resolved.Repo, Filename: resolved.Filename, Path: path,
-		Kind: resolved.Kind, Backend: resolved.Backend,
-	}
+	registry.Models[strings.ToLower(resolved.Name)] = modelFromResolved(resolved, path)
 	return registry.Save()
 }
 
@@ -409,6 +432,7 @@ type serveOptions struct {
 	upstreamPort int
 	context      int
 	llamaServer  string
+	cpu          bool
 	verbose      bool
 }
 
@@ -432,8 +456,19 @@ func parseServe(args []string) (serveOptions, config.Model, error) {
 	fs.StringVar(&opts.host, "host", "127.0.0.1", "listen host")
 	fs.IntVar(&opts.port, "port", 11435, "Tapioca API port")
 	fs.IntVar(&opts.upstreamPort, "upstream-port", 11436, "private llama-server port")
-	fs.IntVar(&opts.context, "context", catalog.DefaultContext(ref), "context window")
+	defaultContext := catalog.DefaultContext(ref)
+	if registry, err := config.Load(); err == nil {
+		if model, ok := registry.Find(ref); ok {
+			if model.Context > 0 {
+				defaultContext = model.Context
+			} else if model.Backend == "llama-vision" {
+				defaultContext = 4096
+			}
+		}
+	}
+	fs.IntVar(&opts.context, "context", defaultContext, "context window")
 	fs.StringVar(&opts.llamaServer, "llama-server", "", "path to llama-server")
+	fs.BoolVar(&opts.cpu, "cpu", false, "run language and projector on CPU")
 	fs.BoolVar(&opts.verbose, "verbose", false, "show llama.cpp and HTTP request logs")
 	if err := fs.Parse(args[1:]); err != nil {
 		return opts, config.Model{}, err
@@ -451,7 +486,7 @@ func startServer(ctx context.Context, model config.Model, opts serveOptions) err
 	}
 	s := server.New(server.Options{
 		Model: model, Host: opts.host, Port: opts.port, UpstreamPort: opts.upstreamPort,
-		Context: opts.context, LlamaServer: opts.llamaServer, Verbose: opts.verbose,
+		CPU: opts.cpu, Context: opts.context, LlamaServer: opts.llamaServer, Verbose: opts.verbose,
 	})
 	return s.Start(ctx)
 }

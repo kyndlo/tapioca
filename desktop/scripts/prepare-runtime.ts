@@ -103,5 +103,15 @@ export async function prepareRuntime(
 const invoked = process.argv[1] ? path.resolve(process.argv[1]) : "";
 if (invoked === fileURLToPath(import.meta.url)) {
   const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-  console.log(`Prepared ${await prepareRuntime(desktopRoot)}`);
+  const prepared = await prepareRuntime(desktopRoot);
+  if (process.platform === "darwin" && process.arch === "arm64") {
+    const vision = spawnSync(
+      "sh",
+      [path.resolve(desktopRoot, "../scripts/prepare-vision-runtime.sh"), path.resolve(desktopRoot, "runtime")],
+      { shell: false, stdio: "inherit" },
+    );
+    if (vision.error) throw vision.error;
+    if (vision.status !== 0) throw new Error("Preparing pinned vision runtime failed");
+  }
+  console.log(`Prepared ${prepared}`);
 }
